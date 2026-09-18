@@ -33,9 +33,9 @@ func take_hit(damage: int, _from_direction: int) -> void:
 
 
 func _on_hurt_area_body_entered(body: Node) -> void:
-	if body == self:
-		return
-	if body.has_method("take_hit"):
+	# Solo amenaza al jugador: sin esto, también golpea a otros enemigos o
+	# a un Eco recién aparecido si nace pegado a él.
+	if body.is_in_group("player"):
 		body.take_hit(1, 0)
 
 

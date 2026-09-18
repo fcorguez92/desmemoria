@@ -32,9 +32,9 @@ func take_hit(_damage: int, _from_direction: int) -> void:
 
 
 func _on_hurt_area_body_entered(body: Node) -> void:
-	if body == self:
-		return
-	if body.has_method("take_hit"):
+	# Solo amenaza al jugador: sin esto, un enemigo cercano podría "rematar"
+	# al Eco por ti antes de que llegues a recuperarlo.
+	if body.is_in_group("player"):
 		body.take_hit(1, 0)
 
 
