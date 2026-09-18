@@ -3,6 +3,9 @@ extends CharacterBody2D
 ## Enemigo de prueba, sin IA todavía: solo existe para poder golpear algo
 ## y comprobar si el ataque y el daño por contacto se sienten bien.
 
+## Enemigo de prueba: ataca al mismo alcance que el jugador (ver
+## Player.attack_reach) para poder comparar sensaciones directamente.
+## No es el diseño final de enemigo, solo referencia para probar el núcleo.
 @export var max_health: int = 3
 @export var ecos_reward: int = 2
 
