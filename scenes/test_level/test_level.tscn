@@ -1,7 +1,8 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=8 format=3]
 
 [ext_resource type="PackedScene" path="res://scenes/player/player.tscn" id="1_player"]
 [ext_resource type="PackedScene" path="res://scenes/enemy/enemy.tscn" id="2_enemy"]
+[ext_resource type="PackedScene" path="res://scenes/memory_anchor/memory_anchor.tscn" id="3_anchor"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_ground_a"]
 size = Vector2(400, 40)
@@ -49,6 +50,12 @@ polygon = PackedVector2Array(-100, -15, 100, -15, 100, 15, -100, 15)
 
 [node name="Player" parent="." instance=ExtResource("1_player")]
 position = Vector2(100, 340)
+
+[node name="MemoryAnchor" parent="." instance=ExtResource("3_anchor")]
+position = Vector2(160, 356)
+
+[node name="MemoryAnchor2" parent="." instance=ExtResource("3_anchor")]
+position = Vector2(980, 197)
 
 [node name="Enemy" parent="." instance=ExtResource("2_enemy")]
 position = Vector2(700, 356)

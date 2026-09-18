@@ -29,11 +29,12 @@ Todo es geometría de colores planos (`Polygon2D`), sin arte final. Es intencion
 - Flecha arriba/abajo: mirar (desplaza la cámara, no mueve al personaje).
 - X: atacar.
 - Shift izquierdo: dash.
+- H: curarse (si quedan cargas y no estás a vida completa).
 
 ## Qué falta del núcleo jugable (ver `docs/nucleo-jugable.md`, sección "pendiente")
 
-- Anclas de Memoria (puntos de control: guardado, curación, reinicio de enemigos).
-- Objeto de curación de usos limitados.
+- Anclas de Memoria: hecho (curan, recargan la curación, fijan el punto de reaparición). Pendiente: reiniciar a los enemigos normales del área al activarse — falta un sistema de seguimiento/reaparición de enemigos.
+- Objeto de curación de usos limitados: hecho (recarga en las Anclas).
 - Tiers de mejora del arma y qué se compra con Ecos.
 - Resto de habilidades de progresión (trepar/pared, doble salto).
 - Sistema de estadísticas del personaje más allá de vida.

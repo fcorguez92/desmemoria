@@ -19,6 +19,7 @@ const EchoScene := preload("res://scenes/echo/echo.tscn")
 @export var camera_look_speed: float = 4.0
 @export var max_health: int = 5
 @export var hit_invulnerability_time: float = 0.6
+@export var max_heal_charges: int = 3
 @export var dash_speed: float = 900.0
 @export var dash_duration: float = 0.15
 @export var dash_cooldown: float = 0.4
@@ -28,6 +29,7 @@ var jump_buffer_timer: float = 0.0
 var facing: int = 1
 var attack_cooldown_timer: float = 0.0
 var health: int
+var heal_charges: int
 var ecos: int = 0
 var invulnerable_timer: float = 0.0
 var active_echo: Node = null
@@ -44,11 +46,13 @@ var dash_direction: int = 1
 @onready var flash_timer: Timer = $FlashTimer
 @onready var health_label: Label = $HUD/HealthLabel
 @onready var ecos_label: Label = $HUD/EcosLabel
+@onready var heal_label: Label = $HUD/HealLabel
 
 
 func _ready() -> void:
 	add_to_group("player")
 	health = max_health
+	heal_charges = max_heal_charges
 	last_grounded_position = global_position
 	_update_hud()
 
@@ -105,6 +109,11 @@ func _physics_process(delta: float) -> void:
 	attack_cooldown_timer = max(attack_cooldown_timer - delta, 0.0)
 	if Input.is_action_just_pressed("attack"):
 		_try_attack()
+
+	if Input.is_action_just_pressed("heal") and heal_charges > 0 and health < max_health:
+		heal_charges -= 1
+		health = max_health
+		_update_hud()
 
 	invulnerable_timer = max(invulnerable_timer - delta, 0.0)
 
@@ -181,9 +190,18 @@ func die() -> void:
 	_update_hud()
 
 
+func rest_at(anchor_position: Vector2) -> void:
+	spawn_position = anchor_position
+	last_grounded_position = anchor_position
+	health = max_health
+	heal_charges = max_heal_charges
+	_update_hud()
+
+
 func _update_hud() -> void:
 	health_label.text = "Vida: %d/%d" % [health, max_health]
 	ecos_label.text = "Ecos: %d" % ecos
+	heal_label.text = "Curación: %d/%d" % [heal_charges, max_heal_charges]
 
 
 func _on_flash_timer_timeout() -> void:

@@ -46,4 +46,9 @@ offset_left = 16.0
 offset_top = 40.0
 text = "Ecos: 0"
 
+[node name="HealLabel" type="Label" parent="HUD"]
+offset_left = 16.0
+offset_top = 64.0
+text = "Curación: 3/3"
+
 [connection signal="timeout" from="FlashTimer" to="." method="_on_flash_timer_timeout"]
