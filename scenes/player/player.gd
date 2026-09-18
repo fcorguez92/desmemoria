@@ -28,6 +28,7 @@ var health: int
 var ecos: int = 0
 var invulnerable_timer: float = 0.0
 var active_echo: Node = null
+var last_grounded_position: Vector2
 
 @onready var spawn_position: Vector2 = global_position
 @onready var visual: Polygon2D = $Visual
@@ -41,11 +42,15 @@ var active_echo: Node = null
 func _ready() -> void:
 	add_to_group("player")
 	health = max_health
+	last_grounded_position = global_position
 	_update_hud()
 
 
 func _physics_process(delta: float) -> void:
 	var was_on_floor := is_on_floor()
+
+	if was_on_floor:
+		last_grounded_position = global_position
 
 	if not is_on_floor():
 		var current_gravity := gravity * fall_gravity_multiplier if velocity.y > 0.0 else gravity
@@ -139,7 +144,9 @@ func die() -> void:
 	if ecos > 0:
 		var echo := EchoScene.instantiate()
 		echo.ecos_held = ecos
-		echo.global_position = global_position
+		# La última posición en suelo, no la posición exacta de la muerte:
+		# así una caída a un hueco no deja el Eco fuera de tu alcance.
+		echo.global_position = last_grounded_position
 		get_parent().add_child(echo)
 		active_echo = echo
 
