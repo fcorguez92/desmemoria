@@ -30,6 +30,8 @@ func take_hit(damage: int, _from_direction: int) -> void:
 
 
 func _on_hurt_area_body_entered(body: Node) -> void:
+	if body == self:
+		return
 	if body.has_method("take_hit"):
 		body.take_hit(1, 0)
 

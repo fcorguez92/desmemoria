@@ -107,6 +107,8 @@ func _try_attack() -> void:
 		return
 	attack_cooldown_timer = attack_cooldown
 	for body in attack_hitbox.get_overlapping_bodies():
+		if body == self:
+			continue
 		if body.has_method("take_hit"):
 			body.take_hit(1, facing)
 
