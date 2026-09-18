@@ -141,14 +141,16 @@ func die() -> void:
 	if is_instance_valid(active_echo):
 		active_echo.queue_free()
 
-	if ecos > 0:
-		var echo := EchoScene.instantiate()
-		echo.ecos_held = ecos
-		# La última posición en suelo, no la posición exacta de la muerte:
-		# así una caída a un hueco no deja el Eco fuera de tu alcance.
-		echo.global_position = last_grounded_position
-		get_parent().add_child(echo)
-		active_echo = echo
+	# Siempre se marca el punto de muerte, aunque no llevaras Ecos encima:
+	# sirve como señal de "aquí moriste la última vez" (útil de cara a un
+	# futuro mapa), no solo como contenedor de Ecos.
+	var echo := EchoScene.instantiate()
+	echo.ecos_held = ecos
+	# La última posición en suelo, no la posición exacta de la muerte: así
+	# una caída a un hueco no deja el Eco fuera de tu alcance.
+	echo.global_position = last_grounded_position
+	get_parent().add_child(echo)
+	active_echo = echo
 
 	ecos = 0
 	health = max_health

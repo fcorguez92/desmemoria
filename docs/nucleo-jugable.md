@@ -29,6 +29,8 @@ Al morir, el jugador pierde todos sus Ecos, que quedan marcados como **un Eco de
 
 Se probó una versión hostil (había que derrotarlo en combate) durante el prototipo y se descartó: no aportaba la tensión buscada y complicaba la recuperación sin necesidad.
 
+El Eco aparece siempre al morir, aunque no se llevaran Ecos encima (en ese caso, tocarlo no da nada). Así sirve también como señal de "aquí moriste la última vez", pensando en un futuro sistema de mapa que podría marcarlo — todavía no decidido.
+
 ## Curación: Anclas de Memoria
 
 Un objeto curativo de usos limitados, que se recarga solo en puntos de control llamados **Anclas de Memoria** (el equivalente a las hogueras/puntos de descanso). Las Anclas también:
