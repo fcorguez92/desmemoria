@@ -25,7 +25,9 @@ Los enemigos derrotados sueltan **Ecos** — fragmentos de memoria ajena liberad
 
 ## Muerte y recuperación
 
-Al morir, el jugador pierde todos sus Ecos, que quedan en el punto exacto de la muerte como **un Eco de sí mismo** — una versión hostil que se aferra a lo que no soltó. Para recuperarlos hay que derrotar a ese Eco. Si el jugador muere otra vez antes de conseguirlo, ese Eco anterior (y sus Ecos) se pierde para siempre, y se forma uno nuevo en el nuevo punto de muerte.
+Al morir, el jugador pierde todos sus Ecos, que quedan marcados como **un Eco de sí mismo** en la última posición en la que pisó suelo firme (no en el punto exacto de la muerte, para que una caída a un hueco no deje el Eco inalcanzable). El Eco no es hostil: basta con tocarlo para recuperar los Ecos al instante. Si el jugador muere otra vez antes de llegar a él, ese Eco anterior (y sus Ecos) se pierde para siempre, y se forma uno nuevo en el nuevo punto de muerte.
+
+Se probó una versión hostil (había que derrotarlo en combate) durante el prototipo y se descartó: no aportaba la tensión buscada y complicaba la recuperación sin necesidad.
 
 ## Curación: Anclas de Memoria
 

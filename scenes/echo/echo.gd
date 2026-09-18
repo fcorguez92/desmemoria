@@ -1,42 +1,23 @@
-extends CharacterBody2D
+extends Node2D
 
-## Un fragmento hostil de ti mismo que queda en el punto exacto de tu última
-## muerte, aferrado a los Ecos que perdiste. Derrótalo para recuperarlos.
-## Si vuelves a morir antes de conseguirlo, se pierde para siempre (ver
-## Player.die()).
+## Marca el punto donde perdiste tus Ecos (o tu última posición en suelo, si
+## moriste cayendo). No es hostil: tocarlo los recupera al instante. Si
+## mueres otra vez antes de tocarlo, Player.die() lo borra sin más y se
+## pierden para siempre.
 
 @export var ecos_held: int = 0
 
-@onready var visual: Polygon2D = $Visual
-@onready var flash_timer: Timer = $FlashTimer
-@onready var hurt_area: Area2D = $HurtArea
-
-var health: int = 1
+@onready var pickup_area: Area2D = $PickupArea
 
 
 func _ready() -> void:
-	hurt_area.body_entered.connect(_on_hurt_area_body_entered)
+	pickup_area.body_entered.connect(_on_pickup_area_body_entered)
 
 
-func take_hit(_damage: int, _from_direction: int) -> void:
-	health -= 1
-	if health <= 0:
-		var player := get_tree().get_first_node_in_group("player")
-		if player:
-			player.add_ecos(ecos_held)
-			player.active_echo = null
-		queue_free()
+func _on_pickup_area_body_entered(body: Node) -> void:
+	if not body.is_in_group("player"):
 		return
-	visual.modulate = Color(1.0, 0.35, 0.35)
-	flash_timer.start()
-
-
-func _on_hurt_area_body_entered(body: Node) -> void:
-	# Solo amenaza al jugador: sin esto, un enemigo cercano podría "rematar"
-	# al Eco por ti antes de que llegues a recuperarlo.
-	if body.is_in_group("player"):
-		body.take_hit(1, 0)
-
-
-func _on_flash_timer_timeout() -> void:
-	visual.modulate = Color(1.0, 1.0, 1.0)
+	body.add_ecos(ecos_held)
+	if body.active_echo == self:
+		body.active_echo = null
+	queue_free()
