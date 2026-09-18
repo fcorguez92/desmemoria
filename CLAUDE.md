@@ -35,6 +35,7 @@ El usuario tiene nivel técnico básico: explicar herramientas y conceptos nuevo
 - `docs/decisiones.md` — registro razonado de decisiones técnicas y de diseño importantes.
 - `docs/historia.md` — premisa, mitología, protagonista, facciones.
 - `docs/mundo.md` — estructura geográfica, biomas, conexiones.
+- `docs/nucleo-jugable.md` — movimiento, combate, habilidades, economía, muerte/curación.
 
 Son documentos vivos: se actualizan según avanza el diseño, no se reescriben de golpe.
 
