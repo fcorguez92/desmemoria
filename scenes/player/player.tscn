@@ -29,3 +29,21 @@ monitoring = true
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="AttackHitbox"]
 shape = SubResource("RectangleShape2D_attack")
+
+[node name="FlashTimer" type="Timer" parent="."]
+wait_time = 0.1
+one_shot = true
+
+[node name="HUD" type="CanvasLayer" parent="."]
+
+[node name="HealthLabel" type="Label" parent="HUD"]
+offset_left = 16.0
+offset_top = 16.0
+text = "Vida: 5/5"
+
+[node name="EcosLabel" type="Label" parent="HUD"]
+offset_left = 16.0
+offset_top = 40.0
+text = "Ecos: 0"
+
+[connection signal="timeout" from="FlashTimer" to="." method="_on_flash_timer_timeout"]

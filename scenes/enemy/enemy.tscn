@@ -19,4 +19,9 @@ polygon = PackedVector2Array(-16, -24, 16, -24, 16, 24, -16, 24)
 wait_time = 0.08
 one_shot = true
 
+[node name="HurtArea" type="Area2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="HurtArea"]
+shape = SubResource("RectangleShape2D_enemy")
+
 [connection signal="timeout" from="FlashTimer" to="." method="_on_flash_timer_timeout"]

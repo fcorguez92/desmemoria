@@ -1,0 +1,27 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scenes/echo/echo.gd" id="1_echo"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_echo"]
+size = Vector2(28, 40)
+
+[node name="Echo" type="CharacterBody2D"]
+script = ExtResource("1_echo")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("RectangleShape2D_echo")
+
+[node name="Visual" type="Polygon2D" parent="."]
+color = Color(0.6, 0.75, 0.85, 0.85)
+polygon = PackedVector2Array(-14, -20, 14, -20, 14, 20, -14, 20)
+
+[node name="FlashTimer" type="Timer" parent="."]
+wait_time = 0.1
+one_shot = true
+
+[node name="HurtArea" type="Area2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="HurtArea"]
+shape = SubResource("RectangleShape2D_echo")
+
+[connection signal="timeout" from="FlashTimer" to="." method="_on_flash_timer_timeout"]
