@@ -13,6 +13,8 @@ extends CharacterBody2D
 @export var fall_death_y: float = 900.0
 @export var attack_cooldown: float = 0.25
 @export var attack_reach: float = 20.0
+@export var camera_look_offset: float = 100.0
+@export var camera_look_speed: float = 4.0
 
 var coyote_timer: float = 0.0
 var jump_buffer_timer: float = 0.0
@@ -21,6 +23,7 @@ var attack_cooldown_timer: float = 0.0
 @onready var spawn_position: Vector2 = global_position
 @onready var visual: Polygon2D = $Visual
 @onready var attack_hitbox: Area2D = $AttackHitbox
+@onready var camera: Camera2D = $Camera2D
 
 
 func _physics_process(delta: float) -> void:
@@ -37,7 +40,7 @@ func _physics_process(delta: float) -> void:
 	else:
 		coyote_timer = max(coyote_timer - delta, 0.0)
 
-	if Input.is_action_just_pressed("ui_up"):
+	if Input.is_action_just_pressed("ui_accept"):
 		jump_buffer_timer = jump_buffer_time
 	else:
 		jump_buffer_timer = max(jump_buffer_timer - delta, 0.0)
@@ -48,8 +51,18 @@ func _physics_process(delta: float) -> void:
 		coyote_timer = 0.0
 
 	# Saltar más bajo si se suelta el botón pronto (salto de altura variable).
-	if Input.is_action_just_released("ui_up") and velocity.y < 0.0:
+	if Input.is_action_just_released("ui_accept") and velocity.y < 0.0:
 		velocity.y *= 0.5
+
+	# Mirar arriba/abajo desplaza la cámara sin mover al personaje, para ver
+	# fuera de pantalla antes de saltar a ciegas.
+	var look_direction := 0.0
+	if Input.is_action_pressed("ui_up"):
+		look_direction = -1.0
+	elif Input.is_action_pressed("ui_down"):
+		look_direction = 1.0
+	var target_camera_offset := Vector2(0.0, look_direction * camera_look_offset)
+	camera.offset = camera.offset.lerp(target_camera_offset, camera_look_speed * delta)
 
 	var direction := Input.get_axis("ui_left", "ui_right")
 	velocity.x = direction * speed
