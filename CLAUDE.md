@@ -30,6 +30,14 @@ El usuario tiene nivel técnico básico: explicar herramientas y conceptos nuevo
 - Control de versiones: **Git**, repo local (GitHub cuando el usuario lo pida explícitamente).
 - Sin backend, sin base de datos, sin cuentas online: es un proyecto de aprendizaje/portfolio personal, no comercial por ahora.
 
+## Documentación del proyecto
+
+- `docs/decisiones.md` — registro razonado de decisiones técnicas y de diseño importantes.
+- `docs/historia.md` — premisa, mitología, protagonista, facciones.
+- `docs/mundo.md` — estructura geográfica, biomas, conexiones.
+
+Son documentos vivos: se actualizan según avanza el diseño, no se reescriben de golpe.
+
 ## Reglas de Git para este proyecto
 
 - Nunca hacer force push, reset destructivo, ni eliminar ramas sin aprobación explícita del usuario.
