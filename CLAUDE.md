@@ -36,6 +36,7 @@ El usuario tiene nivel técnico básico: explicar herramientas y conceptos nuevo
 - `docs/historia.md` — premisa, mitología, protagonista, facciones.
 - `docs/mundo.md` — estructura geográfica, biomas, conexiones.
 - `docs/nucleo-jugable.md` — movimiento, combate, habilidades, economía, muerte/curación.
+- `docs/estado.md` — en qué fase estamos, qué está validado, qué falta.
 
 Son documentos vivos: se actualizan según avanza el diseño, no se reescriben de golpe.
 
