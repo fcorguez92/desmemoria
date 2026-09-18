@@ -19,6 +19,9 @@ const EchoScene := preload("res://scenes/echo/echo.tscn")
 @export var camera_look_speed: float = 4.0
 @export var max_health: int = 5
 @export var hit_invulnerability_time: float = 0.6
+@export var dash_speed: float = 900.0
+@export var dash_duration: float = 0.15
+@export var dash_cooldown: float = 0.4
 
 var coyote_timer: float = 0.0
 var jump_buffer_timer: float = 0.0
@@ -29,6 +32,10 @@ var ecos: int = 0
 var invulnerable_timer: float = 0.0
 var active_echo: Node = null
 var last_grounded_position: Vector2
+var is_dashing: bool = false
+var dash_timer: float = 0.0
+var dash_cooldown_timer: float = 0.0
+var dash_direction: int = 1
 
 @onready var spawn_position: Vector2 = global_position
 @onready var visual: Polygon2D = $Visual
@@ -100,6 +107,21 @@ func _physics_process(delta: float) -> void:
 		_try_attack()
 
 	invulnerable_timer = max(invulnerable_timer - delta, 0.0)
+
+	# El dash es un empujón horizontal recto que ignora la gravedad durante
+	# su duración: por eso pisa la velocity calculada arriba justo antes de
+	# mover al personaje, en vez de mezclarse con el resto del movimiento.
+	dash_cooldown_timer = max(dash_cooldown_timer - delta, 0.0)
+	if Input.is_action_just_pressed("dash") and not is_dashing and dash_cooldown_timer <= 0.0:
+		is_dashing = true
+		dash_timer = dash_duration
+		dash_cooldown_timer = dash_cooldown
+		dash_direction = facing
+	if is_dashing:
+		dash_timer -= delta
+		velocity = Vector2(dash_direction * dash_speed, 0.0)
+		if dash_timer <= 0.0:
+			is_dashing = false
 
 	move_and_slide()
 
