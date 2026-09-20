@@ -33,6 +33,7 @@ func _run() -> void:
 	await _test_checkpoint_heals_and_moves_respawn()
 	await _test_enemy_reward_and_contact_damage()
 	await _test_enemies_respawn_on_rest_and_death()
+	await _test_weapon_upgrade_at_anchor()
 	await _test_dash_gates_the_far_platform()
 
 
@@ -163,6 +164,49 @@ func _test_enemies_respawn_on_rest_and_death() -> void:
 		if child is EntitySpawner and is_instance_valid(child.instance):
 			count += 1
 	_check(count == 3, "los tres generadores tienen un enemigo vivo")
+
+
+func _test_weapon_upgrade_at_anchor() -> void:
+	await _fresh_level("Mejora del Filo con Ecos")
+	var weapon: TieredUpgrade = _player.weapon
+	_check(weapon.level == 0 and _player.melee.damage == 1, "el Filo empieza en el nivel 1 con daño 1")
+
+	_player.add_ecos(3)
+	_check(not _player.try_upgrade_weapon(), "no se puede mejorar sin Ecos suficientes")
+	_check(_player.ecos == 3 and weapon.level == 0, "una mejora fallida no cobra nada")
+	_check("te faltan 1" in _player.upgrade_prompt(), "el aviso indica cuántos Ecos faltan")
+
+	_player.add_ecos(1)
+	_check(_player.try_upgrade_weapon(), "se puede mejorar con Ecos suficientes")
+	_check(_player.ecos == 0 and weapon.level == 1, "mejorar cobra el coste y sube un nivel")
+	_check(_player.melee.damage == 2, "el ataque usa el daño del nuevo nivel")
+
+	_player.health.take_hit(99)
+	await _wait(2)
+	_check(weapon.level == 1 and _player.melee.damage == 2, "morir no pierde las mejoras")
+
+	# Desde el Ancla: la tecla de mejora funciona solo estando al alcance.
+	var anchor: Node2D = _level.get_node("MemoryAnchor2")
+	_player.add_ecos(8)
+	Input.action_press("upgrade")
+	await _wait(2)
+	Input.action_release("upgrade")
+	_check(weapon.level == 1, "la mejora no funciona lejos de un Ancla")
+	_player.global_position = anchor.global_position
+	await _wait(10)
+	_check("Mejorar el Filo" in anchor.get_node("Prompt").text, "el Ancla muestra la opción de mejora")
+	Input.action_press("upgrade")
+	await _wait(2)
+	Input.action_release("upgrade")
+	await _wait(2)
+	_check(weapon.level == 2 and _player.ecos == 0, "la tecla de mejora en el Ancla mejora el Filo")
+
+	while not weapon.is_max():
+		weapon.advance()
+	_player.add_ecos(100)
+	_check(not _player.try_upgrade_weapon(), "no se puede pasar del nivel máximo")
+	_check(_player.melee.damage == 5, "el nivel máximo da el daño máximo")
+	_check(_player.upgrade_prompt() == "El Filo está al máximo", "el aviso indica que está al máximo")
 
 
 func _test_dash_gates_the_far_platform() -> void:

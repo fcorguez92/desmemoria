@@ -107,7 +107,7 @@ El orden importa y por eso está explícito en `game/player/player.gd`:
 | **Descansable:** `rest_at(position: Vector2)` + pertenecer al grupo `target_group` | Jugador | `Checkpoint` |
 | **Reiniciable:** grupo `resettable` con método `reset()` | `EntitySpawner` | El jugador (`_reset_world()`) al morir y al descansar |
 | **Grupo `player`** | El jugador se añade a sí mismo en `_ready()` | `ContactDamageArea`, `Checkpoint`, enemigos, Eco |
-| **Acciones de entrada:** `ui_left/right/up/down/accept` + `attack`, `dash`, `heal`, `interact` | `project.godot` | `PlatformerMotor`, `DashComponent`, `CameraLookComponent`, `player.gd` |
+| **Acciones de entrada:** `ui_left/right/up/down/accept` + `attack`, `dash`, `heal`, `interact`, `upgrade` | `project.godot` | `PlatformerMotor`, `DashComponent`, `CameraLookComponent`, `player.gd` |
 
 Filtrar por **grupo** (y no por "cualquier cosa con `take_hit`") en el daño por
 contacto evita que los enemigos se dañen entre sí o dañen el Eco.

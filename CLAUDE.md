@@ -63,6 +63,7 @@ Además hay que **jugarlo**: los tests miden reglas, no sensaciones.
 
 - Identificadores de código en inglés; documentación, comentarios y textos al
   jugador en español.
+- Idioma: español de España (vocabulario peninsular) en documentación, comentarios y textos al jugador.
 - Nombres en español para objetos, lugares y lore: comprobar antes que la palabra
   no tenga acepciones vulgares o escatológicas; el tono del juego es serio.
 - GDScript tipado. Un componente por archivo. `class_name` solo en `core/`.
@@ -87,6 +88,7 @@ y `core/README.md` en el mismo commit.
 
 ## Reglas de Git para este proyecto
 
+- Los commits son solo locales. No añadir remotos, no hacer push ni publicar nada en internet sin que el usuario lo pida explícitamente en ese momento.
 - Nunca hacer force push, reset destructivo, ni eliminar ramas sin aprobación explícita del usuario.
 - Preferir commits nuevos a `--amend`.
 - No modificar la configuración de git (local ni global) sin necesidad comprobada.

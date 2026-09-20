@@ -16,10 +16,12 @@ var active_echo: Node = null
 @onready var melee: MeleeAttackComponent = $MeleeAttackComponent
 @onready var respawn: RespawnComponent = $RespawnComponent
 @onready var hit_flash: HitFlashComponent = $HitFlashComponent
+@onready var weapon: TieredUpgrade = $WeaponUpgrade
 @onready var visual: Polygon2D = $Visual
 @onready var health_label: Label = $HUD/HealthLabel
 @onready var ecos_label: Label = $HUD/EcosLabel
 @onready var heal_label: Label = $HUD/HealLabel
+@onready var weapon_label: Label = $HUD/WeaponLabel
 
 
 func _ready() -> void:
@@ -28,7 +30,8 @@ func _ready() -> void:
 	health.changed.connect(_update_hud)
 	health.damaged.connect(_on_damaged)
 	health.died.connect(die)
-	_update_hud()
+	weapon.changed.connect(_on_weapon_changed)
+	_on_weapon_changed()
 
 
 func _physics_process(delta: float) -> void:
@@ -64,6 +67,27 @@ func rest_at(anchor_position: Vector2) -> void:
 func add_ecos(amount: int) -> void:
 	ecos += amount
 	_update_hud()
+
+
+## Gasta Ecos en subir un nivel el Filo. Devuelve false si no se pudo
+## (sin Ecos suficientes o ya al máximo). Lo llama el Ancla de Memoria.
+func try_upgrade_weapon() -> bool:
+	if weapon.is_max() or ecos < weapon.next_cost():
+		return false
+	ecos -= weapon.next_cost()
+	weapon.advance()
+	_update_hud()
+	return true
+
+
+## Texto de la opción de mejora que muestra el Ancla.
+func upgrade_prompt() -> String:
+	if weapon.is_max():
+		return "El Filo está al máximo"
+	var cost := weapon.next_cost()
+	if ecos >= cost:
+		return "Mejorar el Filo (%d Ecos)" % cost
+	return "Mejorar el Filo (%d Ecos, te faltan %d)" % [cost, cost - ecos]
 
 
 func die() -> void:
@@ -102,7 +126,13 @@ func _on_damaged(_amount: int) -> void:
 	hit_flash.flash()
 
 
+func _on_weapon_changed() -> void:
+	melee.damage = weapon.current_value()
+	_update_hud()
+
+
 func _update_hud() -> void:
 	health_label.text = "Vida: %d/%d" % [health.health, health.max_health]
 	ecos_label.text = "Ecos: %d" % ecos
 	heal_label.text = "Curación: %d/%d" % [health.heal_charges, health.max_heal_charges]
+	weapon_label.text = "Filo: nivel %d (daño %d)" % [weapon.level + 1, weapon.current_value()]

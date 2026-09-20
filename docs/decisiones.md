@@ -53,6 +53,16 @@ Cada entrada: qué se decidió, por qué, qué alternativas se descartaron y por
 
 **Decidido por**: el usuario pidió Z y un lugar temático; Claude propuso el concepto.
 
+## 2026-09-20 — Mejora del arma: se gasta en el Ancla y sube el daño
+
+**Decisión**: los Ecos se gastan en mejorar el Filo en un Ancla de Memoria con la tecla C. Cinco niveles; cada uno sube el daño (1 a 5) y cuesta 4, 8, 14 y 22 Ecos.
+
+**Por qué**: sin un sitio donde gastarlos, el riesgo de perder los Ecos al morir no significaba nada. Hacerlo en el Ancla aprovecha un lugar que el jugador ya visita, sin construir menús ni personajes que vendan. Se eligió la opción más simple propuesta por Claude y aprobada por el usuario.
+
+**Técnico**: `TieredUpgrade` (core) es genérico (niveles, costes y valores); el jugador cobra y aplica el daño al ataque. El Ancla del juego hereda de `Checkpoint` para añadir la opción de mejora sin ensuciar `core/`.
+
+**Pendiente**: solo sube el daño; decidir si alcance o velocidad también mejoran, y si hay más cosas en las que gastar Ecos. Cifras de partida, a ajustar jugando.
+
 ## 2026-09-20 — Reaparición de enemigos: generador que recrea la entidad
 
 **Decisión**: los enemigos se colocan mediante `EntitySpawner` (core). Al morir o descansar el jugador, se llama al grupo `resettable` y cada generador destruye su enemigo (vivo o muerto) y crea uno nuevo desde cero.

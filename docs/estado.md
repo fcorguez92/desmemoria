@@ -16,9 +16,9 @@
 ## Qué existe ahora mismo
 
 ```
-core/         Base reutilizable: 7 componentes + 3 objetos (ver core/README.md)
+core/         Base reutilizable: 8 componentes + 3 objetos (ver core/README.md)
 game/         player, enemy (de prueba), echo, memory_anchor, levels/test_level
-tests/        smoke_test.gd — 41 comprobaciones, todas en verde
+tests/        smoke_test.gd — 55 comprobaciones, todas en verde
 docs/         Diseño, decisiones, arquitectura y estado
 ```
 
@@ -28,13 +28,13 @@ de esta fase era validar cómo se siente, no cómo se ve.
 ## Controles actuales
 
 - Flecha izq/dcha: moverse · Espacio: saltar · Flecha arriba/abajo: mirar
-- X: atacar · Shift izquierdo: dash · H: curarse (si quedan cargas y no estás a vida completa) · Z: interactuar (descansar en un Ancla)
+- X: atacar · Shift izquierdo: dash · H: curarse (si quedan cargas y no estás a vida completa) · Z: interactuar (descansar en un Ancla) · C: mejorar el Filo (en un Ancla)
 
 ## Qué falta del núcleo jugable
 
 - Reinicio de enemigos por zonas: hoy al morir o descansar reaparecen todos los
   del nivel; cuando haya varias zonas, limitarlo a la zona del Ancla.
-- Tiers de mejora del arma y qué se compra con Ecos.
+- Más usos para los Ecos aparte del Filo, y si el Filo mejora también alcance o velocidad (hoy solo sube el daño).
 - Resto de habilidades de progresión (trepar pared, doble salto) — ahora se
   añaden como componentes nuevos en `core/components/` (ver `arquitectura.md`).
 - Estadísticas del personaje más allá de la vida.

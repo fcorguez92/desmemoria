@@ -22,6 +22,7 @@ no se mueven solos: el dueño llama a su `step()` en un orden explícito.
 | `MeleeAttackComponent` | Golpe cuerpo a cuerpo con enfriamiento sobre un `Area2D` | `try_attack(attacker, facing) -> bool`, `set_facing(facing)`; exporta `hitbox` |
 | `CameraLookComponent` | Desplaza la `Camera2D` al mirar arriba/abajo | Autónomo (`_physics_process`); exporta `camera` |
 | `RespawnComponent` | Punto de reaparición, último suelo pisado, límite de caída | `track_ground(body)`, `is_out_of_bounds(body)`, `set_checkpoint(pos)`, `respawn(body)` |
+| `TieredUpgrade` | Mejora por niveles con coste y valor por nivel (daño de un arma, vida máxima...). No gestiona la moneda: el dueño comprueba el saldo y cobra | `current_value()`, `is_max()`, `next_cost()`, `advance()`, `level`; señal `changed`; exports `values` y `costs` |
 | `HitFlashComponent` | Parpadeo de color al recibir un golpe | `flash()`; exporta `target` (cualquier `CanvasItem`) |
 
 Valores por defecto y su significado están documentados en los comentarios `##`
@@ -32,7 +33,7 @@ de cada variable exportada (se ven en el Inspector).
 | Objeto | Base | Responsabilidad |
 |---|---|---|
 | `ContactDamageArea` | `Area2D` | Daña a los cuerpos del grupo `target_group` (por defecto `player`) que entren en el área |
-| `Checkpoint` | `Area2D` | Al pulsar `action_interact` con un cuerpo del grupo objetivo dentro, llama a `rest_at(position)` en él; muestra `prompt` (opcional) mientras hay alguien al alcance |
+| `Checkpoint` | `Area2D` (se puede heredar: ver `game/memory_anchor/`; `targets_in_range` es público) | Al pulsar `action_interact` con un cuerpo del grupo objetivo dentro, llama a `rest_at(position)` en él; muestra `prompt` (opcional) mientras hay alguien al alcance |
 
 | `EntitySpawner` | `Node2D` | Crea `scene` al cargar; al recibir `reset()` (vía el grupo `reset_group`) destruye la instancia actual y crea una nueva desde cero. `instance` es la entidad actual |
 

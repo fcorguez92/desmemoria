@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3]
+[gd_scene load_steps=12 format=3]
 
 [ext_resource type="Script" path="res://game/player/player.gd" id="1_player"]
 [ext_resource type="Script" path="res://core/components/platformer_motor.gd" id="2_motor"]
@@ -8,6 +8,7 @@
 [ext_resource type="Script" path="res://core/components/camera_look_component.gd" id="6_camera_look"]
 [ext_resource type="Script" path="res://core/components/respawn_component.gd" id="7_respawn"]
 [ext_resource type="Script" path="res://core/components/hit_flash_component.gd" id="8_flash"]
+[ext_resource type="Script" path="res://core/components/tiered_upgrade.gd" id="9_upgrade"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_1"]
 radius = 12.0
@@ -63,6 +64,11 @@ script = ExtResource("7_respawn")
 script = ExtResource("8_flash")
 target = NodePath("../Visual")
 
+[node name="WeaponUpgrade" type="Node" parent="."]
+script = ExtResource("9_upgrade")
+values = PackedInt32Array(1, 2, 3, 4, 5)
+costs = PackedInt32Array(4, 8, 14, 22)
+
 [node name="HUD" type="CanvasLayer" parent="."]
 
 [node name="HealthLabel" type="Label" parent="HUD"]
@@ -79,3 +85,8 @@ text = "Ecos: 0"
 offset_left = 16.0
 offset_top = 64.0
 text = "Curación: 3/3"
+
+[node name="WeaponLabel" type="Label" parent="HUD"]
+offset_left = 16.0
+offset_top = 88.0
+text = "Filo: nivel 1 (daño 1)"

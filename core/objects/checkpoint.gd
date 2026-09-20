@@ -12,7 +12,9 @@ extends Area2D
 ## al alcance, para indicar que se puede interactuar.
 @export var prompt: CanvasItem
 
-var _bodies_in_range: Array[Node] = []
+## Objetivos válidos que están ahora mismo dentro del área. Público para que
+## un checkpoint más específico (que herede de este) ofrezca más acciones.
+var targets_in_range: Array[Node] = []
 
 
 func _ready() -> void:
@@ -22,23 +24,23 @@ func _ready() -> void:
 
 
 func _physics_process(_delta: float) -> void:
-	if _bodies_in_range.is_empty() or not Input.is_action_just_pressed(action_interact):
+	if targets_in_range.is_empty() or not Input.is_action_just_pressed(action_interact):
 		return
-	for body in _bodies_in_range:
+	for body in targets_in_range:
 		body.rest_at(global_position)
 
 
 func _on_body_entered(body: Node) -> void:
 	if body.is_in_group(target_group) and body.has_method("rest_at"):
-		_bodies_in_range.append(body)
+		targets_in_range.append(body)
 		_update_prompt()
 
 
 func _on_body_exited(body: Node) -> void:
-	_bodies_in_range.erase(body)
+	targets_in_range.erase(body)
 	_update_prompt()
 
 
 func _update_prompt() -> void:
 	if prompt:
-		prompt.visible = not _bodies_in_range.is_empty()
+		prompt.visible = not targets_in_range.is_empty()

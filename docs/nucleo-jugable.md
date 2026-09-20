@@ -8,7 +8,15 @@ Estado: diseño aprobado, pendiente de validar con el prototipo grey-box. Estas 
 
 ## Arma: "el Filo" (nombre de trabajo)
 
-Un único arma cuerpo a cuerpo que mejora en tiers (4-5 previstos) gastando Ecos, en vez de un inventario de armas distintas. Moveset fijo: ataque horizontal, ataque hacia arriba y hacia abajo (necesario para combate vertical en un mapa con plataformas).
+Un único arma cuerpo a cuerpo que mejora por niveles gastando Ecos, en vez de un inventario de armas distintas. Moveset fijo: ataque horizontal, ataque hacia arriba y hacia abajo (necesario para combate vertical en un mapa con plataformas; hoy solo existe el horizontal).
+
+### Mejora del Filo (implementada)
+
+- Se mejora **en un Ancla de Memoria** pulsando **C** (junto a Z para descansar). El Ancla muestra el coste de la siguiente mejora y, si no llegan los Ecos, cuántos faltan.
+- Cinco niveles. Cada subida aumenta el **daño**: 1, 2, 3, 4, 5. Costes de cada subida en Ecos: 4, 8, 14, 22.
+- Los enemigos de prueba tienen 3 de vida y dan 2 Ecos, así que la primera mejora cuesta matar a 2 enemigos y con el nivel 3 caen de un golpe.
+- Las mejoras son permanentes: morir no las pierde (los Ecos sí).
+- Los costes y valores son de partida y se ajustarán jugando. Solo sube el daño; alcance y velocidad de ataque quedan sin decidir.
 
 ## Habilidades de progresión (boceto inicial — ampliable si el desarrollo lo permite)
 
@@ -46,5 +54,5 @@ El Ancla es un **hito de piedras apiladas**, cada una con grabado el nombre de a
 
 - Sistema de estadísticas del personaje (¿solo vida, o también algo como stamina/resistencia?).
 - Qué se compra con Ecos aparte del Filo, y a través de qué NPC.
-- Tiers exactos de mejora del Filo y sus requisitos.
+- En qué más se gastan los Ecos aparte del Filo, y si las mejoras piden algo además de Ecos (p. ej. un material raro).
 - Diseño de enemigos y jefes concretos.
