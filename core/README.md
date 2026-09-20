@@ -43,7 +43,8 @@ de cada variable exportada (se ven en el Inspector).
 - **Acciones de entrada:** los nombres de acción son variables exportadas
   (`action_left`, `action_jump`, `action_dash`...). Por defecto usan las
   acciones integradas de Godot (`ui_left`, `ui_right`, `ui_accept`, `ui_up`,
-  `ui_down`) y `dash`, que debe existir en el Mapa de entrada del proyecto.
+  `ui_down`), más `dash` e `interact` (usada por `Checkpoint`), que deben
+  existir en el Mapa de entrada del proyecto.
   Ver la sección `[input]` de `project.godot` de este repo como ejemplo.
 
 ## Referencias entre nodos en escenas `.tscn`

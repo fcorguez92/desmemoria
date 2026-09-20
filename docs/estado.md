@@ -18,7 +18,7 @@
 ```
 core/         Base reutilizable: 7 componentes + 2 objetos (ver core/README.md)
 game/         player, enemy (de prueba), echo, memory_anchor, levels/test_level
-tests/        smoke_test.gd — 29 comprobaciones, todas en verde
+tests/        smoke_test.gd — 33 comprobaciones, todas en verde
 docs/         Diseño, decisiones, arquitectura y estado
 ```
 

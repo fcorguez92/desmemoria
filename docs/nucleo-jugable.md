@@ -33,8 +33,9 @@ El Eco aparece siempre al morir, aunque no se llevaran Ecos encima (en ese caso,
 
 ## Curación: Anclas de Memoria
 
-Un objeto curativo de usos limitados, que se recarga solo en puntos de control llamados **Anclas de Memoria** (el equivalente a las hogueras/puntos de descanso). Las Anclas también:
+Un objeto curativo de usos limitados, que se recarga solo en los puntos de descanso, llamados **Anclas de Memoria**. Las Anclas también:
 - Sirven de punto de guardado.
+- Se activan **a propósito** con el botón Z (no al pasar por encima), y muestran un aviso "Z: Recordar" al estar al alcance. Descansar es una parada, no un accidente.
 - Al usarlas, reinician (respawnean) a los enemigos normales del área — como en los juegos souls, para mantener el riesgo al volver a explorar.
 
 ## Pendiente de definir en próximas sesiones de diseño

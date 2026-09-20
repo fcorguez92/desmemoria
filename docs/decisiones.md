@@ -39,6 +39,18 @@ Cada entrada: qué se decidió, por qué, qué alternativas se descartaron y por
 
 **Decidido por**: el usuario (opción recomendada por Claude).
 
+## 2026-09-20 — Puntos de descanso: Mojón de Nombres, activado con Z
+
+**Decisión**: las Anclas de Memoria dejan de activarse al pasar por encima y requieren pulsar Z, con un aviso "Z: Recordar". Su aspecto pasa a ser un mojón de piedras con nombres grabados de personas que la Desmemoria borró.
+
+**Por qué**: el usuario quería que descansar fuese una parada deliberada, y un lugar propio del juego, no un banco (Hollow Knight) ni una hoguera (Dark Souls). El mojón expresa la premisa: los supervivientes conservan nombres borrados y el protagonista, que no olvida, los pronuncia. Detalle en `nucleo-jugable.md`.
+
+**Alternativas consideradas** (se eligió el mojón): un atril donde se dicta la memoria al Archivo (recuerda a las máquinas de escribir de guardado de Resident Evil) y un sello de cera de los Custodios (muy ligado a una sola facción).
+
+**Técnico**: `Checkpoint` (en `core/`) usa una acción de interacción configurable y un `prompt` opcional; sigue sin saber nada del juego.
+
+**Decidido por**: el usuario pidió Z y un lugar temático; Claude propuso el concepto.
+
 ## 2026-09-20 — Pruebas automáticas: prueba de humo propia, sin framework
 
 **Decisión**: `tests/smoke_test.gd` carga el nivel real y comprueba el ciclo jugable y los contratos de `core/` sin ventana; sale con código 0/1.

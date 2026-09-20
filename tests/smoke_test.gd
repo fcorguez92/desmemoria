@@ -103,9 +103,18 @@ func _test_checkpoint_heals_and_moves_respawn() -> void:
 	_player.health.heal_charges = 0
 	_player.global_position = anchor.global_position
 	await _wait(10)
+	_check(_player.health.health == 2, "acercarse al checkpoint no descansa sin pulsar interactuar")
+	_check(anchor.get_node("Prompt").visible, "se muestra el aviso al estar al alcance")
+	Input.action_press("interact")
+	await _wait(2)
+	Input.action_release("interact")
+	await _wait(2)
 	_check(_player.health.health == 5, "el checkpoint cura del todo")
 	_check(_player.health.heal_charges == 3, "el checkpoint recarga las curaciones")
 	_check(_player.respawn.spawn_position == anchor.global_position, "el checkpoint fija el respawn")
+	_player.global_position = Vector2(700, 300)
+	await _wait(10)
+	_check(not anchor.get_node("Prompt").visible, "el aviso se oculta al alejarse")
 
 
 func _test_enemy_reward_and_contact_damage() -> void:
