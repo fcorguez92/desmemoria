@@ -34,7 +34,9 @@ func _run() -> void:
 	await _test_enemy_reward_and_contact_damage()
 	await _test_enemies_respawn_on_rest_and_death()
 	await _test_weapon_upgrade_at_anchor()
+	await _test_ability_pickups()
 	await _test_dash_gates_the_far_platform()
+	await _test_double_jump_reaches_high_platform()
 
 
 # --- Tests -------------------------------------------------------------------
@@ -211,15 +213,75 @@ func _test_weapon_upgrade_at_anchor() -> void:
 
 func _test_dash_gates_the_far_platform() -> void:
 	# Mismo salto hacia el hueco final, con y sin dash a media altura.
-	var reached_with_dash := await _jump_across_gap(true)
-	var reached_without_dash := await _jump_across_gap(false)
-	print("\n[Dash bloquea el hueco final]")
+	var reached_with_dash := await _jump_across_gap(true, true)
+	var reached_pressing_locked := await _jump_across_gap(true, false)
+	var reached_without_dash := await _jump_across_gap(false, true)
+	print("\n[El dash abre el hueco final]")
 	_check(reached_with_dash, "saltar + dash alcanza la plataforma final")
+	_check(not reached_pressing_locked, "pulsar dash sin haberlo conseguido no sirve")
 	_check(not reached_without_dash, "saltar sin dash no alcanza la plataforma final")
 
 
-func _jump_across_gap(use_dash: bool) -> bool:
+func _test_ability_pickups() -> void:
+	await _fresh_level("Habilidades: se consiguen con objetos")
+	_check(not _player.dash.unlocked, "el dash empieza bloqueado")
+	_check(_player.motor.max_air_jumps == 0, "el doble salto empieza bloqueado")
+	var pickup: Node2D = _level.get_node("DashPickup")
+	_player.global_position = pickup.global_position
+	await _wait(10)
+	_check(_player.dash.unlocked, "recoger el objeto desbloquea el dash")
+	_check(not is_instance_valid(pickup), "el objeto desaparece al recogerlo")
+	_check("Dash" in _player.message_label.text, "se muestra un mensaje con la habilidad")
+	_player.health.take_hit(99)
+	await _wait(2)
+	_check(_player.dash.unlocked, "morir no pierde las habilidades")
+
+
+func _test_double_jump_reaches_high_platform() -> void:
+	var reached_with := await _reach_high_platform(true)
+	var reached_without := await _reach_high_platform(false)
+	print("\n[El doble salto abre la plataforma alta]")
+	_check(reached_with, "con doble salto se alcanza la plataforma alta")
+	_check(not reached_without, "sin doble salto no se alcanza")
+
+
+func _reach_high_platform(double_jump: bool) -> bool:
 	await _fresh_level("", false)
+	if double_jump:
+		_player.unlock_ability(&"double_jump")
+	_player.global_position = Vector2(1700, 200)
+	_player.velocity = Vector2.ZERO
+	Input.action_press("ui_right")
+	await physics_frame
+	# Se mantiene el salto pulsado hasta el punto más alto: soltarlo antes
+	# lo acortaría (salto de altura variable).
+	Input.action_press("ui_accept")
+	for i in 10:
+		await physics_frame
+	while _player.velocity.y < -50.0:
+		await physics_frame
+	Input.action_release("ui_accept")
+	# Sin ventana, "acaba de soltarse" dura varios pasos de físicas y acortaría
+	# también el segundo salto; se espera a que caduque antes de volver a pulsar.
+	for i in 4:
+		await physics_frame
+	Input.action_press("ui_accept")
+	var landed_on_platform := false
+	for i in 100:
+		await physics_frame
+		# Si se sigue avanzando, se cae por el otro extremo: se comprueba al aterrizar.
+		if _player.is_on_floor() and _player.global_position.y < -40.0 and _player.global_position.x > 1900.0:
+			landed_on_platform = true
+			break
+	Input.action_release("ui_accept")
+	Input.action_release("ui_right")
+	return landed_on_platform
+
+
+func _jump_across_gap(press_dash: bool, dash_unlocked: bool) -> bool:
+	await _fresh_level("", false)
+	if dash_unlocked:
+		_player.unlock_ability(&"dash")
 	_player.global_position = Vector2(1140, 210)
 	_player.velocity = Vector2.ZERO
 	Input.action_press("ui_right")
@@ -227,7 +289,7 @@ func _jump_across_gap(use_dash: bool) -> bool:
 	Input.action_press("ui_accept")
 	await physics_frame
 	Input.action_release("ui_accept")
-	var dashed := not use_dash
+	var dashed := not press_dash
 	for i in 90:
 		await physics_frame
 		if not dashed and _player.velocity.y > -50.0:

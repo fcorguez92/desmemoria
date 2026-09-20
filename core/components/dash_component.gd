@@ -9,6 +9,8 @@ extends Node
 @export var duration: float = 0.15
 @export var cooldown: float = 0.4
 @export var action_dash: StringName = &"dash"
+## Si es false el dash no se puede usar (habilidad aún no conseguida).
+@export var unlocked: bool = true
 
 var is_dashing: bool = false
 
@@ -20,7 +22,7 @@ var _direction: int = 1
 func step(body: CharacterBody2D, facing: int, delta: float) -> void:
 	_cooldown_timer = maxf(_cooldown_timer - delta, 0.0)
 
-	if Input.is_action_just_pressed(action_dash) and not is_dashing and _cooldown_timer <= 0.0:
+	if unlocked and Input.is_action_just_pressed(action_dash) and not is_dashing and _cooldown_timer <= 0.0:
 		is_dashing = true
 		_timer = duration
 		_cooldown_timer = cooldown

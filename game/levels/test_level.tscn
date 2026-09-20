@@ -1,9 +1,13 @@
-[gd_scene load_steps=9 format=3]
+[gd_scene load_steps=11 format=3]
 
 [ext_resource type="PackedScene" path="res://game/player/player.tscn" id="1_player"]
 [ext_resource type="PackedScene" path="res://game/enemy/enemy.tscn" id="2_enemy"]
 [ext_resource type="PackedScene" path="res://game/memory_anchor/memory_anchor.tscn" id="3_anchor"]
 [ext_resource type="Script" path="res://core/objects/entity_spawner.gd" id="4_spawner"]
+[ext_resource type="PackedScene" path="res://game/ability_pickup/ability_pickup.tscn" id="5_pickup"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_platform_e"]
+size = Vector2(280, 30)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_ground_a"]
 size = Vector2(400, 40)
@@ -82,3 +86,24 @@ shape = SubResource("RectangleShape2D_ground_d")
 [node name="Visual" type="Polygon2D" parent="GroundD"]
 color = Color(0.32, 0.45, 0.35, 1)
 polygon = PackedVector2Array(-150, -15, 150, -15, 150, 15, -150, 15)
+
+[node name="DashPickup" parent="." instance=ExtResource("5_pickup")]
+position = Vector2(1105, 196)
+ability_id = &"dash"
+
+[node name="DoubleJumpPickup" parent="." instance=ExtResource("5_pickup")]
+position = Vector2(1520, 196)
+ability_id = &"double_jump"
+
+[node name="PlatformE" type="StaticBody2D" parent="."]
+position = Vector2(2060, -35)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="PlatformE"]
+shape = SubResource("RectangleShape2D_platform_e")
+
+[node name="Visual" type="Polygon2D" parent="PlatformE"]
+color = Color(0.32, 0.45, 0.35, 1)
+polygon = PackedVector2Array(-140, -15, 140, -15, 140, 15, -140, 15)
+
+[node name="MemoryAnchor3" parent="." instance=ExtResource("3_anchor")]
+position = Vector2(2140, -78)

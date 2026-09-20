@@ -16,9 +16,9 @@
 ## Qué existe ahora mismo
 
 ```
-core/         Base reutilizable: 8 componentes + 3 objetos (ver core/README.md)
-game/         player, enemy (de prueba), echo, memory_anchor, levels/test_level
-tests/        smoke_test.gd — 55 comprobaciones, todas en verde
+core/         Base reutilizable: 8 componentes + 4 objetos (ver core/README.md)
+game/         player, enemy (de prueba), echo, memory_anchor, ability_pickup, levels/test_level
+tests/        smoke_test.gd — 64 comprobaciones, todas en verde
 docs/         Diseño, decisiones, arquitectura y estado
 ```
 
@@ -35,8 +35,8 @@ de esta fase era validar cómo se siente, no cómo se ve.
 - Reinicio de enemigos por zonas: hoy al morir o descansar reaparecen todos los
   del nivel; cuando haya varias zonas, limitarlo a la zona del Ancla.
 - Más usos para los Ecos aparte del Filo, y si el Filo mejora también alcance o velocidad (hoy solo sube el daño).
-- Resto de habilidades de progresión (trepar pared, doble salto) — ahora se
-  añaden como componentes nuevos en `core/components/` (ver `arquitectura.md`).
+- Trepar pared (dash y doble salto ya están hechos y se consiguen en el mundo). Se
+  añade como componente nuevo en `core/components/` (ver `arquitectura.md`).
 - Estadísticas del personaje más allá de la vida.
 - Capas de colisión (jugador, enemigos, entorno) cuando crezca el número de entidades.
 - Sustituir el HUD de texto plano por uno real.

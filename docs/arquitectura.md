@@ -106,6 +106,7 @@ El orden importa y por eso está explícito en `game/player/player.gd`:
 | **Golpeable:** `take_hit(damage: int, from_direction: int)` | Jugador, enemigos | `MeleeAttackComponent`, `ContactDamageArea` |
 | **Descansable:** `rest_at(position: Vector2)` + pertenecer al grupo `target_group` | Jugador | `Checkpoint` |
 | **Reiniciable:** grupo `resettable` con método `reset()` | `EntitySpawner` | El jugador (`_reset_world()`) al morir y al descansar |
+| **Aprendiz:** `unlock_ability(id: StringName)` + pertenecer al grupo `target_group` | Jugador (decide qué activa cada `id`) | `AbilityPickup` |
 | **Grupo `player`** | El jugador se añade a sí mismo en `_ready()` | `ContactDamageArea`, `Checkpoint`, enemigos, Eco |
 | **Acciones de entrada:** `ui_left/right/up/down/accept` + `attack`, `dash`, `heal`, `interact`, `upgrade` | `project.godot` | `PlatformerMotor`, `DashComponent`, `CameraLookComponent`, `player.gd` |
 

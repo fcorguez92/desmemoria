@@ -42,6 +42,7 @@ script = ExtResource("2_motor")
 
 [node name="DashComponent" type="Node" parent="."]
 script = ExtResource("3_dash")
+unlocked = false
 
 [node name="HealthComponent" type="Node" parent="."]
 script = ExtResource("4_health")
@@ -90,3 +91,7 @@ text = "Curación: 3/3"
 offset_left = 16.0
 offset_top = 88.0
 text = "Filo: nivel 1 (daño 1)"
+
+[node name="MessageLabel" type="Label" parent="HUD"]
+offset_left = 16.0
+offset_top = 112.0

@@ -53,6 +53,16 @@ Cada entrada: qué se decidió, por qué, qué alternativas se descartaron y por
 
 **Decidido por**: el usuario pidió Z y un lugar temático; Claude propuso el concepto.
 
+## 2026-09-20 — Habilidades que se consiguen, y doble salto
+
+**Decisión**: ninguna habilidad se tiene al empezar. Se consiguen recogiendo un "recuerdo" en el mundo (`AbilityPickup`), son permanentes, y cada una se coloca justo antes del obstáculo que abre. El dash pasa a estar bloqueado de inicio y se añade el doble salto (un salto extra en el aire, `air_jump_velocity` = -800 frente a -900 del primero).
+
+**Por qué**: sin conseguirlas no existía el bucle metroidvania (encuentro una técnica, se abre un camino) y encaja con la premisa (cada habilidad es una técnica recordada).
+
+**Técnico**: el doble salto va dentro de `PlatformerMotor` (`max_air_jumps`) y no como componente aparte, porque comparte con el salto normal el margen de coyote y el buffer; separado se pisaría con él. `DashComponent` gana `unlocked`. `AbilityPickup` (core) solo entrega un identificador y el jugador decide qué activa: así `core/` no conoce las habilidades del juego.
+
+**Pendiente**: trepar pared (la más delicada, toca el feeling del movimiento).
+
 ## 2026-09-20 — Mejora del arma: se gasta en el Ancla y sube el daño
 
 **Decisión**: los Ecos se gastan en mejorar el Filo en un Ancla de Memoria con la tecla C. Cinco niveles; cada uno sube el daño (1 a 5) y cuesta 4, 8, 14 y 22 Ecos.

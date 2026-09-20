@@ -17,8 +17,8 @@ no se mueven solos: el dueño llama a su `step()` en un orden explícito.
 | Componente | Responsabilidad | API principal |
 |---|---|---|
 | `HealthComponent` | Vida, invulnerabilidad tras daño, cargas de curación | `take_hit(amount) -> bool`, `use_heal_charge() -> bool`, `reset_health()`, `restore()`; señales `changed`, `damaged(amount)`, `died` |
-| `PlatformerMotor` | Movimiento lateral, gravedad, salto con coyote time, jump buffering y salto variable | `step(body, delta)`, `facing`; señal `facing_changed(facing)` |
-| `DashComponent` | Empujón horizontal recto que ignora la gravedad | `step(body, facing, delta)`, `is_dashing` |
+| `PlatformerMotor` | Movimiento lateral, gravedad, salto con coyote time, jump buffering y salto variable, y saltos extra en el aire (`max_air_jumps`: 0 = ninguno, 1 = doble salto) | `step(body, delta)`, `facing`; señal `facing_changed(facing)` |
+| `DashComponent` | Empujón horizontal recto que ignora la gravedad | `step(body, facing, delta)`, `is_dashing`; `unlocked` (false = habilidad aún no conseguida) |
 | `MeleeAttackComponent` | Golpe cuerpo a cuerpo con enfriamiento sobre un `Area2D` | `try_attack(attacker, facing) -> bool`, `set_facing(facing)`; exporta `hitbox` |
 | `CameraLookComponent` | Desplaza la `Camera2D` al mirar arriba/abajo | Autónomo (`_physics_process`); exporta `camera` |
 | `RespawnComponent` | Punto de reaparición, último suelo pisado, límite de caída | `track_ground(body)`, `is_out_of_bounds(body)`, `set_checkpoint(pos)`, `respawn(body)` |
@@ -35,6 +35,7 @@ de cada variable exportada (se ven en el Inspector).
 | `ContactDamageArea` | `Area2D` | Daña a los cuerpos del grupo `target_group` (por defecto `player`) que entren en el área |
 | `Checkpoint` | `Area2D` (se puede heredar: ver `game/memory_anchor/`; `targets_in_range` es público) | Al pulsar `action_interact` con un cuerpo del grupo objetivo dentro, llama a `rest_at(position)` en él; muestra `prompt` (opcional) mientras hay alguien al alcance |
 
+| `AbilityPickup` | `Area2D` | Al entrar un cuerpo del grupo objetivo, llama a `unlock_ability(ability_id)` en él y desaparece. No conoce las habilidades: solo entrega el identificador |
 | `EntitySpawner` | `Node2D` | Crea `scene` al cargar; al recibir `reset()` (vía el grupo `reset_group`) destruye la instancia actual y crea una nueva desde cero. `instance` es la entidad actual |
 
 ## Contratos que asumen

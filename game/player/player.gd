@@ -5,10 +5,14 @@ extends CharacterBody2D
 ## El orden de _physics_process es deliberado (ver docs/arquitectura.md).
 
 const EchoScene := preload("res://game/echo/echo.tscn")
+const ABILITY_NAMES := {&"dash": "Dash", &"double_jump": "Doble salto"}
+const MESSAGE_SECONDS := 3.0
 
 var ecos: int = 0
 ## Eco de la última muerte, si aún no se recuperó.
 var active_echo: Node = null
+
+var _message_id: int = 0
 
 @onready var motor: PlatformerMotor = $PlatformerMotor
 @onready var dash: DashComponent = $DashComponent
@@ -22,6 +26,7 @@ var active_echo: Node = null
 @onready var ecos_label: Label = $HUD/EcosLabel
 @onready var heal_label: Label = $HUD/HealLabel
 @onready var weapon_label: Label = $HUD/WeaponLabel
+@onready var message_label: Label = $HUD/MessageLabel
 
 
 func _ready() -> void:
@@ -67,6 +72,20 @@ func rest_at(anchor_position: Vector2) -> void:
 func add_ecos(amount: int) -> void:
 	ecos += amount
 	_update_hud()
+
+
+## Contrato de habilidades: lo llama core/objects/ability_pickup.gd. Las
+## habilidades son permanentes: morir no las pierde.
+func unlock_ability(id: StringName) -> void:
+	match id:
+		&"dash":
+			dash.unlocked = true
+		&"double_jump":
+			motor.max_air_jumps = 1
+		_:
+			push_warning("Habilidad desconocida: %s" % id)
+			return
+	_show_message("Has recordado: %s" % ABILITY_NAMES[id])
 
 
 ## Gasta Ecos en subir un nivel el Filo. Devuelve false si no se pudo
@@ -124,6 +143,15 @@ func _on_facing_changed(facing: int) -> void:
 
 func _on_damaged(_amount: int) -> void:
 	hit_flash.flash()
+
+
+func _show_message(text: String) -> void:
+	_message_id += 1
+	var this_message := _message_id
+	message_label.text = text
+	await get_tree().create_timer(MESSAGE_SECONDS).timeout
+	if this_message == _message_id:
+		message_label.text = ""
 
 
 func _on_weapon_changed() -> void:

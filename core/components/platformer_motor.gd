@@ -20,6 +20,9 @@ signal facing_changed(facing: int)
 @export var jump_buffer_time: float = 0.12
 ## Fracción de la velocidad de subida que se conserva al soltar el salto pronto.
 @export_range(0.0, 1.0) var jump_cut_factor: float = 0.5
+## Saltos extra en el aire (0 = ninguno, 1 = doble salto). Se recargan al tocar suelo.
+@export var max_air_jumps: int = 0
+@export var air_jump_velocity: float = -800.0
 @export var action_left: StringName = &"ui_left"
 @export var action_right: StringName = &"ui_right"
 @export var action_jump: StringName = &"ui_accept"
@@ -28,6 +31,7 @@ var facing: int = 1
 
 var _coyote_timer: float = 0.0
 var _jump_buffer_timer: float = 0.0
+var _air_jumps_left: int = 0
 
 
 func step(body: CharacterBody2D, delta: float) -> void:
@@ -36,12 +40,14 @@ func step(body: CharacterBody2D, delta: float) -> void:
 	if on_floor:
 		body.velocity.y = 0.0
 		_coyote_timer = coyote_time
+		_air_jumps_left = max_air_jumps
 	else:
 		var g := gravity * fall_gravity_multiplier if body.velocity.y > 0.0 else gravity
 		body.velocity.y += g * delta
 		_coyote_timer = maxf(_coyote_timer - delta, 0.0)
 
-	if Input.is_action_just_pressed(action_jump):
+	var jump_pressed := Input.is_action_just_pressed(action_jump)
+	if jump_pressed:
 		_jump_buffer_timer = jump_buffer_time
 	else:
 		_jump_buffer_timer = maxf(_jump_buffer_timer - delta, 0.0)
@@ -50,6 +56,11 @@ func step(body: CharacterBody2D, delta: float) -> void:
 		body.velocity.y = jump_velocity
 		_jump_buffer_timer = 0.0
 		_coyote_timer = 0.0
+	elif jump_pressed and not on_floor and _air_jumps_left > 0:
+		# Solo si el salto normal no pudo usarse (ni suelo ni margen de coyote).
+		body.velocity.y = air_jump_velocity
+		_air_jumps_left -= 1
+		_jump_buffer_timer = 0.0
 
 	if Input.is_action_just_released(action_jump) and body.velocity.y < 0.0:
 		body.velocity.y *= jump_cut_factor

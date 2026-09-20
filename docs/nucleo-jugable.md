@@ -22,10 +22,19 @@ Un único arma cuerpo a cuerpo que mejora por niveles gastando Ecos, en vez de u
 
 Cada habilidad es narrativamente una técnica recordada de otra persona (ver docs/historia.md); desbloquearla es a la vez progreso mecánico y revelación de historia.
 
-1. **Dash** — desplazamiento horizontal rápido.
-2. **Trepar/saltar en pared** — asciende por grietas específicas marcadas en el entorno.
-3. **Doble salto** — alcance vertical adicional.
+1. **Dash** — desplazamiento horizontal rápido. *(implementado)*
+2. **Trepar/saltar en pared** — asciende por grietas específicas marcadas en el entorno. *(pendiente)*
+3. **Doble salto** — un salto extra en el aire, algo más corto que el primero. *(implementado)*
 4. **Excavar/romper suelo** — abre Las Minas del Origen como red de atajos entre regiones de superficie (ver docs/mundo.md).
+
+### Cómo se consiguen (implementado)
+
+Ninguna habilidad se tiene al empezar: se consiguen recogiendo un **recuerdo** (objeto con forma de rombo azul claro) que aparece en el mundo, y el juego avisa con "Has recordado: ...". Son permanentes: morir no las pierde. Cada una está colocada justo antes del obstáculo que abre:
+
+- El **dash** está en la plataforma elevada, y abre el hueco ancho que hay detrás.
+- El **doble salto** está en la última plataforma verde, y abre una plataforma alta a la derecha que sin él es inalcanzable.
+
+Es el bucle metroidvania: encuentro una técnica, y un camino antes cerrado se abre.
 
 ## Economía: Ecos
 
