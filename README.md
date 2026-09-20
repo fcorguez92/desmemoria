@@ -19,7 +19,7 @@ Ver [`docs/estado.md`](docs/estado.md).
 2. Abrir esta carpeta como proyecto y pulsar **F5**.
 
 Controles: flechas izq/dcha mover · Espacio saltar · flechas arriba/abajo mirar ·
-X atacar · Shift dash · H curarse.
+X atacar · Shift dash · H curarse · Z interactuar (descansar en un Ancla).
 
 ## Probar
 

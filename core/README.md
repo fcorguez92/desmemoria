@@ -32,7 +32,7 @@ de cada variable exportada (se ven en el Inspector).
 | Objeto | Base | Responsabilidad |
 |---|---|---|
 | `ContactDamageArea` | `Area2D` | Daña a los cuerpos del grupo `target_group` (por defecto `player`) que entren en el área |
-| `Checkpoint` | `Area2D` | Llama a `rest_at(position)` en los cuerpos del grupo objetivo que entren |
+| `Checkpoint` | `Area2D` | Al pulsar `action_interact` con un cuerpo del grupo objetivo dentro, llama a `rest_at(position)` en él; muestra `prompt` (opcional) mientras hay alguien al alcance |
 
 ## Contratos que asumen
 

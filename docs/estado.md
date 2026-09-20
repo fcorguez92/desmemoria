@@ -28,7 +28,7 @@ de esta fase era validar cómo se siente, no cómo se ve.
 ## Controles actuales
 
 - Flecha izq/dcha: moverse · Espacio: saltar · Flecha arriba/abajo: mirar
-- X: atacar · Shift izquierdo: dash · H: curarse (si quedan cargas y no estás a vida completa)
+- X: atacar · Shift izquierdo: dash · H: curarse (si quedan cargas y no estás a vida completa) · Z: interactuar (descansar en un Ancla)
 
 ## Qué falta del núcleo jugable
 

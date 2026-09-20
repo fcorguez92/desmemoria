@@ -38,6 +38,10 @@ Un objeto curativo de usos limitados, que se recarga solo en los puntos de desca
 - Se activan **a propósito** con el botón Z (no al pasar por encima), y muestran un aviso "Z: Recordar" al estar al alcance. Descansar es una parada, no un accidente.
 - Al usarlas, reinician (respawnean) a los enemigos normales del área — como en los juegos souls, para mantener el riesgo al volver a explorar.
 
+### Aspecto: el Mojón de Nombres
+
+El Ancla es un **mojón de piedras apiladas**, cada una con grabado el nombre de alguien que la Desmemoria borró. Los supervivientes lo levantan para que al menos ese nombre siga existiendo. Como el protagonista no puede olvidar, descansar ahí es pronunciar esos nombres en voz alta. Se eligió porque no es un banco (Hollow Knight) ni una hoguera (Dark Souls), y expresa la premisa del juego en un objeto cotidiano.
+
 ## Pendiente de definir en próximas sesiones de diseño
 
 - Sistema de estadísticas del personaje (¿solo vida, o también algo como stamina/resistencia?).
