@@ -1,6 +1,6 @@
 [gd_scene load_steps=3 format=3]
 
-[ext_resource type="Script" path="res://scenes/echo/echo.gd" id="1_echo"]
+[ext_resource type="Script" path="res://game/echo/echo.gd" id="1_echo"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_echo"]
 size = Vector2(36, 44)

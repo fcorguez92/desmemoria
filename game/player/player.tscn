@@ -1,0 +1,81 @@
+[gd_scene load_steps=11 format=3]
+
+[ext_resource type="Script" path="res://game/player/player.gd" id="1_player"]
+[ext_resource type="Script" path="res://core/components/platformer_motor.gd" id="2_motor"]
+[ext_resource type="Script" path="res://core/components/dash_component.gd" id="3_dash"]
+[ext_resource type="Script" path="res://core/components/health_component.gd" id="4_health"]
+[ext_resource type="Script" path="res://core/components/melee_attack_component.gd" id="5_melee"]
+[ext_resource type="Script" path="res://core/components/camera_look_component.gd" id="6_camera_look"]
+[ext_resource type="Script" path="res://core/components/respawn_component.gd" id="7_respawn"]
+[ext_resource type="Script" path="res://core/components/hit_flash_component.gd" id="8_flash"]
+
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_1"]
+radius = 12.0
+height = 48.0
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_attack"]
+size = Vector2(28, 36)
+
+[node name="Player" type="CharacterBody2D"]
+script = ExtResource("1_player")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CapsuleShape2D_1")
+
+[node name="Visual" type="Polygon2D" parent="."]
+color = Color(0.85, 0.85, 0.9, 1)
+polygon = PackedVector2Array(-12, -24, 12, -24, 12, 24, -12, 24)
+
+[node name="Camera2D" type="Camera2D" parent="."]
+position_smoothing_enabled = true
+position_smoothing_speed = 8.0
+
+[node name="AttackHitbox" type="Area2D" parent="."]
+position = Vector2(20, 0)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="AttackHitbox"]
+shape = SubResource("RectangleShape2D_attack")
+
+[node name="PlatformerMotor" type="Node" parent="."]
+script = ExtResource("2_motor")
+
+[node name="DashComponent" type="Node" parent="."]
+script = ExtResource("3_dash")
+
+[node name="HealthComponent" type="Node" parent="."]
+script = ExtResource("4_health")
+max_health = 5
+invulnerability_time = 0.6
+max_heal_charges = 3
+
+[node name="MeleeAttackComponent" type="Node" parent="." node_paths=PackedStringArray("hitbox")]
+script = ExtResource("5_melee")
+hitbox = NodePath("../AttackHitbox")
+
+[node name="CameraLookComponent" type="Node" parent="." node_paths=PackedStringArray("camera")]
+script = ExtResource("6_camera_look")
+camera = NodePath("../Camera2D")
+
+[node name="RespawnComponent" type="Node" parent="."]
+script = ExtResource("7_respawn")
+
+[node name="HitFlashComponent" type="Node" parent="." node_paths=PackedStringArray("target")]
+script = ExtResource("8_flash")
+target = NodePath("../Visual")
+
+[node name="HUD" type="CanvasLayer" parent="."]
+
+[node name="HealthLabel" type="Label" parent="HUD"]
+offset_left = 16.0
+offset_top = 16.0
+text = "Vida: 5/5"
+
+[node name="EcosLabel" type="Label" parent="HUD"]
+offset_left = 16.0
+offset_top = 40.0
+text = "Ecos: 0"
+
+[node name="HealLabel" type="Label" parent="HUD"]
+offset_left = 16.0
+offset_top = 64.0
+text = "Curación: 3/3"

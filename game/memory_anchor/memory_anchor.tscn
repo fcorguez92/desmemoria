@@ -1,18 +1,16 @@
 [gd_scene load_steps=3 format=3]
 
-[ext_resource type="Script" path="res://scenes/memory_anchor/memory_anchor.gd" id="1_anchor"]
+[ext_resource type="Script" path="res://core/objects/checkpoint.gd" id="1_checkpoint"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_anchor"]
 size = Vector2(48, 56)
 
-[node name="MemoryAnchor" type="Node2D"]
-script = ExtResource("1_anchor")
+[node name="MemoryAnchor" type="Area2D"]
+script = ExtResource("1_checkpoint")
 
 [node name="Visual" type="Polygon2D" parent="."]
 color = Color(0.85, 0.65, 0.2, 1)
 polygon = PackedVector2Array(-10, -28, 10, -28, 10, 28, -10, 28)
 
-[node name="Area2D" type="Area2D" parent="."]
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Area2D"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("RectangleShape2D_anchor")

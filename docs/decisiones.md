@@ -25,6 +25,28 @@ Cada entrada: qué se decidió, por qué, qué alternativas se descartaron y por
 
 **Fuentes consultadas**: blog oficial de Unity sobre cancelación de la Runtime Fee y subidas de precio 2025-2026; unrealengine.com/license; comunidad y plantillas de souls-likes en Godot 4; guías 2026 de integración MCP Godot/Claude Code (StraySpark, GDAI).
 
+## 2026-09-20 — Base reutilizable: capas `core/` y `game/` en el mismo repositorio
+
+**Decisión**: separar el código en `core/` (jugabilidad 2D genérica y reutilizable) y `game/` (lo específico de este juego), con la regla de que `core/` nunca referencia `game/`. `player.gd` (200 líneas mezcladas) se divide en componentes de una sola responsabilidad. La base se extraerá a plantilla o addon cuando exista un segundo proyecto.
+
+**Por qué**: el usuario quiere reutilizar esta base en futuros proyectos y que una IA la entienda. Separar por capas hace la extracción posterior casi mecánica sin pagar hoy el coste de mantener un repositorio aparte.
+
+**Alternativas descartadas**:
+- *Repositorio/addon de motor separado ya*: más limpio a largo plazo, pero añade mantenimiento y complejidad antes de haber probado cómo se reutiliza realmente; riesgo de abstraer mal.
+- *Solo documentar sin reestructurar*: lo más barato, pero dejaba lo genérico mezclado con lo específico y sin forma de comprobar qué es reutilizable.
+
+**Riesgo asumido**: generalizar antes de un segundo proyecto puede producir abstracciones que no encajen. Se mitiga extrayendo solo lo que ya usan a la vez el jugador y los enemigos (vida, parpadeo, daño por contacto) o que es claramente genérico (movimiento, dash, checkpoint), y no añadiendo nada "por si acaso".
+
+**Decidido por**: el usuario (opción recomendada por Claude).
+
+## 2026-09-20 — Pruebas automáticas: prueba de humo propia, sin framework
+
+**Decisión**: `tests/smoke_test.gd` carga el nivel real y comprueba el ciclo jugable y los contratos de `core/` sin ventana; sale con código 0/1.
+
+**Por qué**: durante el refactor cazó dos fallos reales que solo se habrían descubierto jugando (referencias entre nodos vacías; el Eco recogiéndose al instante al reaparecer). Reemplaza a los scripts de diagnóstico desechables que veníamos escribiendo y borrando.
+
+**Alternativa**: frameworks como GUT o gdUnit4. Descartados por ahora: son dependencias externas y el tamaño actual no lo justifica. Se reevaluará si la batería de pruebas crece mucho.
+
 ## 2026-09-18 — Alcance del proyecto: personal/aprendizaje, no comercial
 
 **Decisión**: el proyecto se trata como aprendizaje y portfolio personal, sin presión de publicación. No se diseñan todavía economía, monetización ni requisitos de tienda.

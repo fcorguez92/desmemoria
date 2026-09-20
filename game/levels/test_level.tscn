@@ -1,8 +1,8 @@
 [gd_scene load_steps=8 format=3]
 
-[ext_resource type="PackedScene" path="res://scenes/player/player.tscn" id="1_player"]
-[ext_resource type="PackedScene" path="res://scenes/enemy/enemy.tscn" id="2_enemy"]
-[ext_resource type="PackedScene" path="res://scenes/memory_anchor/memory_anchor.tscn" id="3_anchor"]
+[ext_resource type="PackedScene" path="res://game/player/player.tscn" id="1_player"]
+[ext_resource type="PackedScene" path="res://game/enemy/enemy.tscn" id="2_enemy"]
+[ext_resource type="PackedScene" path="res://game/memory_anchor/memory_anchor.tscn" id="3_anchor"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_ground_a"]
 size = Vector2(400, 40)

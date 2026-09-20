@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="Proyecto Souls2D"
-run/main_scene="res://scenes/test_level/test_level.tscn"
+run/main_scene="res://game/levels/test_level.tscn"
 config/features=PackedStringArray("4.7", "Forward Plus")
 
 [input]
