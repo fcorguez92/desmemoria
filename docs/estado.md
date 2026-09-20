@@ -16,9 +16,9 @@
 ## Qué existe ahora mismo
 
 ```
-core/         Base reutilizable: 7 componentes + 2 objetos (ver core/README.md)
+core/         Base reutilizable: 7 componentes + 3 objetos (ver core/README.md)
 game/         player, enemy (de prueba), echo, memory_anchor, levels/test_level
-tests/        smoke_test.gd — 33 comprobaciones, todas en verde
+tests/        smoke_test.gd — 41 comprobaciones, todas en verde
 docs/         Diseño, decisiones, arquitectura y estado
 ```
 
@@ -32,8 +32,8 @@ de esta fase era validar cómo se siente, no cómo se ve.
 
 ## Qué falta del núcleo jugable
 
-- Anclas de Memoria: pendiente reiniciar a los enemigos normales del área al
-  activarse (falta un sistema de seguimiento/reaparición de enemigos).
+- Reinicio de enemigos por zonas: hoy al morir o descansar reaparecen todos los
+  del nivel; cuando haya varias zonas, limitarlo a la zona del Ancla.
 - Tiers de mejora del arma y qué se compra con Ecos.
 - Resto de habilidades de progresión (trepar pared, doble salto) — ahora se
   añaden como componentes nuevos en `core/components/` (ver `arquitectura.md`).

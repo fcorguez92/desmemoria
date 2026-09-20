@@ -43,7 +43,7 @@ game/  ──usa──▶  core/  ──usa──▶  Godot
 ├── core/                      BASE REUTILIZABLE
 │   ├── README.md              Catálogo de componentes y contratos
 │   ├── components/            Nodos con una responsabilidad cada uno
-│   └── objects/               Áreas reutilizables (daño por contacto, checkpoint)
+│   └── objects/               Daño por contacto, checkpoint, generador de entidades
 ├── game/                      ESPECÍFICO DE ESTE JUEGO
 │   ├── player/                Orquesta los componentes + Ecos + HUD
 │   ├── enemy/                 Enemigo de prueba
@@ -105,6 +105,7 @@ El orden importa y por eso está explícito en `game/player/player.gd`:
 |---|---|---|
 | **Golpeable:** `take_hit(damage: int, from_direction: int)` | Jugador, enemigos | `MeleeAttackComponent`, `ContactDamageArea` |
 | **Descansable:** `rest_at(position: Vector2)` + pertenecer al grupo `target_group` | Jugador | `Checkpoint` |
+| **Reiniciable:** grupo `resettable` con método `reset()` | `EntitySpawner` | El jugador (`_reset_world()`) al morir y al descansar |
 | **Grupo `player`** | El jugador se añade a sí mismo en `_ready()` | `ContactDamageArea`, `Checkpoint`, enemigos, Eco |
 | **Acciones de entrada:** `ui_left/right/up/down/accept` + `attack`, `dash`, `heal`, `interact` | `project.godot` | `PlatformerMotor`, `DashComponent`, `CameraLookComponent`, `player.gd` |
 

@@ -53,6 +53,18 @@ Cada entrada: qué se decidió, por qué, qué alternativas se descartaron y por
 
 **Decidido por**: el usuario pidió Z y un lugar temático; Claude propuso el concepto.
 
+## 2026-09-20 — Reaparición de enemigos: generador que recrea la entidad
+
+**Decisión**: los enemigos se colocan mediante `EntitySpawner` (core). Al morir o descansar el jugador, se llama al grupo `resettable` y cada generador destruye su enemigo (vivo o muerto) y crea uno nuevo desde cero.
+
+**Por qué**: el usuario quería que los enemigos reaparezcan al morir o descansar. Recrear la escena entera garantiza vida completa y posición original sin que cada enemigo implemente su propio reinicio, así que sirve igual para enemigos futuros con IA o estado.
+
+**Alternativa descartada**: no destruir a los enemigos, sino desactivarlos y darles un método `reset()`. Obliga a cada tipo de enemigo a limpiar correctamente su estado y a desactivar colisiones a mano; más propenso a errores.
+
+**Limitación conocida**: se reinician todos los enemigos del nivel. Delimitar por zonas se hará cuando existan varias zonas.
+
+**Técnico**: el reinicio se aplaza (`call_deferred`) porque puede pedirse desde dentro de una señal de físicas, donde Godot no permite añadir cuerpos.
+
 ## 2026-09-20 — Pruebas automáticas: prueba de humo propia, sin framework
 
 **Decisión**: `tests/smoke_test.gd` carga el nivel real y comprueba el ciclo jugable y los contratos de `core/` sin ventana; sale con código 0/1.

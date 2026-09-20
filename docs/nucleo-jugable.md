@@ -36,7 +36,7 @@ El Eco aparece siempre al morir, aunque no se llevaran Ecos encima (en ese caso,
 Un objeto curativo de usos limitados, que se recarga solo en los puntos de descanso, llamados **Anclas de Memoria**. Las Anclas también:
 - Sirven de punto de guardado.
 - Se activan **a propósito** con el botón Z (no al pasar por encima), y muestran un aviso "Z: Recordar" al estar al alcance. Descansar es una parada, no un accidente.
-- Al usarlas, reinician (respawnean) a los enemigos normales del área — como en los juegos souls, para mantener el riesgo al volver a explorar.
+- Al usarlas, reinician (respawnean) a los enemigos normales — como en los juegos souls, para mantener el riesgo al volver a explorar. Los enemigos también reaparecen cuando el jugador muere. Hoy se reinician **todos** los enemigos del nivel, no solo los "del área"; delimitar zonas queda para cuando haya un mundo con varias.
 
 ### Aspecto: el Hito de Nombres
 

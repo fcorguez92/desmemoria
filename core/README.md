@@ -34,7 +34,14 @@ de cada variable exportada (se ven en el Inspector).
 | `ContactDamageArea` | `Area2D` | Daña a los cuerpos del grupo `target_group` (por defecto `player`) que entren en el área |
 | `Checkpoint` | `Area2D` | Al pulsar `action_interact` con un cuerpo del grupo objetivo dentro, llama a `rest_at(position)` en él; muestra `prompt` (opcional) mientras hay alguien al alcance |
 
+| `EntitySpawner` | `Node2D` | Crea `scene` al cargar; al recibir `reset()` (vía el grupo `reset_group`) destruye la instancia actual y crea una nueva desde cero. `instance` es la entidad actual |
+
 ## Contratos que asumen
+
+- **Reiniciable:** los `EntitySpawner` pertenecen al grupo `reset_group` (por
+  defecto `resettable`). Quien decide cuándo reiniciar el mundo llama a
+  `get_tree().call_group("resettable", "reset")`. En este juego lo hace el
+  jugador al morir y al descansar.
 
 - **Golpeable:** cualquier cuerpo que reciba daño implementa
   `take_hit(damage: int, from_direction: int)`.
@@ -69,3 +76,8 @@ Enemy (CharacterBody2D)            <- script propio: take_hit() -> health.take_h
 ```
 
 Ver `game/enemy/` para un ejemplo real y `game/player/` para uno completo.
+
+## Ejemplo: enemigos que reaparecen
+
+En el nivel se colocan `EntitySpawner` (con `scene` = la escena del enemigo) en
+lugar de instanciar el enemigo directamente. No hace falta nada más en el enemigo.

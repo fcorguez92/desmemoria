@@ -1,8 +1,9 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource type="PackedScene" path="res://game/player/player.tscn" id="1_player"]
 [ext_resource type="PackedScene" path="res://game/enemy/enemy.tscn" id="2_enemy"]
 [ext_resource type="PackedScene" path="res://game/memory_anchor/memory_anchor.tscn" id="3_anchor"]
+[ext_resource type="Script" path="res://core/objects/entity_spawner.gd" id="4_spawner"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_ground_a"]
 size = Vector2(400, 40)
@@ -57,14 +58,20 @@ position = Vector2(160, 356)
 [node name="MemoryAnchor2" parent="." instance=ExtResource("3_anchor")]
 position = Vector2(980, 197)
 
-[node name="Enemy" parent="." instance=ExtResource("2_enemy")]
+[node name="EnemySpawn1" type="Node2D" parent="."]
 position = Vector2(700, 356)
+script = ExtResource("4_spawner")
+scene = ExtResource("2_enemy")
 
-[node name="Enemy2" parent="." instance=ExtResource("2_enemy")]
+[node name="EnemySpawn2" type="Node2D" parent="."]
 position = Vector2(250, 356)
+script = ExtResource("4_spawner")
+scene = ExtResource("2_enemy")
 
-[node name="Enemy3" parent="." instance=ExtResource("2_enemy")]
+[node name="EnemySpawn3" type="Node2D" parent="."]
 position = Vector2(1050, 201)
+script = ExtResource("4_spawner")
+scene = ExtResource("2_enemy")
 
 [node name="GroundD" type="StaticBody2D" parent="."]
 position = Vector2(1580, 240)

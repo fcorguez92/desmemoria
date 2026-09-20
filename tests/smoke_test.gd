@@ -32,6 +32,7 @@ func _run() -> void:
 	await _test_echo_pickup_returns_ecos()
 	await _test_checkpoint_heals_and_moves_respawn()
 	await _test_enemy_reward_and_contact_damage()
+	await _test_enemies_respawn_on_rest_and_death()
 	await _test_dash_gates_the_far_platform()
 
 
@@ -119,7 +120,7 @@ func _test_checkpoint_heals_and_moves_respawn() -> void:
 
 func _test_enemy_reward_and_contact_damage() -> void:
 	await _fresh_level("Enemigos: daño por contacto y recompensa")
-	var enemy: Node2D = _level.get_node("Enemy")
+	var enemy: Node2D = _level.get_node("EnemySpawn1").instance
 	_player.global_position = enemy.global_position
 	await _wait(10)
 	_check(_player.health.health == 4, "el contacto con un enemigo daña al jugador")
@@ -131,6 +132,37 @@ func _test_enemy_reward_and_contact_damage() -> void:
 	_check(_player.ecos == 2, "matar al enemigo da sus Ecos")
 	await _wait(2)
 	_check(not is_instance_valid(enemy), "el enemigo muerto se elimina")
+
+
+func _test_enemies_respawn_on_rest_and_death() -> void:
+	await _fresh_level("Los enemigos reaparecen al descansar y al morir")
+	var spawner: EntitySpawner = _level.get_node("EnemySpawn1")
+
+	var killed: Node = spawner.instance
+	for i in 3:
+		killed.take_hit(1, 1)
+	await _wait(2)
+	_check(not is_instance_valid(killed), "el enemigo muerto no está")
+	_player.rest_at(_player.global_position)
+	await _wait(3)
+	_check(is_instance_valid(spawner.instance) and spawner.instance != killed, "reaparece al descansar")
+	_check(spawner.instance.health.health == 3, "reaparece con vida completa")
+
+	var wounded: Node = spawner.instance
+	wounded.take_hit(1, 1)
+	_check(wounded.health.health == 2, "el enemigo herido pierde vida")
+	await _stand_at(330.0)
+	_player.health.take_hit(99)
+	await _wait(3)
+	_check(spawner.instance != wounded and not is_instance_valid(wounded), "al morir el jugador se reemplaza al enemigo herido")
+	_check(spawner.instance.health.health == 3, "el enemigo nuevo tiene la vida completa")
+	_check(spawner.instance.global_position == spawner.global_position, "reaparece en su posición original")
+
+	var count := 0
+	for child in _level.get_children():
+		if child is EntitySpawner and is_instance_valid(child.instance):
+			count += 1
+	_check(count == 3, "los tres generadores tienen un enemigo vivo")
 
 
 func _test_dash_gates_the_far_platform() -> void:

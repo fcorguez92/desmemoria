@@ -58,6 +58,7 @@ func take_hit(damage: int, _from_direction: int) -> void:
 func rest_at(anchor_position: Vector2) -> void:
 	respawn.set_checkpoint(anchor_position)
 	health.restore()
+	_reset_world()
 
 
 func add_ecos(amount: int) -> void:
@@ -83,6 +84,13 @@ func die() -> void:
 	health.reset_health()
 	respawn.respawn(self)
 	_update_hud()
+	_reset_world()
+
+
+## Al morir o descansar, todo lo "reiniciable" (enemigos) vuelve a su estado
+## inicial. Ver EntitySpawner en core/objects/.
+func _reset_world() -> void:
+	get_tree().call_group(&"resettable", &"reset")
 
 
 func _on_facing_changed(facing: int) -> void:
