@@ -63,6 +63,8 @@ Además hay que **jugarlo**: los tests miden reglas, no sensaciones.
 
 - Identificadores de código en inglés; documentación, comentarios y textos al
   jugador en español.
+- Nombres en español para objetos, lugares y lore: comprobar antes que la palabra
+  no tenga acepciones vulgares o escatológicas; el tono del juego es serio.
 - GDScript tipado. Un componente por archivo. `class_name` solo en `core/`.
 - Las exports que apuntan a nodos requieren `node_paths` en el `.tscn` (ver `core/README.md`).
 - Sin addons ni dependencias externas salvo justificación (ver filosofía de ingeniería).

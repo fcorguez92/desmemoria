@@ -39,13 +39,15 @@ Cada entrada: qué se decidió, por qué, qué alternativas se descartaron y por
 
 **Decidido por**: el usuario (opción recomendada por Claude).
 
-## 2026-09-20 — Puntos de descanso: Mojón de Nombres, activado con Z
+## 2026-09-20 — Puntos de descanso: Hito de Nombres, activado con Z
 
-**Decisión**: las Anclas de Memoria dejan de activarse al pasar por encima y requieren pulsar Z, con un aviso "Z: Recordar". Su aspecto pasa a ser un mojón de piedras con nombres grabados de personas que la Desmemoria borró.
+**Decisión**: las Anclas de Memoria dejan de activarse al pasar por encima y requieren pulsar Z, con un aviso "Z: Recordar". Su aspecto pasa a ser un hito de piedras con nombres grabados de personas que la Desmemoria borró.
 
-**Por qué**: el usuario quería que descansar fuese una parada deliberada, y un lugar propio del juego, no un banco (Hollow Knight) ni una hoguera (Dark Souls). El mojón expresa la premisa: los supervivientes conservan nombres borrados y el protagonista, que no olvida, los pronuncia. Detalle en `nucleo-jugable.md`.
+**Por qué**: el usuario quería que descansar fuese una parada deliberada, y un lugar propio del juego, no un banco (Hollow Knight) ni una hoguera (Dark Souls). El hito expresa la premisa: los supervivientes conservan nombres borrados y el protagonista, que no olvida, los pronuncia. Detalle en `nucleo-jugable.md`.
 
-**Alternativas consideradas** (se eligió el mojón): un atril donde se dicta la memoria al Archivo (recuerda a las máquinas de escribir de guardado de Resident Evil) y un sello de cera de los Custodios (muy ligado a una sola facción).
+**Nombre**: la primera propuesta tenía una acepción vulgar en español y el usuario la rechazó; se sustituyó por "Hito". Alternativas de nombre disponibles si tampoco convence: "Túmulo de Nombres", "Estela de Nombres".
+
+**Alternativas de concepto consideradas** (se eligió el hito de piedras): un atril donde se dicta la memoria al Archivo (recuerda a las máquinas de escribir de guardado de Resident Evil) y un sello de cera de los Custodios (muy ligado a una sola facción).
 
 **Técnico**: `Checkpoint` (en `core/`) usa una acción de interacción configurable y un `prompt` opcional; sigue sin saber nada del juego.
 
