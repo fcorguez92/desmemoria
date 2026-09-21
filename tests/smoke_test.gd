@@ -413,10 +413,12 @@ func _test_anchor_menu_keyboard_and_pause() -> void:
 	_check(_player.global_position == before, "con el menú abierto el jugador no se mueve")
 
 	var panel: Control = menu.get_node("Root/Panel")
-	var width_before := panel.size.x
+	var size_before := panel.size
+	var rows_before: int = menu.menu.get_child_count()
 	await _press_action("ui_down")
 	_check(menu.menu.selected == 1, "la flecha abajo mueve la selección")
-	_check(is_equal_approx(panel.size.x, width_before), "el ancho del menú no cambia al mover la selección")
+	_check(panel.size == size_before, "el tamaño del menú no cambia al mover la selección")
+	_check(menu.menu.get_child_count() == rows_before, "mover la selección no duplica filas (ni un frame)")
 	await _press_action("ui_down")
 	_check(menu.menu.selected == 0, "la selección da la vuelta")
 	await _press_action("ui_cancel")
