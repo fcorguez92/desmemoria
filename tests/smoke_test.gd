@@ -47,6 +47,7 @@ func _run() -> void:
 	await _test_wall_slide_and_wall_jump()
 	await _test_wall_jump_opens_the_shaft()
 	await _test_ultimo_umbral_builds_from_text_map()
+	await _test_planks_are_one_way_platforms()
 
 
 # --- Tests -------------------------------------------------------------------
@@ -608,6 +609,38 @@ func _jump_across_gap(press_dash: bool, dash_unlocked: bool) -> bool:
 	Input.action_release("ui_right")
 	# Si cayó, murió (hay Eco) y reapareció lejos; si cruzó, sigue en la plataforma.
 	return _player.active_echo == null and _player.global_position.x > 1430.0
+
+
+
+
+func _test_planks_are_one_way_platforms() -> void:
+	print("\n[Los tablones se atraviesan desde abajo y se pisan desde arriba]")
+	if is_instance_valid(_level):
+		_level.queue_free()
+		await process_frame
+	_level = load("res://game/levels/ultimo_umbral.tscn").instantiate()
+	root.add_child(_level)
+	await process_frame
+	await process_frame
+	_player = get_first_node_in_group("player")
+	var tiles: TextTileMap = _level.get_node("Tiles")
+	# Tejado de la cabaña: fila de tablones en las columnas 15..22.
+	var roof_cell := Vector2i(18, 15)
+	_check(tiles.get_cell_atlas_coords(roof_cell) == Vector2i(4, 0), "hay un tablón donde se espera (tejado de la cabaña)")
+	var roof_top: float = tiles.to_global(tiles.map_to_local(roof_cell)).y - 8.0
+	var ground_top: float = tiles.to_global(tiles.map_to_local(Vector2i(18, 20))).y - 8.0
+	_player.global_position = Vector2(tiles.to_global(tiles.map_to_local(roof_cell)).x, ground_top - 24.0)
+	_player.velocity = Vector2.ZERO
+	await _wait(20)
+	_check(_player.is_on_floor() and _player.global_position.y > roof_top, "de pie bajo el tejado, sin que lo toque")
+	Input.action_press("ui_accept")
+	await _wait(60)
+	Input.action_release("ui_accept")
+	await _wait(30)
+	_check(_player.is_on_floor() and _player.global_position.y < roof_top, "saltando desde abajo se atraviesa el tablón y se aterriza encima")
+	_player.velocity = Vector2.ZERO
+	await _wait(20)
+	_check(_player.is_on_floor() and _player.global_position.y < roof_top, "se puede estar de pie sobre el tablón")
 
 
 # --- Utilidades --------------------------------------------------------------
