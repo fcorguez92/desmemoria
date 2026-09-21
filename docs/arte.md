@@ -112,6 +112,7 @@ dos maneras: empezar con el texto y pasar a retocar a mano cuando compense.
 |---|---|---|---|
 | Caminante (jugador) | 20×44, figura con capucha, ojo y bufanda de luz azul; espada ("el Filo") de acero con canto azul | 64×56 | reposo (2), correr (4), salto (1), caída (1), ataque (3), guardia (2) |
 | Cascarón (enemigo) | 24×44, figura pálida sin rostro con trapos rojos; cuchillo pesado oxidado | 64×56 | reposo (2), andar (4), aviso (2), golpe (2) |
+| Iconos del HUD | 16×16: frasco de curación (lleno y vacío, ámbar) y Eco (gota azul) | 16×16 | una fila de 3 fotogramas (`game/ui/hud_icons.png`) |
 
 Son un primer dibujo funcional, no arte final. **Las armas van integradas en el
 sprite**: se dibujan como piezas superpuestas al cuerpo (brazo y arma) en cada pose,

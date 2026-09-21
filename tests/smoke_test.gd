@@ -250,7 +250,7 @@ func _test_attack_feedback() -> void:
 func _test_parry() -> void:
 	await _fresh_level("Parry: ventana, golpes frontales y aturdimiento", true, true, "EnemySpawn1")
 	var parry: ParryComponent = _player.parry
-	_check("(H)" in _player.heal_label.text, "el HUD muestra la tecla de curación")
+	_check(_player.hud.heal_flasks.count == _player.health.heal_charges and _player.hud.heal_flasks.max_count == _player.health.max_heal_charges, "el HUD muestra los frascos de curación")
 	_check(not parry.try_deflect(-1, 1), "sin abrir la guardia no se desvía nada")
 	_check(parry.try_start(), "se puede abrir la guardia")
 	_check(not parry.try_start(), "no se puede reabrir con la guardia ya abierta")
@@ -420,7 +420,7 @@ func _test_ability_pickups() -> void:
 	await _wait(10)
 	_check(_player.dash.unlocked, "recoger el objeto desbloquea el dash")
 	_check(not is_instance_valid(pickup), "el objeto desaparece al recogerlo")
-	_check("Dash" in _player.message_label.text, "se muestra un mensaje con la habilidad")
+	_check("Dash" in _player.hud.message_label.text, "se muestra un mensaje con la habilidad")
 	_player.health.take_hit(99)
 	await _wait(2)
 	_check(_player.dash.unlocked, "morir no pierde las habilidades")

@@ -44,12 +44,14 @@ game/  ──usa──▶  core/  ──usa──▶  Godot
 │   ├── README.md              Catálogo de componentes y contratos
 │   ├── components/            Nodos con una responsabilidad cada uno
 │   ├── objects/               Checkpoint, objeto de habilidad, generador de entidades, mapa de baldosas desde texto
+│   ├── ui/                    Controles de HUD genéricos (barra segmentada, fila de iconos)
 │   └── effects/               Efectos visuales autodestructivos (chispazo de impacto)
 ├── game/                      ESPECÍFICO DE ESTE JUEGO
 │   ├── player/                Orquesta los componentes + Ecos + HUD
 │   ├── enemy/                 Enemigo de prueba
 │   ├── echo/                  Marcador de la última muerte
 │   ├── memory_anchor/         Punto de control (usa core/objects/checkpoint.gd)
+│   ├── ui/                    HUD del jugador (vida, frascos, Ecos, mensajes)
 │   └── levels/                Niveles: El Último Umbral (mapa de texto + baldosas) y el banco de pruebas
 ├── art/                       Fuentes del arte (no se cargan en el juego)
 │   ├── palette.txt            La paleta: un carácter por color

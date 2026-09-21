@@ -16,7 +16,7 @@
 ## Qué existe ahora mismo
 
 ```
-core/         Base reutilizable: 14 componentes + 4 objetos + 1 efecto (ver core/README.md)
+core/         Base reutilizable: 14 componentes + 4 objetos + 1 efecto + 2 controles de HUD (ver core/README.md)
 game/         player, enemy (de prueba), echo, memory_anchor, ability_pickup, levels (El Último Umbral + banco de pruebas)
 tests/        smoke_test.gd — 116 comprobaciones, todas en verde
 docs/         Diseño, decisiones, arquitectura y estado
@@ -39,7 +39,7 @@ de esta fase era validar cómo se siente, no cómo se ve.
 - Ajustar el ritmo del combate jugando (tiempos de aviso y recuperación, retroceso) y más tipos de enemigo (a distancia, voladores) y jefes.
 - Estadísticas del personaje más allá de la vida.
 - Capas de colisión (jugador, enemigos, entorno) cuando crezca el número de entidades.
-- Sustituir el HUD de texto plano por uno real.
+- Menú del Ancla y menú de pausa (el HUD ya tiene barra de vida, frascos e icono de Ecos; el nivel del Filo ya no se muestra en pantalla hasta que exista ese menú).
 
 ## Cómo probar
 

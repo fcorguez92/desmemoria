@@ -1,0 +1,74 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://game/ui/hud.gd" id="1_hud"]
+[ext_resource type="Script" path="res://core/ui/segmented_bar.gd" id="2_bar"]
+[ext_resource type="Script" path="res://core/ui/icon_row.gd" id="3_row"]
+[ext_resource type="Texture2D" path="res://game/ui/hud_icons.png" id="4_icons"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_echo"]
+atlas = ExtResource("4_icons")
+region = Rect2(32, 0, 16, 16)
+
+[node name="HUD" type="CanvasLayer"]
+script = ExtResource("1_hud")
+
+[node name="HealthBar" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 0
+offset_left = 16.0
+offset_top = 16.0
+offset_right = 118.0
+offset_bottom = 28.0
+script = ExtResource("2_bar")
+
+[node name="HealFlasks" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 0
+offset_left = 15.0
+offset_top = 34.0
+offset_right = 63.0
+offset_bottom = 50.0
+script = ExtResource("3_row")
+sheet = ExtResource("4_icons")
+
+[node name="Ecos" type="HBoxContainer" parent="."]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -120.0
+offset_top = 14.0
+offset_right = -16.0
+offset_bottom = 34.0
+grow_horizontal = 0
+theme_override_constants/separation = 6
+alignment = 2
+
+[node name="Icon" type="TextureRect" parent="Ecos"]
+layout_mode = 2
+texture = SubResource("AtlasTexture_echo")
+stretch_mode = 3
+
+[node name="Amount" type="Label" parent="Ecos"]
+layout_mode = 2
+text = "0"
+
+[node name="MessageLabel" type="Label" parent="."]
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 16.0
+offset_bottom = 42.0
+grow_horizontal = 2
+horizontal_alignment = 1
+
+[node name="ControlsLabel" type="Label" parent="."]
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 16.0
+offset_top = -26.0
+grow_horizontal = 2
+grow_vertical = 0
+modulate = Color(1, 1, 1, 0.55)
+theme_override_font_sizes/font_size = 12
+text = "← → mover · Espacio saltar · X atacar · V parry · Shift dash · H curar · Z descansar · C mejorar"
