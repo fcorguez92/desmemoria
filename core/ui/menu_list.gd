@@ -20,8 +20,10 @@ signal cancelled
 @export var normal_color: Color = Color("#a39fa8")
 @export var selected_color: Color = Color("#f3c46a")
 @export var disabled_color: Color = Color("#6a6670")
-## Texto que se antepone a la opción seleccionada.
-@export var cursor: String = "› "
+## Texto que se muestra junto a la opción seleccionada.
+@export var cursor: String = "›"
+## Ancho fijo (en píxeles) de la columna del cursor.
+@export var cursor_width: int = 18
 
 var selected: int = 0
 
@@ -87,16 +89,24 @@ func _rebuild() -> void:
 	for child in get_children():
 		child.queue_free()
 	for i in _texts.size():
-		var label := Label.new()
-		var is_selected := i == selected
-		label.text = (cursor if is_selected else " ".repeat(cursor.length())) + _texts[i]
 		var color := normal_color
 		if not _enabled[i]:
 			color = disabled_color
-		elif is_selected:
+		elif i == selected:
 			color = selected_color
-		label.add_theme_color_override(&"font_color", color)
-		add_child(label)
+		# El cursor va en su propia columna, de ancho fijo: así el texto no se
+		# desplaza ni cambia el ancho del menú al mover la selección.
+		var cursor_label := Label.new()
+		cursor_label.text = cursor if i == selected else ""
+		cursor_label.custom_minimum_size.x = cursor_width
+		cursor_label.add_theme_color_override(&"font_color", color)
+		var text_label := Label.new()
+		text_label.text = _texts[i]
+		text_label.add_theme_color_override(&"font_color", color)
+		var row := HBoxContainer.new()
+		row.add_child(cursor_label)
+		row.add_child(text_label)
+		add_child(row)
 
 
 func _all_true(count: int) -> Array[bool]:
