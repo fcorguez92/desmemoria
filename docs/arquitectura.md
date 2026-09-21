@@ -109,7 +109,7 @@ El orden importa y por eso está explícito en `game/player/player.gd`:
 
 | Contrato | Quién lo implementa | Quién lo usa |
 |---|---|---|
-| **Golpeable:** `take_hit(damage: int, from_direction: int)` | Jugador, enemigos | `MeleeAttackComponent` |
+| **Golpeable:** `take_hit(damage: int, from_direction: int, attacker: Node = null)` | Jugador, enemigos | `MeleeAttackComponent` |
 | **Descansable:** `rest_at(position: Vector2)` + pertenecer al grupo `target_group` | Jugador | `Checkpoint` |
 | **Reiniciable:** grupo `resettable` con método `reset()` | `EntitySpawner` | El jugador (`_reset_world()`) al morir y al descansar |
 | **Aprendiz:** `unlock_ability(id: StringName)` + pertenecer al grupo `target_group` | Jugador (decide qué activa cada `id`) | `AbilityPickup` |

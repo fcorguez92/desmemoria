@@ -10,9 +10,10 @@ extends Node2D
 @export var duration: float = 0.18
 
 
-static func spawn(parent: Node, at: Vector2) -> void:
+static func spawn(parent: Node, at: Vector2, spark_color: Color = Color(1.0, 0.95, 0.7)) -> void:
 	var spark := HitSpark.new()
 	parent.add_child(spark)
+	spark.color = spark_color
 	spark.global_position = at
 
 

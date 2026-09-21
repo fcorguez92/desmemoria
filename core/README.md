@@ -20,6 +20,7 @@ no se mueven solos: el dueño llama a su `step()` en un orden explícito.
 | `PlatformerMotor` | Movimiento lateral, gravedad, salto con coyote time, jump buffering y salto variable, saltos extra en el aire (`max_air_jumps`: 0 = ninguno, 1 = doble salto) y agarre/salto de pared (`can_wall_jump`, con `wall_slide_speed`, `wall_jump_push`, etc.). Al pulsar salto: suelo > pared > salto extra | `step(body, delta)`, `facing`; señal `facing_changed(facing)` |
 | `DashComponent` | Empujón horizontal recto que ignora la gravedad | `step(body, facing, delta)`, `is_dashing`; `unlocked` (false = habilidad aún no conseguida) |
 | `MeleeAttackComponent` | Golpe cuerpo a cuerpo con enfriamiento sobre un `Area2D`. Con `target_group` solo golpea a ese grupo (vacío = a todo lo golpeable) | `try_attack(attacker, facing) -> bool`, `set_facing(facing)`; señal `hit_landed(body)` por cada cuerpo alcanzado; exporta `hitbox` |
+| `ParryComponent` | Parry: al pulsar se abre una ventana breve (por defecto 0,2 s) en la que un golpe frontal se desvía en vez de hacer daño; después hay un enfriamiento. No sabe qué pasa al desviar: emite `parried` | `try_start() -> bool`, `try_deflect(blow_direction, facing, attacker) -> bool`, `is_active`; señales `started`, `parried(attacker)` |
 | `KnockbackComponent` | Retroceso horizontal breve al recibir un golpe. Mientras `is_active`, el dueño deja que mande sobre la velocidad | `apply(direction)`, `step(body, delta)`, `is_active` |
 | `PatrolChaseAI` | IA de enemigo terrestre: patrulla, persigue al objetivo, ataca con aviso previo (esquivable) y no se cae por los bordes. No aplica gravedad ni daña: el dueño llama a `step()` y decide cómo golpear | `step(body, delta)`, `interrupt(stagger_time)`, `state`, `facing`; señales `facing_changed`, `attack_started`, `attack_landed`; exporta tiempos, rangos y `ledge_probe` (`RayCast2D`, opcional) |
 | `CameraLookComponent` | Desplaza la `Camera2D` al mirar arriba/abajo | Autónomo (`_physics_process`); exporta `camera` |
@@ -45,7 +46,7 @@ de cada variable exportada (se ven en el Inspector).
 
 | Efecto | Responsabilidad |
 |---|---|
-| `HitSpark` | Chispazo breve de impacto que se autodestruye. Uso: `HitSpark.spawn(parent, posición_global)` |
+| `HitSpark` | Chispazo breve de impacto que se autodestruye. Uso: `HitSpark.spawn(parent, posición_global, color)` (el color es opcional) |
 
 ## Contratos que asumen
 
@@ -55,7 +56,8 @@ de cada variable exportada (se ven en el Inspector).
   jugador al morir y al descansar.
 
 - **Golpeable:** cualquier cuerpo que reciba daño implementa
-  `take_hit(damage: int, from_direction: int)`.
+  `take_hit(damage: int, from_direction: int, attacker: Node = null)`. `attacker` es
+  quien golpea (puede ser null) y permite, p. ej., aturdirlo si el golpe se desvía.
 - **Checkpoint:** el cuerpo objetivo implementa `rest_at(position: Vector2)` y
   pertenece al grupo configurado en `target_group`.
 - **Acciones de entrada:** los nombres de acción son variables exportadas

@@ -150,6 +150,27 @@ part sword_strike
 .......c.................
 .........................
 
+# La espada en guardia: en vertical, delante del cuerpo, para desviar un golpe.
+part sword_guard
+...444..
+...4g3..
+...4g3..
+...4g3..
+...4g3..
+...4g3..
+...4g3..
+...4g3..
+...4g3..
+...4g3..
+...4g3..
+...4g3..
+...4g3..
+...4g3..
+.cccccc.
+...44...
+...44...
+........
+
 anim idle
 frame upper cloak legs_idle sword_rest@14,20
 frame upper cloak_b legs_idle sword_rest@14,20
@@ -170,3 +191,7 @@ anim attack
 frame upper cloak legs_idle sword_strike@16,11
 frame upper cloak legs_idle sword_strike@16,13
 frame upper cloak legs_idle sword_rest@16,20
+
+anim parry
+frame upper cloak legs_idle sword_guard@14,5
+frame upper cloak legs_idle sword_guard@14,2

@@ -16,9 +16,9 @@
 ## Qué existe ahora mismo
 
 ```
-core/         Base reutilizable: 13 componentes + 3 objetos + 1 efecto (ver core/README.md)
+core/         Base reutilizable: 14 componentes + 3 objetos + 1 efecto (ver core/README.md)
 game/         player, enemy (de prueba), echo, memory_anchor, ability_pickup, levels/test_level
-tests/        smoke_test.gd — 95 comprobaciones, todas en verde
+tests/        smoke_test.gd — 109 comprobaciones, todas en verde
 docs/         Diseño, decisiones, arquitectura y estado
 ```
 
@@ -29,7 +29,7 @@ de esta fase era validar cómo se siente, no cómo se ve.
 
 - Flecha izq/dcha: moverse · Espacio: saltar · Flecha arriba/abajo: mirar
 - En el aire, Espacio otra vez: doble salto (tras conseguirlo) · Junto a una pared, mantén la dirección hacia ella para agarrarte y pulsa Espacio para saltar de ella (tras conseguirlo)
-- X: atacar · Shift izquierdo: dash · H: curarse (si quedan cargas y no estás a vida completa) · Z: interactuar (descansar en un Ancla) · C: mejorar el Filo (en un Ancla)
+- X: atacar · V: parry · Shift izquierdo: dash · H: curarse (si quedan cargas y no estás a vida completa) · Z: interactuar (descansar en un Ancla) · C: mejorar el Filo (en un Ancla)
 
 ## Qué falta del núcleo jugable
 

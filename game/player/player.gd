@@ -27,6 +27,8 @@ var _message_id: int = 0
 @onready var knockback: KnockbackComponent = $KnockbackComponent
 @onready var attack_visual: AttackVisualComponent = $AttackVisualComponent
 @onready var screen_shake: ScreenShakeComponent = $ScreenShakeComponent
+@onready var parry: ParryComponent = $ParryComponent
+@onready var parry_flash: HitFlashComponent = $ParryFlash
 @onready var weapon: TieredUpgrade = $WeaponUpgrade
 @onready var visual: Sprite2D = $Visual
 @onready var animator: SheetAnimator = $SheetAnimator
@@ -44,6 +46,7 @@ func _ready() -> void:
 	health.damaged.connect(_on_damaged)
 	health.died.connect(die)
 	melee.hit_landed.connect(_on_hit_landed)
+	parry.parried.connect(_on_parried)
 	weapon.changed.connect(_on_weapon_changed)
 	_on_weapon_changed()
 
@@ -52,8 +55,11 @@ func _physics_process(delta: float) -> void:
 	respawn.track_ground(self)
 	motor.step(self, delta)
 
-	if Input.is_action_just_pressed("attack") and melee.try_attack(self, motor.facing):
+	# Con la guardia alzada no se puede atacar.
+	if Input.is_action_just_pressed("attack") and not parry.is_active and melee.try_attack(self, motor.facing):
 		attack_visual.swing()
+	if Input.is_action_just_pressed("parry") and parry.try_start():
+		animator.play_action("parry")
 	if Input.is_action_just_pressed("heal"):
 		health.use_heal_charge()
 
@@ -71,7 +77,9 @@ func _physics_process(delta: float) -> void:
 
 
 ## Contrato "golpeable" (ver docs/arquitectura.md).
-func take_hit(damage: int, from_direction: int) -> void:
+func take_hit(damage: int, from_direction: int, attacker: Node = null) -> void:
+	if parry.try_deflect(from_direction, motor.facing, attacker):
+		return
 	if health.take_hit(damage):
 		knockback.apply(from_direction)
 
@@ -187,6 +195,16 @@ func _show_message(text: String) -> void:
 		message_label.text = ""
 
 
+## Golpe desviado: sin daño, con efectos azules, y el atacante queda aturdido.
+func _on_parried(attacker: Node) -> void:
+	parry_flash.flash()
+	screen_shake.shake(5.0, 0.12)
+	if attacker is Node2D:
+		HitSpark.spawn(get_parent(), (global_position + attacker.global_position) / 2.0, Color(0.66, 0.89, 0.95))
+	if attacker and attacker.has_method("on_parried"):
+		attacker.on_parried()
+
+
 func _on_weapon_changed() -> void:
 	melee.damage = weapon.current_value()
 	_update_hud()
@@ -195,5 +213,5 @@ func _on_weapon_changed() -> void:
 func _update_hud() -> void:
 	health_label.text = "Vida: %d/%d" % [health.health, health.max_health]
 	ecos_label.text = "Ecos: %d" % ecos
-	heal_label.text = "Curación: %d/%d" % [health.heal_charges, health.max_heal_charges]
+	heal_label.text = "Curación (H): %d/%d" % [health.heal_charges, health.max_heal_charges]
 	weapon_label.text = "Filo: nivel %d (daño %d)" % [weapon.level + 1, weapon.current_value()]

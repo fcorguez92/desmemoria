@@ -1,7 +1,7 @@
 class_name MeleeAttackComponent
 extends Node
 ## Ataque cuerpo a cuerpo: golpea una vez, con enfriamiento, a todo lo que
-## esté dentro de `hitbox` y tenga un método `take_hit(damage, from_direction)`.
+## esté dentro de `hitbox` y tenga un método `take_hit(damage, from_direction, attacker)`.
 ##
 ## Consulta los solapamientos en el instante del ataque en lugar de usar
 ## señales, para evitar depender del orden de eventos de la física.
@@ -42,6 +42,6 @@ func try_attack(attacker: Node, facing: int) -> bool:
 			continue
 		if target_group != &"" and not body.is_in_group(target_group):
 			continue
-		body.take_hit(damage, facing)
+		body.take_hit(damage, facing, attacker)
 		hit_landed.emit(body)
 	return true

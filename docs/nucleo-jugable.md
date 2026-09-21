@@ -26,6 +26,8 @@ El combate se apoya en dos ideas: **las amenazas se ven venir** y **los golpes t
 - **Ataque con aviso:** al acercarse a unos 44 px se queda quieto y se pone **amarillo** durante 0,4 s; después golpea (1 de daño) por delante y descansa 0,7 s. Alejarte o esquivar durante el aviso evita el golpe.
 - **Retroceso en ambos sentidos:** cuando el golpe cae, empuja a quien lo recibe. Un golpe tuyo al enemigo lo empuja y **cancela su ataque**, dejándolo aturdido 0,3 s.
 - Tras recibir un golpe tienes 0,6 s de invulnerabilidad.
+
+**Parry (implementado, cifras de partida):** se hace con **V**. Abre una ventana de **0,2 s** en la que un golpe **frontal** se desvía sin hacerte daño; por la espalda o fuera de la ventana el golpe entra con normalidad. Si aciertas, hay chispazo azul y temblor, y el enemigo queda **aturdido 1,2 s**: no puede atacar, se ve con tinte azul y **recibe doble daño**, así que es el mejor momento para contraatacar. Tras pulsar hay 0,7 s de enfriamiento, y con la guardia alzada no se puede atacar. Pulsar demasiado pronto o demasiado tarde te deja vulnerable: es la apuesta entre esquivar con el dash (seguro) y parar (arriesgado, pero premia). Con el aviso de 0,4 s del enemigo, hay que pulsar en los últimos 0,2 s.
 - Los enemigos ya no dañan por contacto: solo con su ataque.
 
 **Feedback visual (implementado, provisional):** el combate se lee con sprites de píxeles y efectos sencillos.

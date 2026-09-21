@@ -1,4 +1,4 @@
-[gd_scene load_steps=17 format=3]
+[gd_scene load_steps=18 format=3]
 
 [ext_resource type="Script" path="res://game/player/player.gd" id="1_player"]
 [ext_resource type="Script" path="res://core/components/platformer_motor.gd" id="2_motor"]
@@ -14,6 +14,7 @@
 [ext_resource type="Script" path="res://core/components/screen_shake_component.gd" id="12_shake"]
 [ext_resource type="Texture2D" path="res://game/player/player_sheet.png" id="13_sheet"]
 [ext_resource type="Script" path="res://core/components/sheet_animator.gd" id="14_animator"]
+[ext_resource type="Script" path="res://core/components/parry_component.gd" id="15_parry"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_1"]
 radius = 12.0
@@ -32,12 +33,12 @@ shape = SubResource("CapsuleShape2D_1")
 texture = ExtResource("13_sheet")
 offset = Vector2(0, -4)
 hframes = 4
-vframes = 5
+vframes = 6
 
 [node name="SheetAnimator" type="Node" parent="." node_paths=PackedStringArray("sprite")]
 script = ExtResource("14_animator")
 sprite = NodePath("../Visual")
-animations = {"attack": [4, 3, 12.0, false], "fall": [3, 1, 1.0, false], "idle": [0, 2, 4.0, true], "jump": [2, 1, 1.0, false], "run": [1, 4, 12.0, true]}
+animations = {"attack": [4, 3, 12.0, false], "parry": [5, 2, 10.0, false], "fall": [3, 1, 1.0, false], "idle": [0, 2, 4.0, true], "jump": [2, 1, 1.0, false], "run": [1, 4, 12.0, true]}
 
 [node name="Camera2D" type="Camera2D" parent="."]
 position_smoothing_enabled = true
@@ -124,3 +125,17 @@ slash_alpha = 0.22
 [node name="ScreenShakeComponent" type="Node" parent="." node_paths=PackedStringArray("camera")]
 script = ExtResource("12_shake")
 camera = NodePath("../Camera2D")
+
+[node name="ParryComponent" type="Node" parent="."]
+script = ExtResource("15_parry")
+
+[node name="ParryFlash" type="Node" parent="." node_paths=PackedStringArray("target")]
+script = ExtResource("8_flash")
+target = NodePath("../Visual")
+flash_color = Color(0.6, 0.9, 1, 1)
+duration = 0.15
+
+[node name="ControlsLabel" type="Label" parent="HUD"]
+offset_left = 16.0
+offset_top = 458.0
+text = "← → mover · Espacio saltar · X atacar · V parry · Shift dash · H curar · Z descansar · C mejorar"

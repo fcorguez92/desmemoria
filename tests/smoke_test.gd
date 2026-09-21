@@ -36,6 +36,7 @@ func _run() -> void:
 	await _test_enemy_chases_telegraphs_and_hits()
 	await _test_enemy_attack_can_be_dodged_and_interrupted()
 	await _test_attack_feedback()
+	await _test_parry()
 	await _test_sprites_and_animations()
 	await _test_enemies_respawn_on_rest_and_death()
 	await _test_weapon_upgrade_at_anchor()
@@ -243,6 +244,59 @@ func _test_attack_feedback() -> void:
 	_check(enemy_animator.current == "strike", "al caer el golpe el enemigo reproduce su animación de golpe")
 	await _wait(25)
 	_check(enemy_animator.current in ["idle", "walk"], "tras golpear, el enemigo recupera sus animaciones de movimiento")
+
+
+func _test_parry() -> void:
+	await _fresh_level("Parry: ventana, golpes frontales y aturdimiento", true, true, "EnemySpawn1")
+	var parry: ParryComponent = _player.parry
+	_check("(H)" in _player.heal_label.text, "el HUD muestra la tecla de curación")
+	_check(not parry.try_deflect(-1, 1), "sin abrir la guardia no se desvía nada")
+	_check(parry.try_start(), "se puede abrir la guardia")
+	_check(not parry.try_start(), "no se puede reabrir con la guardia ya abierta")
+	_check(not parry.try_deflect(1, 1), "un golpe por la espalda no se desvía")
+	_check(parry.try_deflect(-1, 1), "un golpe frontal se desvía")
+	_check(not parry.is_active, "desviar consume la ventana")
+	await _wait(60)
+	_check(parry.try_start(), "pasado el enfriamiento se puede volver a parar")
+	await _wait(20)
+	_check(not parry.is_active, "la ventana se cierra sola si nadie ataca")
+
+	# Parry a tiempo contra un ataque real.
+	await _fresh_level("", false, true, "EnemySpawn1")
+	var enemy: Node2D = _level.get_node("EnemySpawn1").instance
+	_player.global_position = Vector2(660, 330)
+	while enemy.ai.state != PatrolChaseAI.State.WINDUP:
+		await physics_frame
+	# Se pulsa cuando ya queda poco para que caiga el golpe.
+	while enemy.ai._timer > 0.1:
+		await physics_frame
+	Input.action_press("parry")
+	await _wait(2)
+	Input.action_release("parry")
+	_check(_player.animator.current == "parry", "al parar se reproduce la pose de guardia")
+	await _wait(10)
+	_check(_player.health.health == 5, "un parry a tiempo evita el daño")
+	_check(enemy.ai.state == PatrolChaseAI.State.RECOVER and enemy._stun_timer > 0.0, "el enemigo queda aturdido")
+	# Contraataque: mientras está aturdido recibe doble daño.
+	Input.action_press("attack")
+	await _wait(3)
+	Input.action_release("attack")
+	_check(enemy.health.health == 1, "el aturdido recibe doble daño (3 de vida - 2 = 1)")
+
+	# Un parry demasiado pronto no salva: la ventana se cierra antes del golpe.
+	await _fresh_level("", false, true, "EnemySpawn1")
+	enemy = _level.get_node("EnemySpawn1").instance
+	_player.global_position = Vector2(660, 330)
+	while enemy.ai.state != PatrolChaseAI.State.WINDUP:
+		await physics_frame
+	Input.action_press("parry")
+	await _wait(2)
+	Input.action_release("parry")
+	for i in 60:
+		await physics_frame
+		if _player.health.health < 5:
+			break
+	_check(_player.health.health == 4, "un parry demasiado pronto no evita el golpe")
 
 
 func _test_sprites_and_animations() -> void:

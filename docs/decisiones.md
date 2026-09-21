@@ -67,6 +67,18 @@ Cada entrada: qué se decidió, por qué, qué alternativas se descartaron y por
 
 **Técnico**: se ajusta `project.godot` (ventana 864×486, ampliación a 1728×972, estirado "viewport" con escalado entero, filtro "Nearest" y ajuste al píxel). Se probó primero 640×360 y el usuario lo encontró demasiado cerrado; 864×486 muestra un 35 % más de mundo y cabe en ventana con escalado ×2 en su pantalla de 1920×1080 (área útil 1032 px de alto). Con la resolución por defecto de Godot (1152×648) se veía más mundo pero sin píxeles nítidos.
 
+## 2026-09-23 — Parry con ventana breve, aturdimiento y doble daño
+
+**Decisión**: V abre una ventana de 0,2 s en la que un golpe frontal se desvía sin daño. Si acierta, el enemigo queda aturdido 1,2 s y recibe doble daño; si falla, no hay protección. Enfriamiento de 0,7 s y sin poder atacar con la guardia alzada. Se añade `ParryComponent` (core) y una pose de guardia en el sprite.
+
+**Por qué**: lo pidió el usuario y encaja con el aviso de 0,4 s del enemigo: además de esquivar con el dash (seguro) hay una opción arriesgada que premia el buen tiempo con un contraataque potente, que es la esencia del combate "souls".
+
+**Alternativas**: parry sin riesgo (ventana larga) o bloqueo mantenido con stamina. Descartadas: la primera resta tensión y la segunda exige un sistema de stamina que aún no existe.
+
+**Técnico**: los golpes cuerpo a cuerpo ahora pasan quién golpea (`take_hit(damage, from_direction, attacker)`), para poder aturdir al atacante; el parámetro es opcional. Solo se desvían golpes frontales (la dirección del golpe debe ser opuesta a hacia dónde mira quien para). El HUD ahora muestra los controles (y "Curación (H)"), porque el usuario no sabía cuál era la tecla de curarse.
+
+**Pendiente**: ajustar la ventana y el aturdimiento jugando (0,2 s es exigente; si se hace demasiado difícil, subirla).
+
 ## 2026-09-22 — Armas integradas en los sprites
 
 **Decisión**: el arma deja de ser una barra que gira sobre el sprite y pasa a dibujarse en el propio personaje. El caminante lleva una espada (acero con canto azul, guarda ámbar) y el cascarón un cuchillo pesado oxidado, cada uno en varias poses (reposo, aviso, golpe). `AttackVisualComponent` ya no gira un brazo: pide animaciones al `SheetAnimator`, que gana "acciones" (`play_action`) para que el movimiento no pise un ataque en curso.

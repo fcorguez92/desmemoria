@@ -4,9 +4,14 @@ extends CharacterBody2D
 ## retroceder y cancela su ataque. Da Ecos al morir.
 
 const TELEGRAPH_COLOR := Color(1.0, 0.85, 0.3)
+const STUN_COLOR := Color(0.7, 0.9, 1.0)
 
 @export var ecos_reward: int = 2
 @export var gravity: float = 2250.0
+## Segundos de aturdimiento tras un parry, durante los que recibe doble daño.
+@export var parry_stun_time: float = 1.2
+
+var _stun_timer: float = 0.0
 
 @onready var health: HealthComponent = $HealthComponent
 @onready var hit_flash: HitFlashComponent = $HitFlashComponent
@@ -28,6 +33,11 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
+	if _stun_timer > 0.0:
+		_stun_timer -= delta
+		if _stun_timer <= 0.0:
+			visual.modulate = Color.WHITE
+
 	if is_on_floor():
 		velocity.y = 0.0
 	else:
@@ -43,12 +53,22 @@ func _physics_process(delta: float) -> void:
 
 
 ## Contrato "golpeable" (ver docs/arquitectura.md).
-func take_hit(damage: int, from_direction: int) -> void:
-	if health.take_hit(damage):
+func take_hit(damage: int, from_direction: int, _attacker: Node = null) -> void:
+	var stunned := _stun_timer > 0.0
+	if health.take_hit(damage * 2 if stunned else damage):
 		knockback.apply(from_direction)
-		ai.interrupt()
-		visual.modulate = Color.WHITE
+		ai.interrupt(maxf(0.3, _stun_timer))
+		visual.modulate = STUN_COLOR if stunned else Color.WHITE
 		attack_visual.reset()
+
+
+## Le han desviado el golpe: se queda aturdido, sin poder atacar, y recibe doble
+## daño mientras dure. Lo llama el jugador (ver Player._on_parried).
+func on_parried() -> void:
+	_stun_timer = parry_stun_time
+	ai.interrupt(parry_stun_time)
+	attack_visual.reset()
+	visual.modulate = STUN_COLOR
 
 
 func _on_damaged(_amount: int) -> void:

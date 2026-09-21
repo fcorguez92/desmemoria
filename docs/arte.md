@@ -108,7 +108,7 @@ dos maneras: empezar con el texto y pasar a retocar a mano cuando compense.
 
 | Sprite | Dibujo | Lienzo | Animaciones |
 |---|---|---|---|
-| Caminante (jugador) | 20×44, figura con capucha, ojo y bufanda de luz azul; espada ("el Filo") de acero con canto azul | 64×56 | reposo (2), correr (4), salto (1), caída (1), ataque (3) |
+| Caminante (jugador) | 20×44, figura con capucha, ojo y bufanda de luz azul; espada ("el Filo") de acero con canto azul | 64×56 | reposo (2), correr (4), salto (1), caída (1), ataque (3), guardia (2) |
 | Cascarón (enemigo) | 24×44, figura pálida sin rostro con trapos rojos; cuchillo pesado oxidado | 64×56 | reposo (2), andar (4), aviso (2), golpe (2) |
 
 Son un primer dibujo funcional, no arte final. **Las armas van integradas en el
