@@ -51,6 +51,7 @@ Controles genéricos para el HUD. No saben de dónde vienen los números: el due
 |---|---|---|
 | `SegmentedBar` | `Control` | Barra con un segmento por punto de `max_value`, dibujada con rectángulos (marco, fondo, relleno con luz y sombra). `set_values(valor, máximo)`; colores y tamaño de segmento configurables |
 | `IconRow` | `Control` | Fila de iconos de una hoja de sprites: `count` llenos y el resto hasta `max_count` vacíos (`full_frame`/`empty_frame`). Sirve para cargas de curación, llaves, munición. `set_values(cantidad, máximo)` |
+| `MenuList` | `VBoxContainer` | Lista de opciones con teclado o mando (`ui_up`/`ui_down`/`ui_accept`/`ui_cancel`). `set_entries(textos, activas)`, avisa con `chosen(índice)` y `cancelled`; las opciones desactivadas salen atenuadas y no se pueden elegir. Para menús con el juego en pausa, el nodo necesita `process_mode = When Paused` |
 
 ## Efectos (`core/effects/`)
 

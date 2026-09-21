@@ -1,6 +1,6 @@
 [gd_scene load_steps=3 format=3]
 
-[ext_resource type="Script" path="res://game/memory_anchor/memory_anchor.gd" id="1_checkpoint"]
+[ext_resource type="Script" path="res://core/objects/checkpoint.gd" id="1_checkpoint"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_anchor"]
 size = Vector2(48, 56)

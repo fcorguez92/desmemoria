@@ -1,4 +1,4 @@
-[gd_scene load_steps=19 format=3]
+[gd_scene load_steps=20 format=3]
 
 [ext_resource type="Script" path="res://game/player/player.gd" id="1_player"]
 [ext_resource type="Script" path="res://core/components/platformer_motor.gd" id="2_motor"]
@@ -16,6 +16,7 @@
 [ext_resource type="Script" path="res://core/components/sheet_animator.gd" id="14_animator"]
 [ext_resource type="Script" path="res://core/components/parry_component.gd" id="15_parry"]
 [ext_resource type="PackedScene" path="res://game/ui/hud.tscn" id="16_hud"]
+[ext_resource type="PackedScene" path="res://game/ui/anchor_menu.tscn" id="17_menu"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_1"]
 radius = 12.0
@@ -112,3 +113,5 @@ duration = 0.15
 
 
 [node name="HUD" parent="." instance=ExtResource("16_hud")]
+
+[node name="AnchorMenu" parent="." instance=ExtResource("17_menu")]
