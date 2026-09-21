@@ -35,12 +35,14 @@ zona.
 
 | Elemento | Colisión actual | Lienzo del sprite | Punto de anclaje |
 |---|---|---|---|
-| Jugador | 24×48 | 32×56 | Los pies, centrados |
-| Enemigo básico | 32×48 | 40×56 | Los pies, centrados |
+| Jugador | 24×48 | 64×56 (cuerpo de 20×44) | Los pies, centrados |
+| Enemigo básico | 32×48 | 64×56 (cuerpo de 24×44) | Los pies, centrados |
 | Ancla, objetos, Eco | según objeto | múltiplos de 8 | Base, centrada |
 
-El lienzo es algo mayor que la colisión para dejar sitio a armas, capas o
-extremidades que sobresalgan. Así el arte se puede cambiar sin recolocar nada.
+El lienzo es mucho mayor que la colisión para dejar sitio a las armas, que se
+dibujan en el sprite y sobresalen al extenderse. Es siempre simétrico respecto al
+centro del cuerpo, para poder voltear el sprite (`scale.x = -1`) sin recolocarlo.
+Así el arte se puede cambiar sin tocar colisiones.
 
 ## Animaciones previstas (fotogramas por segundo orientativos)
 

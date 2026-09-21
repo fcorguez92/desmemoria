@@ -28,7 +28,7 @@ El combate se apoya en dos ideas: **las amenazas se ven venir** y **los golpes t
 - Tras recibir un golpe tienes 0,6 s de invulnerabilidad.
 - Los enemigos ya no dañan por contacto: solo con su ataque.
 
-**Feedback visual (implementado, provisional):** sin arte todavía, el combate se lee con formas simples.
+**Feedback visual (implementado, provisional):** el combate se lee con sprites de píxeles y efectos sencillos.
 - **Arma integrada en el sprite:** el caminante empuña su espada y el cascarón un cuchillo oxidado, dibujados en el propio personaje. El del enemigo se **alza durante el aviso** (además del tono amarillo) y cae al golpear; el tuyo golpea al instante al pulsar X.
 - **Destello del arco** del golpe, muy sutil, blanco el tuyo y anaranjado el del enemigo.
 - **Chispazo** en el punto de impacto cuando un golpe alcanza a alguien.
@@ -53,7 +53,6 @@ Ninguna habilidad se tiene al empezar: se consiguen recogiendo un **recuerdo** (
 
 - El **dash** está en la plataforma elevada, y abre el hueco ancho que hay detrás.
 - El **doble salto** está en la última plataforma verde, y abre una plataforma alta a la derecha que sin él es inalcanzable.
-
 - El **salto de pared** está en la plataforma alta del doble salto, y abre un pozo estrecho a su derecha: sin él no se puede salir por arriba, ni siquiera con doble salto. Arriba hay una plataforma con otro Ancla.
 
 Es el bucle metroidvania: encuentro una técnica, y un camino antes cerrado se abre.

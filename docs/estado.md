@@ -22,7 +22,7 @@ tests/        smoke_test.gd — 95 comprobaciones, todas en verde
 docs/         Diseño, decisiones, arquitectura y estado
 ```
 
-Todo es geometría de colores planos (`Polygon2D`), sin arte final: el objetivo
+Los personajes ya usan sprites de píxeles; el entorno, los objetos y los Ecos siguen siendo geometría de colores planos (`Polygon2D`) sin arte final: el objetivo
 de esta fase era validar cómo se siente, no cómo se ve.
 
 ## Controles actuales
