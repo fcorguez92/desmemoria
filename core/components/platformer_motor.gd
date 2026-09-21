@@ -41,10 +41,21 @@ signal facing_changed(facing: int)
 ## Margen tras separarse de la pared en el que aún se puede saltar desde ella.
 @export var wall_coyote_time: float = 0.1
 
+@export_group("Plataformas de un solo sentido")
+## Si es true, abajo + salto sobre una plataforma de un solo sentido la atraviesa
+## hacia abajo. Sobre suelo sólido, abajo + salto sigue siendo un salto normal.
+@export var can_drop_through: bool = true
+## Píxeles que se baja el cuerpo de golpe al atravesar: más que el grosor de la
+## franja de colisión de la plataforma, para quedar por debajo de ella.
+@export var drop_through_distance: float = 5.0
+## Velocidad de caída inicial al atravesar.
+@export var drop_through_speed: float = 60.0
+
 @export_group("Entrada")
 @export var action_left: StringName = &"ui_left"
 @export var action_right: StringName = &"ui_right"
 @export var action_jump: StringName = &"ui_accept"
+@export var action_down: StringName = &"ui_down"
 
 var facing: int = 1
 
@@ -81,6 +92,15 @@ func step(body: CharacterBody2D, delta: float) -> void:
 		_wall_timer = maxf(_wall_timer - delta, 0.0)
 
 	var jump_pressed := Input.is_action_just_pressed(action_jump)
+	if jump_pressed and on_floor and can_drop_through and Input.is_action_pressed(action_down) \
+			and _standing_on_one_way(body):
+		# Abajo + salto sobre una plataforma de un solo sentido: bajar en vez de saltar.
+		body.position.y += drop_through_distance
+		body.velocity.y = drop_through_speed
+		_coyote_timer = 0.0
+		_jump_buffer_timer = 0.0
+		jump_pressed = false
+		on_floor = false
 	if jump_pressed:
 		_jump_buffer_timer = jump_buffer_time
 	else:
@@ -109,6 +129,28 @@ func step(body: CharacterBody2D, delta: float) -> void:
 		body.velocity.x = direction * speed
 		if direction != 0.0:
 			_set_facing(int(signf(direction)))
+
+
+## ¿Lo que hay justo bajo los pies es una plataforma de un solo sentido? Sirve
+## tanto para baldosas (TileMapLayer) como para formas con `one_way_collision`.
+func _standing_on_one_way(body: CharacterBody2D) -> bool:
+	var hit := KinematicCollision2D.new()
+	if not body.test_move(body.global_transform, Vector2(0.0, 2.0), hit):
+		return false
+	var collider := hit.get_collider()
+	if collider is TileMapLayer:
+		var layer := collider as TileMapLayer
+		# La baldosa es la que contiene el punto de contacto, un píxel hacia dentro.
+		var inside := hit.get_position() - hit.get_normal()
+		var data := layer.get_cell_tile_data(layer.local_to_map(layer.to_local(inside)))
+		return data != null and data.get_collision_polygons_count(0) > 0 \
+				and data.is_collision_polygon_one_way(0, 0)
+	if collider is CollisionObject2D:
+		var object := collider as CollisionObject2D
+		var owner_id := object.shape_find_owner(hit.get_collider_shape_index())
+		var shape_node := object.shape_owner_get_owner(owner_id) as CollisionShape2D
+		return shape_node != null and shape_node.one_way_collision
+	return false
 
 
 func _set_facing(new_facing: int) -> void:

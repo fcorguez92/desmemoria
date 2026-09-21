@@ -666,6 +666,42 @@ func _test_planks_are_one_way_platforms() -> void:
 	await _wait(20)
 	_check(_player.is_on_floor() and _player.global_position.y < roof_top, "se puede estar de pie sobre el tablón")
 
+	# Sobre el tablón, solo saltar sigue siendo saltar.
+	var standing_y: float = _player.global_position.y
+	var highest_y := standing_y
+	Input.action_press("ui_accept")
+	await _wait(3)
+	Input.action_release("ui_accept")
+	for i in 30:
+		await physics_frame
+		highest_y = minf(highest_y, _player.global_position.y)
+	_check(highest_y < standing_y - 20.0, "sobre el tablón, saltar sin pulsar abajo salta")
+	await _wait(60)
+	_check(_player.is_on_floor() and _player.global_position.y < roof_top, "y se vuelve a aterrizar sobre el tablón")
+
+	# Abajo + salto: se baja atravesándolo.
+	Input.action_press("ui_down")
+	Input.action_press("ui_accept")
+	await _wait(3)
+	Input.action_release("ui_accept")
+	await _wait(60)
+	Input.action_release("ui_down")
+	_check(_player.is_on_floor() and _player.global_position.y > roof_top, "abajo + salto sobre el tablón lo atraviesa hacia abajo")
+
+	# En suelo sólido, abajo + salto sigue siendo un salto.
+	await _wait(20)
+	var ground_y: float = _player.global_position.y
+	highest_y = ground_y
+	Input.action_press("ui_down")
+	Input.action_press("ui_accept")
+	await _wait(3)
+	Input.action_release("ui_accept")
+	for i in 30:
+		await physics_frame
+		highest_y = minf(highest_y, _player.global_position.y)
+	Input.action_release("ui_down")
+	_check(highest_y < ground_y - 20.0, "en suelo sólido, abajo + salto sigue saltando")
+
 
 # --- Utilidades --------------------------------------------------------------
 
