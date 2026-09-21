@@ -81,6 +81,7 @@ Además hay que **jugarlo**: los tests miden reglas, no sensaciones.
 - `docs/mundo.md` — estructura geográfica, biomas, conexiones.
 - `docs/nucleo-jugable.md` — movimiento, combate, habilidades, economía, muerte/curación.
 - `docs/arte.md` — dirección artística (pixel art oscuro), resolución, paleta, tamaños de sprite y pipeline (sprites como texto, `tools/build_sprites.gd`).
+- `docs/vertical-slice.md` — diseño de El Último Umbral, la primera zona: recorrido, leyenda del mapa de texto y lo que queda fuera.
 - `docs/estado.md` — en qué fase estamos, qué está validado, qué falta.
 
 Son documentos vivos: se actualizan según avanza el diseño, no se reescriben de

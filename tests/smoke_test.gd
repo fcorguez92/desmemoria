@@ -45,6 +45,7 @@ func _run() -> void:
 	await _test_double_jump_reaches_high_platform()
 	await _test_wall_slide_and_wall_jump()
 	await _test_wall_jump_opens_the_shaft()
+	await _test_ultimo_umbral_builds_from_text_map()
 
 
 # --- Tests -------------------------------------------------------------------
@@ -580,7 +581,44 @@ func _jump_across_gap(press_dash: bool, dash_unlocked: bool) -> bool:
 ## Carga el nivel de prueba desde cero. Por defecto SIN enemigos, para que no
 ## interfieran con pruebas de otras cosas; los tests de enemigos los piden.
 ## `only_spawner` deja solo ese generador de enemigos (por nombre), para que los
-## demás no ataquen al jugador durante una prueba de IA concreta.
+
+
+func _test_ultimo_umbral_builds_from_text_map() -> void:
+	print("\n[El Último Umbral se construye desde su mapa de texto]")
+	if is_instance_valid(_level):
+		_level.queue_free()
+		await process_frame
+	_level = load("res://game/levels/ultimo_umbral.tscn").instantiate()
+	root.add_child(_level)
+	await process_frame
+	await process_frame
+	_player = get_first_node_in_group("player")
+	var tiles: TextTileMap = _level.get_node("Tiles")
+	_check(tiles.get_used_rect().end == Vector2i(80, 28), "el mapa llega hasta la columna 80 y la fila 28")
+	_check(_player != null, "hay un jugador colocado por el marcador P")
+	var spawners := 0
+	for child in _level.get_children():
+		if child is EntitySpawner:
+			spawners += 1
+	_check(spawners == 2, "dos enemigos colocados por los marcadores E")
+	var anchors := 0
+	for child in _level.get_children():
+		if child is Checkpoint:
+			anchors += 1
+	_check(anchors == 2, "dos Anclas de Memoria colocadas por los marcadores A")
+	await _wait(60)
+	_check(_player.is_on_floor(), "el jugador se apoya en el suelo del mapa")
+	var start_x: float = _player.global_position.x
+	_player.velocity.x = -600.0
+	await _wait(60)
+	_check(absf(_player.global_position.x - start_x) < 200.0 and _player.global_position.x > 32.0, "el muro sellado del extremo izquierdo detiene al jugador")
+	# El foso (x 32..41 baldosas) no tiene suelo: caer debe matar y reaparecer.
+	_player.global_position = Vector2(36.0 * 16.0, 250.0)
+	_player.velocity = Vector2.ZERO
+	await _wait(90)
+	_check(_player.global_position.x < 32.0 * 16.0 or _player.global_position.y < 400.0, "caer al foso reaparece al jugador")
+
+
 func _fresh_level(title: String, announce: bool = true, with_enemies: bool = false, only_spawner: String = "") -> void:
 	if is_instance_valid(_level):
 		_level.queue_free()

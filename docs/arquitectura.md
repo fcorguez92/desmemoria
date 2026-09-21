@@ -43,14 +43,14 @@ game/  ──usa──▶  core/  ──usa──▶  Godot
 ├── core/                      BASE REUTILIZABLE
 │   ├── README.md              Catálogo de componentes y contratos
 │   ├── components/            Nodos con una responsabilidad cada uno
-│   ├── objects/               Checkpoint, objeto de habilidad, generador de entidades
+│   ├── objects/               Checkpoint, objeto de habilidad, generador de entidades, mapa de baldosas desde texto
 │   └── effects/               Efectos visuales autodestructivos (chispazo de impacto)
 ├── game/                      ESPECÍFICO DE ESTE JUEGO
 │   ├── player/                Orquesta los componentes + Ecos + HUD
 │   ├── enemy/                 Enemigo de prueba
 │   ├── echo/                  Marcador de la última muerte
 │   ├── memory_anchor/         Punto de control (usa core/objects/checkpoint.gd)
-│   └── levels/                Niveles (hoy solo el de prueba)
+│   └── levels/                Niveles: El Último Umbral (mapa de texto + baldosas) y el banco de pruebas
 ├── art/                       Fuentes del arte (no se cargan en el juego)
 │   ├── palette.txt            La paleta: un carácter por color
 │   └── source/                Sprites escritos como texto (*.sprite)

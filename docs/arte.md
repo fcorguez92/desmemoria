@@ -98,6 +98,8 @@ El texto se puede leer, corregir y versionar en Git como cualquier otro archivo.
   componente `SheetAnimator` (core) elige la fila y el fotograma según la
   animación que pida el dueño.
 
+- **Baldosas de nivel:** `art/source/tiles_umbral.sprite` es una hoja de una fila (una baldosa de 16×16 por fotograma) que genera `game/levels/tiles_umbral.png`; el `TileSet` `tiles_umbral.tres` las usa por su posición en la fila. El terreno se dibuja en `.map` (ver `vertical-slice.md`).
+
 **Regla importante: una sola fuente de verdad por sprite.** Mientras exista su
 `.sprite`, ese texto manda y volver a generar sobrescribe el PNG. Si alguien
 retoca el PNG a mano en Pixelorama o LibreSprite, hay que borrar su `.sprite` (o

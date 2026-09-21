@@ -11,14 +11,14 @@
 5. Diseño del núcleo jugable — hecho (ver `nucleo-jugable.md`).
 6. Prototipo jugable mínimo — hecho.
 7. Validación del núcleo — hecho: movimiento, combate con enemigos y feedback, vida/muerte/Ecos, mejora del arma, puntos de control con curación y las tres habilidades de movimiento (dash, doble salto, salto de pared) que se consiguen en el mundo y abren caminos.
-8. Vertical slice — **en preparación.** Estilo de arte decidido (pixel art oscuro, ver `arte.md`) y Godot configurado para pixel art (864×486, escalado entero). Primer arte hecho (caminante con espada y cascarón con cuchillo, con animaciones básicas de movimiento y ataque, ver `arte.md`). Falta el arte del entorno y de los objetos, y construir El Último Umbral sobre la rejilla de 16 px.
+8. Vertical slice — **en marcha.**  Estilo de arte decidido (pixel art oscuro, ver `arte.md`) y Godot configurado para pixel art (864×486, escalado entero). Primer arte hecho (caminante con espada y cascarón con cuchillo, con animaciones básicas de movimiento y ataque, ver `arte.md`). El terreno de El Último Umbral ya existe (mapa de texto + baldosas, ver `vertical-slice.md`) y es el nivel principal. Falta: fondos y atmósfera, objetos y narrativa ambiental, y jugarlo para ajustar el recorrido.
 
 ## Qué existe ahora mismo
 
 ```
-core/         Base reutilizable: 14 componentes + 3 objetos + 1 efecto (ver core/README.md)
-game/         player, enemy (de prueba), echo, memory_anchor, ability_pickup, levels/test_level
-tests/        smoke_test.gd — 109 comprobaciones, todas en verde
+core/         Base reutilizable: 14 componentes + 4 objetos + 1 efecto (ver core/README.md)
+game/         player, enemy (de prueba), echo, memory_anchor, ability_pickup, levels (El Último Umbral + banco de pruebas)
+tests/        smoke_test.gd — 116 comprobaciones, todas en verde
 docs/         Diseño, decisiones, arquitectura y estado
 ```
 

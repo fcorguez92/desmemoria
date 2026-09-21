@@ -2,6 +2,14 @@
 
 Cada entrada: qué se decidió, por qué, qué alternativas se descartaron y por qué. Se añade una entrada nueva por decisión importante, no se reescribe el historial.
 
+## 2026-09-24 — Niveles como texto: mapa `.map` + `TileMapLayer` (sin editor de niveles)
+
+**Decisión**: el terreno de cada zona se dibuja como un archivo de texto (`*.map`, un carácter por baldosa de 16 px) que el nodo `TextTileMap` (core) convierte en un `TileMapLayer` al cargar. Los caracteres sin baldosa asociada son marcadores (jugador, Ancla, enemigo) que el script del nivel convierte en entidades.
+
+**Alternativas**: pintar en el editor de TileMap de Godot (lo estándar, pero Claude no puede verlo ni editarlo con fiabilidad, y el usuario tiene nivel técnico básico) o herramientas externas como LDtk/Tiled (una dependencia más y un formato que interpretar).
+
+**Por qué**: es coherente con los sprites como texto: un solo flujo, revisable en Git y editable por la IA. Coste: no hay pintado visual y los `.map` requieren un filtro de exportación. Si el nivel crece demasiado para manejarlo así, se puede pasar al editor de Godot sin tirar nada, porque el resultado ya es un `TileMapLayer` normal.
+
 ## 2026-09-18 — Perspectiva del juego: 2D/2.5D lateral
 
 **Decisión**: el juego se ve y se juega en 2D/2.5D con cámara de perfil (tipo *Blasphemous*, *Hollow Knight*, *Salt and Sanctuary*), no en 3D con cámara en tercera persona libre (tipo *Dark Souls*).
