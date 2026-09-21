@@ -82,6 +82,7 @@ Además hay que **jugarlo**: los tests miden reglas, no sensaciones.
 - `docs/nucleo-jugable.md` — movimiento, combate, habilidades, economía, muerte/curación.
 - `docs/arte.md` — dirección artística (pixel art oscuro), resolución, paleta, tamaños de sprite y pipeline (sprites como texto, `tools/build_sprites.gd`).
 - `docs/vertical-slice.md` — diseño de El Último Umbral, la primera zona: recorrido, leyenda del mapa de texto y lo que queda fuera.
+- `docs/flujo-git.md` — ramas, commits y pull requests: cómo se trabaja con el repositorio.
 - `docs/estado.md` — en qué fase estamos, qué está validado, qué falta.
 
 Son documentos vivos: se actualizan según avanza el diseño, no se reescriben de
@@ -90,11 +91,16 @@ y `core/README.md` en el mismo commit.
 
 ## Reglas de Git para este proyecto
 
-- Los commits son solo locales. No añadir remotos, no hacer push ni publicar nada en internet sin que el usuario lo pida explícitamente en ese momento.
+Flujo completo explicado en `docs/flujo-git.md`. Resumen obligatorio:
+
+- El repositorio remoto es `https://github.com/fcorguez92/desmemoria` (público). Es el único remoto permitido; no añadir otros ni publicar en otros sitios.
+- **Nunca commitear directamente en `main`.** Cada trabajo va en su rama (`feat/…`, `fix/…`, `docs/…`, `refactor/…`, `art/…`) y llega a `main` por pull request. Los merges los decide el usuario.
+- Un tema por rama y por PR; commits pequeños con mensaje claro en inglés (imperativo, primera línea ≤ 72 caracteres). La prueba de humo debe pasar antes de abrir el PR.
+- Se puede hacer push de ramas propias a `origin` y abrir PRs; el usuario ha autorizado este flujo de forma permanente.
 - Nunca hacer force push, reset destructivo, ni eliminar ramas sin aprobación explícita del usuario.
 - Preferir commits nuevos a `--amend`.
 - No modificar la configuración de git (local ni global) sin necesidad comprobada.
-
+- No subir archivos generados o secretos: `.godot/`, exportaciones, claves.
 ## Arte
 
 - Los sprites se escriben como texto en `art/source/*.sprite` con la paleta de `art/palette.txt` y se convierten con `godot --headless --path . --script res://tools/build_sprites.gd` (genera los PNG junto a su escena y vistas previas ampliadas en `art/preview/`, que se pueden mirar con la herramienta de lectura de imágenes para revisar el dibujo).
