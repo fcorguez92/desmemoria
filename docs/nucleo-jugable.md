@@ -29,8 +29,8 @@ El combate se apoya en dos ideas: **las amenazas se ven venir** y **los golpes t
 - Los enemigos ya no dañan por contacto: solo con su ataque.
 
 **Feedback visual (implementado, provisional):** sin arte todavía, el combate se lee con formas simples.
-- **Brazo con arma:** el jugador y los enemigos llevan un brazo que golpea hacia delante. El del enemigo se **levanta durante el aviso** (además del tono amarillo) y cae al golpear; el tuyo golpea al instante al pulsar X.
-- **Destello del arco** del golpe, blanco el tuyo y anaranjado el del enemigo.
+- **Arma integrada en el sprite:** el caminante empuña su espada y el cascarón un cuchillo oxidado, dibujados en el propio personaje. El del enemigo se **alza durante el aviso** (además del tono amarillo) y cae al golpear; el tuyo golpea al instante al pulsar X.
+- **Destello del arco** del golpe, muy sutil, blanco el tuyo y anaranjado el del enemigo.
 - **Chispazo** en el punto de impacto cuando un golpe alcanza a alguien.
 - **Temblor de cámara:** fuerte al recibir un golpe, leve al darlo.
 - El destello rojo al recibir daño y el retroceso ya existían.

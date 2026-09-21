@@ -8,15 +8,20 @@ extends SceneTree
 ## Sale con código 0 si todo se generó y con 1 si hubo errores.
 ##
 ## Formato de un archivo .sprite (las líneas que empiezan por # son comentarios):
-##   sheet 32x56                 tamaño del lienzo de cada fotograma
+##   sheet 64x56                 tamaño del lienzo de cada fotograma
 ##   out res://game/x/y.png      dónde se guarda la hoja de sprites
-##   part NOMBRE                 una pieza reutilizable; sus filas de dibujo
+##   part NOMBRE                 una pieza reutilizable; a continuación sus filas
 ##   ...filas de texto, un carácter por píxel, todas del mismo ancho...
 ##   anim NOMBRE                 una animación (una fila de la hoja)
-##   frame PIEZA1 PIEZA2 ...     un fotograma: piezas apiladas de arriba abajo
-## Cada fotograma se coloca centrado abajo dentro del lienzo, para que el
-## personaje quede apoyado en los pies. La hoja tiene una fila por animación
-## y una columna por fotograma.
+##   frame PIEZA1 PIEZA2 ...     un fotograma. Las piezas normales se APILAN de
+##                               arriba abajo y forman el cuerpo base. Las que
+##                               llevan @x,y (p. ej. espada@14,20) se SUPERPONEN
+##                               encima, con su esquina superior izquierda en esa
+##                               posición del cuerpo base (puede ser negativa o
+##                               salirse del cuerpo, mientras quepa en el lienzo).
+## El cuerpo base de cada fotograma se coloca centrado abajo dentro del lienzo,
+## para que el personaje quede apoyado en los pies. La hoja tiene una fila por
+## animación y una columna por fotograma.
 
 const SOURCE_DIR := "res://art/source"
 const PALETTE_PATH := "res://art/palette.txt"
@@ -90,14 +95,26 @@ func _build(path: String, palette: Dictionary) -> bool:
 				animations.append({"name": words[1], "frames": []})
 			"frame":
 				current_part = ""
-				var pieces: Array = []
+				var frame := {"base": [], "overlays": []}
 				for i in range(1, words.size()):
-					if not parts.has(words[i]):
-						push_error("%s:%d pieza desconocida '%s'" % [path, line_number, words[i]])
+					var token := words[i]
+					var offset := Vector2i.ZERO
+					if "@" in token:
+						var split := token.split("@")
+						token = split[0]
+						var xy := split[1].split(",")
+						offset = Vector2i(int(xy[0]), int(xy[1]))
+						if not parts.has(token):
+							push_error("%s:%d pieza desconocida '%s'" % [path, line_number, token])
+							errors += 1
+						else:
+							frame["overlays"].append({"rows": parts[token], "offset": offset})
+					elif not parts.has(token):
+						push_error("%s:%d pieza desconocida '%s'" % [path, line_number, token])
 						errors += 1
 					else:
-						pieces.append(parts[words[i]])
-				animations[-1]["frames"].append(pieces)
+						frame["base"].append_array(parts[token])
+				animations[-1]["frames"].append(frame)
 			_:
 				if current_part.is_empty():
 					push_error("%s:%d línea inesperada: %s" % [path, line_number, line])
@@ -117,10 +134,8 @@ func _build(path: String, palette: Dictionary) -> bool:
 	for row in animations.size():
 		var frames: Array = animations[row]["frames"]
 		for column in frames.size():
-			var rows: Array = []
-			for piece in frames[column]:
-				rows.append_array(piece)
-			if not _draw_frame(sheet, rows, palette, canvas, Vector2i(column, row), "%s [%s, fotograma %d]" % [path, animations[row]["name"], column]):
+			var label := "%s [%s, fotograma %d]" % [path, animations[row]["name"], column]
+			if not _draw_frame(sheet, frames[column], palette, canvas, Vector2i(column, row), label):
 				return false
 
 	var real_out := ProjectSettings.globalize_path(out_path)
@@ -136,14 +151,27 @@ func _build(path: String, palette: Dictionary) -> bool:
 	return true
 
 
-func _draw_frame(sheet: Image, rows: Array, palette: Dictionary, canvas: Vector2i, cell: Vector2i, label: String) -> bool:
-	var width: int = rows[0].length()
-	var height: int = rows.size()
+func _draw_frame(sheet: Image, frame: Dictionary, palette: Dictionary, canvas: Vector2i, cell: Vector2i, label: String) -> bool:
+	var base_rows: Array = frame["base"]
+	var width: int = base_rows[0].length()
+	var height: int = base_rows.size()
 	if width > canvas.x or height > canvas.y:
 		push_error("%s: el dibujo (%dx%d) no cabe en el lienzo (%dx%d)" % [label, width, height, canvas.x, canvas.y])
 		return false
+	# Esquina superior izquierda del cuerpo base dentro de la hoja.
 	var origin := Vector2i(cell.x * canvas.x + (canvas.x - width) / 2, cell.y * canvas.y + canvas.y - height)
-	for y in height:
+	var cell_origin := Vector2i(cell.x * canvas.x, cell.y * canvas.y)
+	if not _draw_rows(sheet, base_rows, origin, cell_origin, canvas, palette, label):
+		return false
+	for overlay in frame["overlays"]:
+		if not _draw_rows(sheet, overlay["rows"], origin + overlay["offset"], cell_origin, canvas, palette, label + " (pieza superpuesta)"):
+			return false
+	return true
+
+
+func _draw_rows(sheet: Image, rows: Array, origin: Vector2i, cell_origin: Vector2i, canvas: Vector2i, palette: Dictionary, label: String) -> bool:
+	var width: int = rows[0].length()
+	for y in rows.size():
 		var text: String = rows[y]
 		if text.length() != width:
 			push_error("%s: la fila %d mide %d y debería medir %d: %s" % [label, y, text.length(), width, text])
@@ -155,5 +183,10 @@ func _draw_frame(sheet: Image, rows: Array, palette: Dictionary, canvas: Vector2
 			if not palette.has(symbol):
 				push_error("%s: carácter '%s' sin color en la paleta (fila %d, columna %d)" % [label, symbol, y, x])
 				return false
-			sheet.set_pixel(origin.x + x, origin.y + y, palette[symbol])
+			var position := origin + Vector2i(x, y)
+			var local := position - cell_origin
+			if local.x < 0 or local.y < 0 or local.x >= canvas.x or local.y >= canvas.y:
+				push_error("%s: el píxel de la fila %d, columna %d cae fuera del lienzo" % [label, y, x])
+				return false
+			sheet.set_pixel(position.x, position.y, palette[symbol])
 	return true

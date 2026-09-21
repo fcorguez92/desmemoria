@@ -32,12 +32,12 @@ shape = SubResource("CapsuleShape2D_1")
 texture = ExtResource("13_sheet")
 offset = Vector2(0, -4)
 hframes = 4
-vframes = 4
+vframes = 5
 
 [node name="SheetAnimator" type="Node" parent="." node_paths=PackedStringArray("sprite")]
 script = ExtResource("14_animator")
 sprite = NodePath("../Visual")
-animations = {"fall": [3, 1, 1.0, false], "idle": [0, 2, 4.0, true], "jump": [2, 1, 1.0, false], "run": [1, 4, 12.0, true]}
+animations = {"attack": [4, 3, 12.0, false], "fall": [3, 1, 1.0, false], "idle": [0, 2, 4.0, true], "jump": [2, 1, 1.0, false], "run": [1, 4, 12.0, true]}
 
 [node name="Camera2D" type="Camera2D" parent="."]
 position_smoothing_enabled = true
@@ -115,17 +115,11 @@ offset_top = 112.0
 color = Color(1, 1, 1, 1)
 polygon = PackedVector2Array(10, -24, 30, -16, 40, 0, 30, 16, 10, 24, 24, 0)
 
-[node name="Arm" type="Node2D" parent="."]
-position = Vector2(0, -6)
-
-[node name="Blade" type="Polygon2D" parent="Arm"]
-color = Color(0.95, 0.95, 1, 1)
-polygon = PackedVector2Array(0, -3, 34, -3, 34, 3, 0, 3)
-
-[node name="AttackVisualComponent" type="Node" parent="." node_paths=PackedStringArray("arm", "slash")]
+[node name="AttackVisualComponent" type="Node" parent="." node_paths=PackedStringArray("animator", "slash")]
 script = ExtResource("11_attack_visual")
-arm = NodePath("../Arm")
+animator = NodePath("../SheetAnimator")
 slash = NodePath("../Slash")
+slash_alpha = 0.22
 
 [node name="ScreenShakeComponent" type="Node" parent="." node_paths=PackedStringArray("camera")]
 script = ExtResource("12_shake")

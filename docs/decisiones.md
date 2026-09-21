@@ -67,6 +67,16 @@ Cada entrada: qué se decidió, por qué, qué alternativas se descartaron y por
 
 **Técnico**: se ajusta `project.godot` (ventana 864×486, ampliación a 1728×972, estirado "viewport" con escalado entero, filtro "Nearest" y ajuste al píxel). Se probó primero 640×360 y el usuario lo encontró demasiado cerrado; 864×486 muestra un 35 % más de mundo y cabe en ventana con escalado ×2 en su pantalla de 1920×1080 (área útil 1032 px de alto). Con la resolución por defecto de Godot (1152×648) se veía más mundo pero sin píxeles nítidos.
 
+## 2026-09-22 — Armas integradas en los sprites
+
+**Decisión**: el arma deja de ser una barra que gira sobre el sprite y pasa a dibujarse en el propio personaje. El caminante lleva una espada (acero con canto azul, guarda ámbar) y el cascarón un cuchillo pesado oxidado, cada uno en varias poses (reposo, aviso, golpe). `AttackVisualComponent` ya no gira un brazo: pide animaciones al `SheetAnimator`, que gana "acciones" (`play_action`) para que el movimiento no pise un ataque en curso.
+
+**Por qué**: lo pidió el usuario y es más coherente con el arte pixel: las armas y los personajes comparten estilo, y el aviso del enemigo se lee mejor con el arma alzada.
+
+**Técnico**: la herramienta de sprites gana piezas superpuestas (`pieza@x,y`), para dibujar brazo y arma encima del cuerpo sin repetir el cuerpo en cada pose. Los lienzos pasan a 64×56 para que quepa el arma extendida. El destello del arco se conserva, mucho más suave. Los tests comprueban que cada bando reproduce sus animaciones de ataque y vuelve a las de movimiento.
+
+**Límite**: el arma sale del sprite, no de un nodo, así que al mejorar el Filo no cambia su aspecto (habría que dibujar variantes).
+
 ## 2026-09-22 — Sprites escritos como texto y convertidos a PNG
 
 **Decisión**: los sprites se escriben como cuadrículas de texto con una paleta (`art/source/*.sprite`, `art/palette.txt`) y `tools/build_sprites.gd` los convierte en hojas PNG. Se define en piezas reutilizables (cabeza y torso, capa, piernas) que se apilan para formar los fotogramas. `SheetAnimator` (core) los anima en el juego.

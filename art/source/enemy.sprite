@@ -1,10 +1,12 @@
 # El cascarón: figura pálida y sin rostro, con trapos rojos. Es lo que queda de
 # quien la Desmemoria ha vaciado: sigue moviéndose por costumbre. Mira a la
-# derecha. Cada dibujo mide 24 de ancho por 44 de alto y se coloca en un lienzo
-# de 40x56 con los pies abajo.
+# derecha. El cuerpo mide 24 de ancho por 44 de alto y se coloca en un lienzo
+# de 64x56 con los pies abajo; el lienzo es ancho para que quepa el cuchillo
+# extendido. Las piezas "blade_*" (brazo y cuchillo) se superponen al cuerpo con
+# @x,y (ver tools/build_sprites.gd).
 # Leyenda: ver art/palette.txt. El punto (.) es transparente.
 
-sheet 40x56
+sheet 64x56
 out res://game/enemy/enemy_sheet.png
 
 part upper
@@ -135,12 +137,77 @@ part legs_walk4
 ............13331.......
 ............11111.......
 
+# El cuchillo de carnicero oxidado. Cuelga al costado en reposo, se levanta en
+# el aviso del ataque y cae en horizontal al golpear.
+part blade_rest
+........
+..44....
+..44....
+.rrrr...
+..sts...
+..sts...
+...sts..
+...sts..
+...sts..
+....sts.
+....sts.
+....stt.
+....rrr.
+
+part blade_up
+.rrrrr..
+.sstts..
+.sstts..
+.sstts..
+.sstts..
+.sstts..
+.sstts..
+.sstts..
+.sstts..
+..sts...
+..sts...
+..sts...
+..sts...
+..sts...
+..sts...
+..sts...
+..sts...
+..sts...
+..sts...
+..sts...
+..sts...
+.rrrrr..
+..44....
+..44....
+........
+........
+
+part blade_strike
+......................
+......................
+..............rrrrrrrr
+......r.......sssssstt
+333344rsssssssssssstts
+333344rsssssssssssssst
+333344rssssssssssssstt
+......r.......sssssstt
+..............rrrrrrrr
+......................
+
 anim idle
-frame upper rags legs_idle
-frame upper rags_b legs_idle
+frame upper rags legs_idle blade_rest@18,15
+frame upper rags_b legs_idle blade_rest@18,15
 
 anim walk
-frame upper rags legs_walk1
-frame upper rags_b legs_walk2
-frame upper rags legs_walk3
-frame upper rags_b legs_walk4
+frame upper rags legs_walk1 blade_rest@18,15
+frame upper rags_b legs_walk2 blade_rest@18,15
+frame upper rags legs_walk3 blade_rest@18,15
+frame upper rags_b legs_walk4 blade_rest@18,15
+
+anim windup
+frame upper rags legs_idle blade_up@18,-4
+frame upper rags legs_idle blade_up@18,-10
+
+anim strike
+frame upper rags legs_idle blade_strike@20,8
+frame upper rags legs_idle blade_strike@20,11

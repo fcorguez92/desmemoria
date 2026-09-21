@@ -26,12 +26,12 @@ shape = SubResource("RectangleShape2D_enemy")
 texture = ExtResource("8_sheet")
 offset = Vector2(0, -4)
 hframes = 4
-vframes = 2
+vframes = 4
 
 [node name="SheetAnimator" type="Node" parent="." node_paths=PackedStringArray("sprite")]
 script = ExtResource("9_animator")
 sprite = NodePath("../Visual")
-animations = {"idle": [0, 2, 3.0, true], "walk": [1, 4, 8.0, true]}
+animations = {"idle": [0, 2, 3.0, true], "strike": [3, 2, 12.0, false], "walk": [1, 4, 8.0, true], "windup": [2, 2, 5.0, false]}
 
 [node name="AttackHitbox" type="Area2D" parent="."]
 position = Vector2(20, 0)
@@ -72,14 +72,8 @@ ledge_probe = NodePath("../LedgeProbe")
 color = Color(1, 0.75, 0.6, 1)
 polygon = PackedVector2Array(12, -26, 32, -18, 42, 0, 32, 18, 12, 26, 26, 0)
 
-[node name="Arm" type="Node2D" parent="."]
-position = Vector2(0, -6)
-
-[node name="Blade" type="Polygon2D" parent="Arm"]
-color = Color(0.95, 0.55, 0.45, 1)
-polygon = PackedVector2Array(0, -3, 34, -3, 34, 3, 0, 3)
-
-[node name="AttackVisualComponent" type="Node" parent="." node_paths=PackedStringArray("arm", "slash")]
+[node name="AttackVisualComponent" type="Node" parent="." node_paths=PackedStringArray("animator", "slash")]
 script = ExtResource("7_attack_visual")
-arm = NodePath("../Arm")
+animator = NodePath("../SheetAnimator")
 slash = NodePath("../Slash")
+slash_alpha = 0.22

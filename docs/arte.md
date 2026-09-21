@@ -47,8 +47,8 @@ extremidades que sobresalgan. Así el arte se puede cambiar sin recolocar nada.
 - Reposo: 4 fotogramas, 6 fps.
 - Caminar/correr: 6 fotogramas, 12 fps.
 - Salto: subida, apogeo y caída (3 poses).
-- Ataque: pose de preparación, golpe y recuperación. El brazo provisional que
-  hay ahora se sustituirá por estas poses; los tiempos los siguen fijando los
+- Ataque: aviso (arma alzada), golpe y recuperación, con el arma dibujada en el
+  propio sprite (hecho: ver "Sprites actuales"). Los tiempos los fijan los
   componentes de `core/` (aviso de 0,4 s en el enemigo, etc.).
 - Recibir golpe, morir, dash, agarre de pared.
 
@@ -106,12 +106,13 @@ dos maneras: empezar con el texto y pasar a retocar a mano cuando compense.
 
 | Sprite | Dibujo | Lienzo | Animaciones |
 |---|---|---|---|
-| Caminante (jugador) | 20×44, figura con capucha, ojo y bufanda de luz azul | 32×56 | reposo (2), correr (4), salto (1), caída (1) |
-| Cascarón (enemigo) | 24×44, figura pálida sin rostro con trapos rojos | 40×56 | reposo (2), andar (4) |
+| Caminante (jugador) | 20×44, figura con capucha, ojo y bufanda de luz azul; espada ("el Filo") de acero con canto azul | 64×56 | reposo (2), correr (4), salto (1), caída (1), ataque (3) |
+| Cascarón (enemigo) | 24×44, figura pálida sin rostro con trapos rojos; cuchillo pesado oxidado | 64×56 | reposo (2), andar (4), aviso (2), golpe (2) |
 
-Son un primer dibujo funcional, no arte final. Todavía no tienen animación de
-golpe recibido, muerte, dash ni agarre de pared; el ataque sigue usando el brazo
-provisional de `core/` (barra blanca o roja) superpuesto al sprite.
+Son un primer dibujo funcional, no arte final. **Las armas van integradas en el
+sprite**: se dibujan como piezas superpuestas al cuerpo (brazo y arma) en cada pose,
+y el lienzo es ancho (64 px) para que quepa el arma extendida. Todavía no hay
+animación de golpe recibido, muerte, dash ni agarre de pared.
 
 ## Reglas sobre IA en el arte
 

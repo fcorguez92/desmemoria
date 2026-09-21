@@ -1,9 +1,11 @@
 # El caminante: figura encapuchada con una bufanda de luz azul (la memoria que
-# no se apaga). Mira a la derecha. Cada dibujo mide 20 de ancho por 44 de alto
-# y se coloca en un lienzo de 32x56 con los pies abajo.
+# no se apaga). Mira a la derecha. El cuerpo mide 20 de ancho por 44 de alto y
+# se coloca en un lienzo de 64x56 con los pies abajo; el lienzo es ancho para que
+# quepa la espada extendida al golpear. Las piezas "sword_*" (brazo y espada) se
+# superponen al cuerpo con @x,y (ver tools/build_sprites.gd).
 # Leyenda: ver art/palette.txt. El punto (.) es transparente.
 
-sheet 32x56
+sheet 64x56
 out res://game/player/player_sheet.png
 
 part upper
@@ -118,18 +120,53 @@ part legs_fall
 .....1331..1331.....
 .....1111..1111.....
 
+# La espada, "el Filo": hoja de acero con guarda ámbar. En reposo cuelga baja
+# hacia delante; al golpear se extiende en horizontal.
+part sword_rest
+............
+..44........
+..44........
+.cccc.......
+..4g3.......
+..4g3.......
+...4g3......
+...4g3......
+....4g3.....
+....4g3.....
+.....4g3....
+.....4g3....
+......4g3...
+......4g3...
+.......4g3..
+.......444..
+
+part sword_strike
+.........................
+.......c.................
+.111144c.................
+.333344c44444444444444444
+.333344cgggggggggggggggg.
+.111144c3333333333333333.
+.......c.................
+.........................
+
 anim idle
-frame upper cloak legs_idle
-frame upper cloak_b legs_idle
+frame upper cloak legs_idle sword_rest@14,20
+frame upper cloak_b legs_idle sword_rest@14,20
 
 anim run
-frame upper cloak legs_run1
-frame upper cloak_b legs_run2
-frame upper cloak legs_run3
-frame upper cloak_b legs_run4
+frame upper cloak legs_run1 sword_rest@14,20
+frame upper cloak_b legs_run2 sword_rest@14,20
+frame upper cloak legs_run3 sword_rest@14,20
+frame upper cloak_b legs_run4 sword_rest@14,20
 
 anim jump
-frame upper cloak legs_jump
+frame upper cloak legs_jump sword_rest@14,20
 
 anim fall
-frame upper cloak_b legs_fall
+frame upper cloak_b legs_fall sword_rest@14,20
+
+anim attack
+frame upper cloak legs_idle sword_strike@16,11
+frame upper cloak legs_idle sword_strike@16,13
+frame upper cloak legs_idle sword_rest@16,20

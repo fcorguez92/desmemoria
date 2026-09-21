@@ -214,37 +214,35 @@ func _test_enemy_attack_can_be_dodged_and_interrupted() -> void:
 func _test_attack_feedback() -> void:
 	await _fresh_level("Feedback visual del combate", true, true, "EnemySpawn1")
 	var enemy: Node2D = _level.get_node("EnemySpawn1").instance
-	var pv: AttackVisualComponent = _player.attack_visual
+	var player_animator: SheetAnimator = _player.animator
 	var camera: Camera2D = _player.get_node("Camera2D")
-	_check(is_equal_approx(pv.arm.rotation, pv.rest_angle), "el brazo del jugador empieza en reposo")
-	pv.set_facing(-1)
-	_check(pv.arm.scale.x == -1.0 and is_equal_approx(pv.arm.rotation, -pv.rest_angle), "el brazo se voltea al mirar a la izquierda")
-	pv.set_facing(1)
-
 	_player.global_position = Vector2(665, 330)
 	await _wait(12)
 	Input.action_press("attack")
 	await _wait(3)
 	Input.action_release("attack")
-	_check(absf(pv.arm.rotation - pv.rest_angle) > 0.05, "atacar mueve el brazo del jugador")
+	_check(player_animator.current == "attack", "atacar reproduce la animación de ataque del jugador (con la espada)")
 	_check(enemy.health.health == 2, "el ataque alcanzó al enemigo")
 	_check(_count_sparks() >= 1, "un golpe que alcanza deja un chispazo")
 	_check(camera.position.length() > 0.0, "un golpe que alcanza sacude la cámara")
 	await _wait(30)
-	_check(absf(pv.arm.rotation - pv.rest_angle) < 0.05, "el brazo vuelve al reposo")
+	_check(player_animator.current != "attack", "tras el ataque el jugador recupera sus animaciones de movimiento")
 	_check(camera.position == Vector2.ZERO, "el temblor termina y la cámara vuelve a su sitio")
 
 	await _fresh_level("", false, true, "EnemySpawn1")
 	enemy = _level.get_node("EnemySpawn1").instance
-	var ev: AttackVisualComponent = enemy.attack_visual
-	_check(is_equal_approx(ev.arm.rotation * ev.facing, ev.rest_angle), "el brazo del enemigo empieza en reposo")
+	var enemy_animator: SheetAnimator = enemy.animator
 	_player.global_position = Vector2(660, 330)
 	while enemy.ai.state != PatrolChaseAI.State.WINDUP:
 		await physics_frame
-	await _wait(20)
-	_check(ev.arm.rotation * ev.facing < ev.rest_angle - 0.5, "el enemigo levanta el brazo durante el aviso")
-	await _wait(60)
-	_check(absf(ev.arm.rotation * ev.facing - ev.rest_angle) < 0.1, "tras golpear, el brazo del enemigo vuelve al reposo")
+	await _wait(4)
+	_check(enemy_animator.current == "windup", "el enemigo alza el arma durante el aviso")
+	while enemy.ai.state != PatrolChaseAI.State.RECOVER:
+		await physics_frame
+	await _wait(1)
+	_check(enemy_animator.current == "strike", "al caer el golpe el enemigo reproduce su animación de golpe")
+	await _wait(25)
+	_check(enemy_animator.current in ["idle", "walk"], "tras golpear, el enemigo recupera sus animaciones de movimiento")
 
 
 func _test_sprites_and_animations() -> void:
@@ -252,8 +250,8 @@ func _test_sprites_and_animations() -> void:
 	var enemy: Node2D = _level.get_node("EnemySpawn1").instance
 	var player_sprite: Sprite2D = _player.visual
 	var enemy_sprite: Sprite2D = enemy.visual
-	_check(player_sprite.texture.get_size() == Vector2(player_sprite.hframes * 32, player_sprite.vframes * 56), "la hoja del jugador cuadra con su cuadrícula de 32x56")
-	_check(enemy_sprite.texture.get_size() == Vector2(enemy_sprite.hframes * 40, enemy_sprite.vframes * 56), "la hoja del enemigo cuadra con su cuadrícula de 40x56")
+	_check(player_sprite.texture.get_size() == Vector2(player_sprite.hframes * 64, player_sprite.vframes * 56), "la hoja del jugador cuadra con su cuadrícula de 64x56")
+	_check(enemy_sprite.texture.get_size() == Vector2(enemy_sprite.hframes * 64, enemy_sprite.vframes * 56), "la hoja del enemigo cuadra con su cuadrícula de 64x56")
 
 	await _wait(15)
 	_check(_player.animator.current == "idle", "quieto en el suelo usa la animación de reposo")
