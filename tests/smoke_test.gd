@@ -394,6 +394,7 @@ func _test_weapon_upgrade_at_anchor() -> void:
 	_check(not _player.try_upgrade_weapon(), "no se puede pasar del nivel máximo")
 	_check(_player.melee.damage == 5, "el nivel máximo da el daño máximo")
 	_player.rest_at(_player.global_position)
+	options.selected = 0
 	_check(not options.activate(), "al máximo la opción de mejora queda desactivada")
 	_player.anchor_menu.close()
 
@@ -401,6 +402,7 @@ func _test_weapon_upgrade_at_anchor() -> void:
 func _test_anchor_menu_keyboard_and_pause() -> void:
 	await _fresh_level("Menú del Ancla: pausa y teclado")
 	var menu = _player.anchor_menu
+	_player.add_ecos(6)
 	_check(not menu.is_open() and not paused, "el menú empieza cerrado y el juego sin pausa")
 	_player.rest_at(_player.global_position)
 	_check(menu.is_open() and paused, "descansar abre el menú y pausa el juego")
@@ -424,6 +426,12 @@ func _test_anchor_menu_keyboard_and_pause() -> void:
 	await _press_action("ui_down")
 	await _press_action("ui_accept")
 	_check(not menu.is_open() and not paused, "la opción Salir cierra el menú")
+	# Sin Ecos suficientes, la mejora sale atenuada y el cursor empieza en Salir.
+	_player.ecos = 0
+	_player.rest_at(_player.global_position)
+	_check(menu.menu.selected == 1, "sin Ecos el cursor empieza en la primera opción disponible")
+	await _press_action("ui_accept")
+	_check(not menu.is_open() and not paused, "Intro sobre la opción disponible funciona a la primera")
 
 
 func _test_dash_gates_the_far_platform() -> void:

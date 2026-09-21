@@ -10,6 +10,9 @@ extends VBoxContainer
 ##
 ## Para menús que se abren con el juego en pausa, el nodo debe tener
 ## `process_mode = When Paused` (o Always), o no recibirá las teclas.
+##
+## Lee las teclas en `_input` (antes que la interfaz de Godot) para que nada se las
+## quede: es lo correcto en un menú modal.
 
 signal chosen(index: int)
 signal cancelled
@@ -35,6 +38,16 @@ func set_entries(texts: PackedStringArray, enabled: Array[bool] = []) -> void:
 	_rebuild()
 
 
+## Deja la selección en la primera opción activa (o en la primera si no hay ninguna).
+func select_first_enabled() -> void:
+	selected = 0
+	for i in _texts.size():
+		if _enabled[i]:
+			selected = i
+			break
+	_rebuild()
+
+
 func move_selection(step: int) -> void:
 	if _texts.is_empty():
 		return
@@ -54,7 +67,7 @@ func cancel() -> void:
 	cancelled.emit()
 
 
-func _unhandled_input(event: InputEvent) -> void:
+func _input(event: InputEvent) -> void:
 	if not is_visible_in_tree():
 		return
 	if event.is_action_pressed(&"ui_down"):

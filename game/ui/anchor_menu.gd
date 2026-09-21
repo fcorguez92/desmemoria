@@ -26,7 +26,7 @@ func is_open() -> bool:
 
 
 func open() -> void:
-	menu.selected = 0
+	menu.select_first_enabled()
 	root.visible = true
 	get_tree().paused = true
 
@@ -52,7 +52,7 @@ func show_state(ecos: int, weapon_level: int, weapon_damage: int, next_cost: int
 	menu.set_entries(PackedStringArray([upgrade_text, "Salir"]), [can_upgrade, true])
 
 
-func _unhandled_input(event: InputEvent) -> void:
+func _input(event: InputEvent) -> void:
 	# Volver a pulsar la tecla del Ancla también cierra el menú.
 	if root.visible and event.is_action_pressed(&"interact"):
 		close()
