@@ -39,5 +39,6 @@ Devuelve código 0 si todo pasa. Detalles en
 | [`docs/decisiones.md`](docs/decisiones.md) | Por qué se decidió cada cosa |
 | [`docs/estado.md`](docs/estado.md) | Qué está hecho y qué falta |
 | [`docs/nucleo-jugable.md`](docs/nucleo-jugable.md) | Diseño del núcleo jugable |
+| [`docs/arte.md`](docs/arte.md) | Dirección artística, resolución, paleta y pipeline |
 | [`docs/historia.md`](docs/historia.md) · [`docs/mundo.md`](docs/mundo.md) | Premisa, mitología y geografía |
 | [`CLAUDE.md`](CLAUDE.md) | Instrucciones permanentes para trabajar con IA |

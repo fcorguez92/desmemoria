@@ -53,6 +53,20 @@ Cada entrada: qué se decidió, por qué, qué alternativas se descartaron y por
 
 **Decidido por**: el usuario pidió Z y un lugar temático; Claude propuso el concepto.
 
+## 2026-09-22 — Estilo de arte: pixel art oscuro con paletas limitadas, con herramientas gratuitas
+
+**Decisión**: pixel art oscuro (referencia *Blasphemous*), resolución interna de 640×360 con escalado entero, rejilla de 16 px y una paleta de rampas de 4 tonos. La Desmemoria se expresa desaturando la paleta por zonas. El arte lo produce el usuario con Pixelorama o LibreSprite (gratuitas). Detalles en `arte.md`.
+
+**Alternativas evaluadas**: dibujo a mano/tinta tipo *Hollow Knight* (el más caro de sostener para una sola persona y difícil de mantener consistente) y siluetas con luz hechas en Godot (el más barato, con menos detalle de personaje).
+
+**Por qué**: es lo más barato y consistente de producir en solitario, Godot 4 lo soporta de serie (filtro Nearest, escalado entero) y encaja con la premisa mediante la paleta. Los sprites (32×56 y 40×56) caben en las colisiones actuales, así que la jugabilidad no cambia.
+
+**Producción**: se eligió empezar con herramientas gratuitas. La opción de IA de pago para sprites (p. ej. PixelLab, unos 12 $/mes) queda descartada por ahora; su punto débil es la consistencia entre fotogramas.
+
+**Datos verificados (2026)**: Aseprite cuesta 19,99 € y LibreSprite/Pixelorama son gratuitas; Steam pide declarar solo la IA cuyo contenido consume el jugador (formulario reescrito en enero de 2026); la Oficina de Derechos de Autor de EE. UU. exige autoría humana y no considera autor a quien solo elige el texto de entrada.
+
+**Técnico**: se ajusta `project.godot` (ventana 640×360, ampliación a 1280×720, estirado "viewport" con escalado entero, filtro "Nearest" y ajuste al píxel). Con esa resolución se ve menos mundo a la vez que antes (1152×648).
+
 ## 2026-09-22 — Salto de pared en cualquier pared, dentro del movimiento
 
 **Decisión**: con la habilidad conseguida, mantener la dirección hacia una pared en el aire hace resbalar despacio (120 px/s), y saltar desde ella empuja hacia el lado contrario (350 px/s horizontal, -850 vertical) con un breve bloqueo de la dirección para que el empuje no se anule al instante. Funciona en cualquier pared. El salto de pared no gasta el doble salto.

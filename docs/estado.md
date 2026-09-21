@@ -11,7 +11,7 @@
 5. Diseño del núcleo jugable — hecho (ver `nucleo-jugable.md`).
 6. Prototipo jugable mínimo — hecho.
 7. Validación del núcleo — hecho: movimiento, combate con enemigos y feedback, vida/muerte/Ecos, mejora del arma, puntos de control con curación y las tres habilidades de movimiento (dash, doble salto, salto de pared) que se consiguen en el mundo y abren caminos.
-8. Vertical slice — siguiente fase, todavía no empezada.
+8. Vertical slice — **en preparación.** Estilo de arte decidido (pixel art oscuro, ver `arte.md`) y Godot configurado para pixel art (640×360, escalado entero). Falta producir el primer arte (jugador y enemigo) y construir El Último Umbral sobre la rejilla de 16 px.
 
 ## Qué existe ahora mismo
 
