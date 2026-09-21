@@ -52,6 +52,7 @@ Controles genéricos para el HUD. No saben de dónde vienen los números: el due
 | `SegmentedBar` | `Control` | Barra con un segmento por punto de `max_value`, dibujada con rectángulos (marco, fondo, relleno con luz y sombra). `set_values(valor, máximo)`; colores y tamaño de segmento configurables |
 | `IconRow` | `Control` | Fila de iconos de una hoja de sprites: `count` llenos y el resto hasta `max_count` vacíos (`full_frame`/`empty_frame`). Sirve para cargas de curación, llaves, munición. `set_values(cantidad, máximo)` |
 | `MenuList` | `VBoxContainer` | Lista de opciones con teclado o mando (`ui_up`/`ui_down`/`ui_accept`/`ui_cancel`). `set_entries(textos, activas)`, `select_first_enabled()`; avisa con `chosen(índice)` y `cancelled`. Las opciones desactivadas salen atenuadas y no se pueden elegir. Lee las teclas en `_input` (antes que la interfaz de Godot) Para menús con el juego en pausa, el nodo necesita `process_mode = When Paused` |
+| `ModalLayer` | `CanvasLayer` | Capa de interfaz modal: `open()` la muestra y pausa el juego, `close()` la oculta y reanuda dos frames de física DESPUÉS (para que la tecla que cierra no se cuele en el juego: Espacio acepta en el menú y también salta). Señales `opened`/`closed`. Exporta `root` (el Control que se muestra u oculta); hay que poner `process_mode = When Paused` en la capa y `node_paths` en el `.tscn` |
 
 ## Efectos (`core/effects/`)
 

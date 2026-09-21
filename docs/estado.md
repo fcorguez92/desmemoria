@@ -29,7 +29,7 @@ de esta fase era validar cómo se siente, no cómo se ve.
 
 - Flecha izq/dcha: moverse · Espacio: saltar · Flecha arriba/abajo: mirar · Abajo + Espacio sobre un tablón: bajar atravesándolo
 - En el aire, Espacio otra vez: doble salto (tras conseguirlo) · Junto a una pared, mantén la dirección hacia ella para agarrarte y pulsa Espacio para saltar de ella (tras conseguirlo)
-- X: atacar · V: parry · Shift izquierdo: dash · H: curarse (si quedan cargas y no estás a vida completa) · Z: descansar en un Ancla y abrir su menú (Intro elige, Esc o Z cierra)
+- Esc: pausa (continuar, personaje, controles, salir) · X: atacar · V: parry · Shift izquierdo: dash · H: curarse (si quedan cargas y no estás a vida completa) · Z: descansar en un Ancla y abrir su menú (Intro elige, Esc o Z cierra)
 
 ## Qué falta del núcleo jugable
 
@@ -39,7 +39,7 @@ de esta fase era validar cómo se siente, no cómo se ve.
 - Ajustar el ritmo del combate jugando (tiempos de aviso y recuperación, retroceso) y más tipos de enemigo (a distancia, voladores) y jefes.
 - Estadísticas del personaje más allá de la vida.
 - Capas de colisión (jugador, enemigos, entorno) cuando crezca el número de entidades.
-- Menú de pausa (Esc: continuar, controles, pestaña Personaje con habilidades) y, cuando existan sus mecánicas, más entradas en el menú del Ancla (tienda, viaje entre Anclas, otras mejoras) y el inventario.
+- Cuando existan sus mecánicas, más entradas en el menú del Ancla (tienda, viaje entre Anclas, otras mejoras) y el inventario.
 
 ## Cómo probar
 

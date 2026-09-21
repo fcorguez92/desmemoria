@@ -41,6 +41,7 @@ func _run() -> void:
 	await _test_enemies_respawn_on_rest_and_death()
 	await _test_weapon_upgrade_at_anchor()
 	await _test_anchor_menu_keyboard_and_pause()
+	await _test_pause_menu()
 	await _test_ability_pickups()
 	await _test_dash_gates_the_far_platform()
 	await _test_double_jump_reaches_high_platform()
@@ -731,6 +732,70 @@ func _test_enemy_does_not_jitter_against_a_wall() -> void:
 		max_x = maxf(max_x, enemy.global_position.x)
 	_check(flips[0] <= 6, "el enemigo no cambia de dirección cada frame (%d cambios en 4 s)" % flips[0])
 	_check(max_x - min_x > 20.0, "el enemigo sigue patrullando en vez de quedarse pegado a la pared")
+
+
+
+func _test_pause_menu() -> void:
+	await _fresh_level("Menú de pausa: abrir con Esc, personaje, controles y continuar")
+	var pause = _player.pause_menu
+	var options: MenuList = pause.menu
+	_check(not pause.is_open(), "la pausa empieza cerrada")
+	await _wait(30)
+	var standing_y: float = _player.global_position.y
+
+	await _press_action("ui_cancel")
+	_check(pause.is_open() and paused, "Esc abre la pausa y detiene el juego")
+	_check(pause.title_label.text == "Pausa" and options.visible, "se muestra la lista principal")
+	var pause_panel: Control = pause.get_node("Root/Panel")
+	var pause_size := pause_panel.size
+	await _press_action("ui_cancel")
+	_check(not pause.is_open() and not paused, "Esc cierra la pausa y reanuda el juego")
+
+	# Personaje: datos y habilidades por descubrir.
+	_player.add_ecos(7)
+	await _press_action("ui_cancel")
+	await _press_action("ui_down")
+	await _press_action("ui_accept")
+	_check(pause.title_label.text == "Personaje" and pause.info.visible, "Personaje abre su pantalla")
+	_check("Vida: 5 / 5" in pause.info_label.text and "Ecos: 7" in pause.info_label.text, "muestra vida y Ecos")
+	_check("Filo: nivel 1 (daño 1)" in pause.info_label.text, "muestra el Filo")
+	_check(pause_panel.size == pause_size, "el panel mide lo mismo en Personaje que en el menú principal")
+	_check("Dash" not in pause.info_label.text and "???" in pause.info_label.text, "las habilidades sin recordar salen como ???")
+	await _press_action("ui_cancel")
+	_check(pause.is_open() and pause.title_label.text == "Pausa", "Esc en una subpantalla vuelve al menú, sin cerrar la pausa")
+
+	# Controles.
+	await _press_action("ui_down")
+	await _press_action("ui_accept")
+	_check(pause.title_label.text == "Controles" and "Moverse" in pause.actions_label.text and "Espacio" in pause.info_label.text, "Controles muestra las teclas y su acción")
+	_check(pause_panel.size == pause_size, "y lo mismo en Controles")
+	await _press_action("ui_accept")
+	_check(pause.is_open() and pause.title_label.text == "Pausa", "Intro en una subpantalla también vuelve")
+
+	# Con una habilidad recordada, sale su nombre. La pantalla se recompone al reabrir.
+	await _press_action("ui_cancel")
+	_player.unlock_ability(&"dash")
+	await _press_action("ui_cancel")
+	await _press_action("ui_down")
+	await _press_action("ui_accept")
+	_check("Dash" in pause.info_label.text, "la habilidad recordada aparece por su nombre")
+	await _press_action("ui_cancel")
+
+	# Continuar con Intro: no debe hacer saltar al personaje.
+	await _press_action("ui_up")
+	await _press_action("ui_accept")
+	_check(not pause.is_open() and not paused, "Continuar cierra la pausa")
+	var highest_y: float = standing_y
+	for i in 30:
+		await physics_frame
+		highest_y = minf(highest_y, _player.global_position.y)
+	_check(highest_y > standing_y - 5.0, "Continuar con Intro no hace saltar al personaje")
+
+	# Esc con el menú del Ancla abierto no abre la pausa encima.
+	_player.rest_at(_player.global_position)
+	await _press_action("ui_cancel")
+	_check(not pause.is_open(), "Esc con el menú del Ancla abierto no abre la pausa")
+	_check(not _player.anchor_menu.is_open(), "Esc cierra el menú del Ancla")
 
 
 # --- Utilidades --------------------------------------------------------------
