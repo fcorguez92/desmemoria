@@ -55,7 +55,7 @@ Cada entrada: qué se decidió, por qué, qué alternativas se descartaron y por
 
 ## 2026-09-22 — Estilo de arte: pixel art oscuro con paletas limitadas, con herramientas gratuitas
 
-**Decisión**: pixel art oscuro (referencia *Blasphemous*), resolución interna de 640×360 con escalado entero, rejilla de 16 px y una paleta de rampas de 4 tonos. La Desmemoria se expresa desaturando la paleta por zonas. El arte lo produce el usuario con Pixelorama o LibreSprite (gratuitas). Detalles en `arte.md`.
+**Decisión**: pixel art oscuro (referencia *Blasphemous*), resolución interna de 864×486 con escalado entero, rejilla de 16 px y una paleta de rampas de 4 tonos. La Desmemoria se expresa desaturando la paleta por zonas. El arte lo produce el usuario con Pixelorama o LibreSprite (gratuitas). Detalles en `arte.md`.
 
 **Alternativas evaluadas**: dibujo a mano/tinta tipo *Hollow Knight* (el más caro de sostener para una sola persona y difícil de mantener consistente) y siluetas con luz hechas en Godot (el más barato, con menos detalle de personaje).
 
@@ -65,7 +65,7 @@ Cada entrada: qué se decidió, por qué, qué alternativas se descartaron y por
 
 **Datos verificados (2026)**: Aseprite cuesta 19,99 € y LibreSprite/Pixelorama son gratuitas; Steam pide declarar solo la IA cuyo contenido consume el jugador (formulario reescrito en enero de 2026); la Oficina de Derechos de Autor de EE. UU. exige autoría humana y no considera autor a quien solo elige el texto de entrada.
 
-**Técnico**: se ajusta `project.godot` (ventana 640×360, ampliación a 1280×720, estirado "viewport" con escalado entero, filtro "Nearest" y ajuste al píxel). Con esa resolución se ve menos mundo a la vez que antes (1152×648).
+**Técnico**: se ajusta `project.godot` (ventana 864×486, ampliación a 1728×972, estirado "viewport" con escalado entero, filtro "Nearest" y ajuste al píxel). Se probó primero 640×360 y el usuario lo encontró demasiado cerrado; 864×486 muestra un 35 % más de mundo y cabe en ventana con escalado ×2 en su pantalla de 1920×1080 (área útil 1032 px de alto). Con la resolución por defecto de Godot (1152×648) se veía más mundo pero sin píxeles nítidos.
 
 ## 2026-09-22 — Salto de pared en cualquier pared, dentro del movimiento
 

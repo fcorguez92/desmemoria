@@ -18,9 +18,13 @@ zona.
 
 ## Resolución y escala
 
-- **Resolución interna: 640×360 píxeles**, escalada por números enteros (×2 a
-  1280×720, ×3 a 1920×1080...). Cada píxel del arte es un cuadrado nítido en
-  pantalla, sin mezclas ni medios píxeles.
+- **Resolución interna: 864×486 píxeles**, escalada por números enteros: ×2 da
+  1728×972, que cabe en una ventana sobre una pantalla de 1920×1080 con barra de
+  tareas. Cada píxel del arte es un cuadrado nítido en pantalla, sin mezclas ni
+  medios píxeles. (Se probó 640×360, que se vio demasiado cerrado para un juego
+  de exploración; 960×540 solo cabría a pantalla completa.) A pantalla completa
+  en 1080p se ve con bordes negros; si algún día se prefiere llenar la pantalla,
+  se puede pasar a 960×540.
 - Ya configurado en `project.godot`: filtro de texturas "Nearest", escalado
   entero, modo de estirado "viewport" y ajuste de transformaciones al píxel.
 - **Rejilla de nivel: 16×16 px** (los tiles). Las medidas del nivel de prueba
