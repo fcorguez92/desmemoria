@@ -43,6 +43,15 @@ de cada variable exportada (se ven en el Inspector).
 | `EntitySpawner` | `Node2D` | Crea `scene` al cargar; al recibir `reset()` (vía el grupo `reset_group`) destruye la instancia actual y crea una nueva desde cero. `instance` es la entidad actual |
 | `TextTileMap` | `TileMapLayer` | Construye el nivel desde un `.map` de texto (un carácter por baldosa, según `legend`). Los caracteres que no están en la leyenda son **marcadores**: no ponen baldosa y su posición queda en `markers[carácter]` para que el nivel coloque entidades. Al exportar hay que incluir `*.map` en los filtros de recursos no gráficos |
 
+## Interfaz (`core/ui/`)
+
+Controles genéricos para el HUD. No saben de dónde vienen los números: el dueño llama a `set_values()`.
+
+| Control | Base | Responsabilidad |
+|---|---|---|
+| `SegmentedBar` | `Control` | Barra con un segmento por punto de `max_value`, dibujada con rectángulos (marco, fondo, relleno con luz y sombra). `set_values(valor, máximo)`; colores y tamaño de segmento configurables |
+| `IconRow` | `Control` | Fila de iconos de una hoja de sprites: `count` llenos y el resto hasta `max_count` vacíos (`full_frame`/`empty_frame`). Sirve para cargas de curación, llaves, munición. `set_values(cantidad, máximo)` |
+
 ## Efectos (`core/effects/`)
 
 | Efecto | Responsabilidad |

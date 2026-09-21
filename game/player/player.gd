@@ -5,6 +5,7 @@ extends CharacterBody2D
 ## El orden de _physics_process es deliberado (ver docs/arquitectura.md).
 
 const EchoScene := preload("res://game/echo/echo.tscn")
+const Hud := preload("res://game/ui/hud.gd")
 const ABILITY_NAMES := {
 	&"dash": "Dash",
 	&"double_jump": "Doble salto",
@@ -32,11 +33,7 @@ var _message_id: int = 0
 @onready var weapon: TieredUpgrade = $WeaponUpgrade
 @onready var visual: Sprite2D = $Visual
 @onready var animator: SheetAnimator = $SheetAnimator
-@onready var health_label: Label = $HUD/HealthLabel
-@onready var ecos_label: Label = $HUD/EcosLabel
-@onready var heal_label: Label = $HUD/HealLabel
-@onready var weapon_label: Label = $HUD/WeaponLabel
-@onready var message_label: Label = $HUD/MessageLabel
+@onready var hud: Hud = $HUD
 
 
 func _ready() -> void:
@@ -189,10 +186,10 @@ func _on_hit_landed(body: Node) -> void:
 func _show_message(text: String) -> void:
 	_message_id += 1
 	var this_message := _message_id
-	message_label.text = text
+	hud.set_message(text)
 	await get_tree().create_timer(MESSAGE_SECONDS).timeout
 	if this_message == _message_id:
-		message_label.text = ""
+		hud.set_message("")
 
 
 ## Golpe desviado: sin daño, con efectos azules, y el atacante queda aturdido.
@@ -211,7 +208,6 @@ func _on_weapon_changed() -> void:
 
 
 func _update_hud() -> void:
-	health_label.text = "Vida: %d/%d" % [health.health, health.max_health]
-	ecos_label.text = "Ecos: %d" % ecos
-	heal_label.text = "Curación (H): %d/%d" % [health.heal_charges, health.max_heal_charges]
-	weapon_label.text = "Filo: nivel %d (daño %d)" % [weapon.level + 1, weapon.current_value()]
+	hud.set_health(health.health, health.max_health)
+	hud.set_heal_charges(health.heal_charges, health.max_heal_charges)
+	hud.set_ecos(ecos)
