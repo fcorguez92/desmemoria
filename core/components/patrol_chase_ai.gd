@@ -104,11 +104,18 @@ func interrupt(stagger_time: float = 0.3) -> void:
 ## Camina en `direction`. Devuelve false si no puede avanzar (pared o borde).
 func _walk(body: CharacterBody2D, direction: int, speed: float) -> bool:
 	_set_facing(direction)
-	if body.is_on_wall() or _ledge_ahead(body):
+	if _wall_ahead(body, direction) or _ledge_ahead(body):
 		body.velocity.x = 0.0
 		return false
 	body.velocity.x = direction * speed
 	return true
+
+
+## ¿Hay una pared justo delante, en la dirección en la que se quiere caminar?
+## Una pared a la espalda no cuenta: si no, un enemigo pegado a una pared daría la
+## vuelta cada frame (viendo siempre "pared") y nunca se apartaría, vibrando.
+func _wall_ahead(body: CharacterBody2D, direction: int) -> bool:
+	return body.is_on_wall() and int(signf(body.get_wall_normal().x)) == -direction
 
 
 func _ledge_ahead(body: CharacterBody2D) -> bool:

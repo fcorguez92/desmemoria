@@ -48,6 +48,7 @@ func _run() -> void:
 	await _test_wall_jump_opens_the_shaft()
 	await _test_ultimo_umbral_builds_from_text_map()
 	await _test_planks_are_one_way_platforms()
+	await _test_enemy_does_not_jitter_against_a_wall()
 
 
 # --- Tests -------------------------------------------------------------------
@@ -701,6 +702,35 @@ func _test_planks_are_one_way_platforms() -> void:
 		highest_y = minf(highest_y, _player.global_position.y)
 	Input.action_release("ui_down")
 	_check(highest_y < ground_y - 20.0, "en suelo sólido, abajo + salto sigue saltando")
+
+
+
+func _test_enemy_does_not_jitter_against_a_wall() -> void:
+	print("\n[Un enemigo pegado a una pared se aparta en vez de vibrar]")
+	if is_instance_valid(_level):
+		_level.queue_free()
+		await process_frame
+	paused = false
+	_level = load("res://game/levels/ultimo_umbral.tscn").instantiate()
+	root.add_child(_level)
+	await process_frame
+	await process_frame
+	var enemy: Node2D = null
+	for child in _level.get_children():
+		if child is EntitySpawner:
+			enemy = child.instance
+			break
+	var flips := [0]
+	enemy.ai.facing_changed.connect(func(_facing: int) -> void: flips[0] += 1)
+	# Mira hacia una pared cercana (un bloque de escombros a su derecha) desde el principio.
+	var min_x := enemy.global_position.x
+	var max_x := enemy.global_position.x
+	for i in 240:
+		await physics_frame
+		min_x = minf(min_x, enemy.global_position.x)
+		max_x = maxf(max_x, enemy.global_position.x)
+	_check(flips[0] <= 6, "el enemigo no cambia de dirección cada frame (%d cambios en 4 s)" % flips[0])
+	_check(max_x - min_x > 20.0, "el enemigo sigue patrullando en vez de quedarse pegado a la pared")
 
 
 # --- Utilidades --------------------------------------------------------------
