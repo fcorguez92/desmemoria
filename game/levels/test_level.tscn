@@ -1,10 +1,22 @@
-[gd_scene load_steps=11 format=3]
+[gd_scene load_steps=15 format=3]
 
 [ext_resource type="PackedScene" path="res://game/player/player.tscn" id="1_player"]
 [ext_resource type="PackedScene" path="res://game/enemy/enemy.tscn" id="2_enemy"]
 [ext_resource type="PackedScene" path="res://game/memory_anchor/memory_anchor.tscn" id="3_anchor"]
 [ext_resource type="Script" path="res://core/objects/entity_spawner.gd" id="4_spawner"]
 [ext_resource type="PackedScene" path="res://game/ability_pickup/ability_pickup.tscn" id="5_pickup"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_platform_f"]
+size = Vector2(360, 30)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_wall_l"]
+size = Vector2(40, 300)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_wall_r"]
+size = Vector2(40, 380)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_platform_g"]
+size = Vector2(220, 30)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_platform_e"]
 size = Vector2(280, 30)
@@ -107,3 +119,50 @@ polygon = PackedVector2Array(-140, -15, 140, -15, 140, 15, -140, 15)
 
 [node name="MemoryAnchor3" parent="." instance=ExtResource("3_anchor")]
 position = Vector2(2140, -78)
+
+[node name="WallJumpPickup" parent="." instance=ExtResource("5_pickup")]
+position = Vector2(2080, -66)
+ability_id = &"wall_jump"
+
+[node name="PlatformF" type="StaticBody2D" parent="."]
+position = Vector2(2380, -35)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="PlatformF"]
+shape = SubResource("RectangleShape2D_platform_f")
+
+[node name="Visual" type="Polygon2D" parent="PlatformF"]
+color = Color(0.32, 0.45, 0.35, 1)
+polygon = PackedVector2Array(-180, -15, 180, -15, 180, 15, -180, 15)
+
+[node name="WallL" type="StaticBody2D" parent="."]
+position = Vector2(2300, -280)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="WallL"]
+shape = SubResource("RectangleShape2D_wall_l")
+
+[node name="Visual" type="Polygon2D" parent="WallL"]
+color = Color(0.26, 0.28, 0.32, 1)
+polygon = PackedVector2Array(-20, -150, 20, -150, 20, 150, -20, 150)
+
+[node name="WallR" type="StaticBody2D" parent="."]
+position = Vector2(2460, -240)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="WallR"]
+shape = SubResource("RectangleShape2D_wall_r")
+
+[node name="Visual" type="Polygon2D" parent="WallR"]
+color = Color(0.26, 0.28, 0.32, 1)
+polygon = PackedVector2Array(-20, -190, 20, -190, 20, 190, -20, 190)
+
+[node name="PlatformG" type="StaticBody2D" parent="."]
+position = Vector2(2590, -415)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="PlatformG"]
+shape = SubResource("RectangleShape2D_platform_g")
+
+[node name="Visual" type="Polygon2D" parent="PlatformG"]
+color = Color(0.32, 0.45, 0.35, 1)
+polygon = PackedVector2Array(-110, -15, 110, -15, 110, 15, -110, 15)
+
+[node name="MemoryAnchor4" parent="." instance=ExtResource("3_anchor")]
+position = Vector2(2590, -458)

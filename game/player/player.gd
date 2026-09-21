@@ -5,7 +5,11 @@ extends CharacterBody2D
 ## El orden de _physics_process es deliberado (ver docs/arquitectura.md).
 
 const EchoScene := preload("res://game/echo/echo.tscn")
-const ABILITY_NAMES := {&"dash": "Dash", &"double_jump": "Doble salto"}
+const ABILITY_NAMES := {
+	&"dash": "Dash",
+	&"double_jump": "Doble salto",
+	&"wall_jump": "Salto de pared",
+}
 const MESSAGE_SECONDS := 3.0
 
 var ecos: int = 0
@@ -90,6 +94,8 @@ func unlock_ability(id: StringName) -> void:
 			dash.unlocked = true
 		&"double_jump":
 			motor.max_air_jumps = 1
+		&"wall_jump":
+			motor.can_wall_jump = true
 		_:
 			push_warning("Habilidad desconocida: %s" % id)
 			return

@@ -53,6 +53,14 @@ Cada entrada: qué se decidió, por qué, qué alternativas se descartaron y por
 
 **Decidido por**: el usuario pidió Z y un lugar temático; Claude propuso el concepto.
 
+## 2026-09-22 — Salto de pared en cualquier pared, dentro del movimiento
+
+**Decisión**: con la habilidad conseguida, mantener la dirección hacia una pared en el aire hace resbalar despacio (120 px/s), y saltar desde ella empuja hacia el lado contrario (350 px/s horizontal, -850 vertical) con un breve bloqueo de la dirección para que el empuje no se anule al instante. Funciona en cualquier pared. El salto de pared no gasta el doble salto.
+
+**Por qué**: es la última habilidad del conjunto y encaja con el manejo tipo Hollow Knight que pidió el usuario. El diseño original hablaba de "grietas marcadas"; se ha simplificado porque marcar superficies añade trabajo de nivel sin aportar nada a esta fase. Decisión tomada por Claude por defecto y comunicada; fácil de restringir después.
+
+**Técnico**: va dentro de `PlatformerMotor` (como el doble salto) para compartir los márgenes de salto. Prioridad al pulsar salto: suelo o coyote > pared > salto extra. El nivel de prueba gana un pozo estrecho cuya salida solo se alcanza con esta habilidad, y un test con un "robot" que sube el pozo saltando de pared a pared demuestra que es posible y que sin la habilidad no.
+
 ## 2026-09-21 — Feedback visual del combate con formas simples
 
 **Decisión**: brazo con arma que golpea (y se levanta durante el aviso del enemigo), destello del arco del golpe, chispazo en el impacto y temblor de cámara. Todo genérico en `core/` (`AttackVisualComponent`, `ScreenShakeComponent`, `HitSpark`) y sin arte final.

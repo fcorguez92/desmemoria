@@ -17,7 +17,7 @@ no se mueven solos: el dueño llama a su `step()` en un orden explícito.
 | Componente | Responsabilidad | API principal |
 |---|---|---|
 | `HealthComponent` | Vida, invulnerabilidad tras daño, cargas de curación | `take_hit(amount) -> bool`, `use_heal_charge() -> bool`, `reset_health()`, `restore()`; señales `changed`, `damaged(amount)`, `died` |
-| `PlatformerMotor` | Movimiento lateral, gravedad, salto con coyote time, jump buffering y salto variable, y saltos extra en el aire (`max_air_jumps`: 0 = ninguno, 1 = doble salto) | `step(body, delta)`, `facing`; señal `facing_changed(facing)` |
+| `PlatformerMotor` | Movimiento lateral, gravedad, salto con coyote time, jump buffering y salto variable, saltos extra en el aire (`max_air_jumps`: 0 = ninguno, 1 = doble salto) y agarre/salto de pared (`can_wall_jump`, con `wall_slide_speed`, `wall_jump_push`, etc.). Al pulsar salto: suelo > pared > salto extra | `step(body, delta)`, `facing`; señal `facing_changed(facing)` |
 | `DashComponent` | Empujón horizontal recto que ignora la gravedad | `step(body, facing, delta)`, `is_dashing`; `unlocked` (false = habilidad aún no conseguida) |
 | `MeleeAttackComponent` | Golpe cuerpo a cuerpo con enfriamiento sobre un `Area2D`. Con `target_group` solo golpea a ese grupo (vacío = a todo lo golpeable) | `try_attack(attacker, facing) -> bool`, `set_facing(facing)`; señal `hit_landed(body)` por cada cuerpo alcanzado; exporta `hitbox` |
 | `KnockbackComponent` | Retroceso horizontal breve al recibir un golpe. Mientras `is_active`, el dueño deja que mande sobre la velocidad | `apply(direction)`, `step(body, delta)`, `is_active` |

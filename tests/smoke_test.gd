@@ -41,6 +41,8 @@ func _run() -> void:
 	await _test_ability_pickups()
 	await _test_dash_gates_the_far_platform()
 	await _test_double_jump_reaches_high_platform()
+	await _test_wall_slide_and_wall_jump()
+	await _test_wall_jump_opens_the_shaft()
 
 
 # --- Tests -------------------------------------------------------------------
@@ -341,6 +343,91 @@ func _test_ability_pickups() -> void:
 	_player.health.take_hit(99)
 	await _wait(2)
 	_check(_player.dash.unlocked, "morir no pierde las habilidades")
+
+
+func _test_wall_slide_and_wall_jump() -> void:
+	var with_wall := await _wall_probe(true)
+	var without_wall := await _wall_probe(false)
+	print("\n[Agarre y salto de pared]")
+	_check(with_wall["slide_speed"] <= 125.0, "agarrado a la pared, la caída se ralentiza")
+	_check(without_wall["slide_speed"] > 300.0, "sin la habilidad se cae con normalidad")
+	_check(with_wall["jump_vx"] > 150.0 and with_wall["jump_vy"] < -400.0, "saltar desde la pared empuja hacia fuera y hacia arriba")
+	_check(without_wall["jump_vy"] > -400.0, "sin la habilidad no hay salto de pared")
+
+
+## Coloca al jugador pegado a la pared izquierda del pozo, a media altura,
+## manteniendo la dirección hacia ella. Devuelve la velocidad máxima de caída
+## observada y la velocidad justo tras pulsar salto.
+func _wall_probe(unlocked: bool) -> Dictionary:
+	await _fresh_level("", false)
+	_player.unlock_ability(&"double_jump")
+	if unlocked:
+		_player.unlock_ability(&"wall_jump")
+	_player.global_position = Vector2(2332, -250)
+	_player.velocity = Vector2.ZERO
+	Input.action_press("ui_left")
+	var max_fall := 0.0
+	for i in 8:
+		await physics_frame
+		max_fall = maxf(max_fall, _player.velocity.y)
+	Input.action_press("ui_accept")
+	await physics_frame
+	await physics_frame
+	var result := {"slide_speed": max_fall, "jump_vx": _player.velocity.x, "jump_vy": _player.velocity.y}
+	Input.action_release("ui_accept")
+	Input.action_release("ui_left")
+	return result
+
+
+func _test_wall_jump_opens_the_shaft() -> void:
+	var reached_with := await _climb_shaft(true)
+	var reached_without := await _climb_shaft(false)
+	print("\n[El salto de pared abre la salida del pozo]")
+	_check(reached_with, "con salto de pared se sale del pozo por arriba")
+	_check(not reached_without, "sin salto de pared (ni con doble salto) no se sale")
+
+
+## "Robot" que sube el pozo saltando de una pared a la otra. Devuelve true si
+## llega a la plataforma superior.
+func _climb_shaft(wall_jump: bool) -> bool:
+	await _fresh_level("", false)
+	_player.unlock_ability(&"double_jump")
+	if wall_jump:
+		_player.unlock_ability(&"wall_jump")
+	_player.global_position = Vector2(2380, -74)
+	_player.velocity = Vector2.ZERO
+
+	var holding_jump := false
+	var cooldown := 0
+	var reached := false
+	Input.action_press("ui_left")
+	for i in 1200:
+		await physics_frame
+		if _player.is_on_floor() and _player.global_position.y < -440.0:
+			reached = true
+			break
+		cooldown = maxi(cooldown - 1, 0)
+		# Se suelta el salto al pasar el punto más alto, como haría una persona.
+		if holding_jump and _player.velocity.y >= -50.0:
+			Input.action_release("ui_accept")
+			holding_jump = false
+		if holding_jump or cooldown > 0:
+			continue
+		var on_wall: bool = _player.is_on_wall() and not _player.is_on_floor()
+		if _player.is_on_floor() or on_wall:
+			if on_wall:
+				# Hacia la pared contraria, es decir, hacia donde apunta la normal.
+				var away: int = int(signf(_player.get_wall_normal().x))
+				Input.action_release("ui_left")
+				Input.action_release("ui_right")
+				Input.action_press("ui_right" if away > 0 else "ui_left")
+			Input.action_press("ui_accept")
+			holding_jump = true
+			cooldown = 14
+	Input.action_release("ui_accept")
+	Input.action_release("ui_left")
+	Input.action_release("ui_right")
+	return reached
 
 
 func _test_double_jump_reaches_high_platform() -> void:

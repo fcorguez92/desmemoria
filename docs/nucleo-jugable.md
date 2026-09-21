@@ -43,7 +43,7 @@ Estas cifras son de partida y sirven para comprobar el ritmo del combate; el dis
 Cada habilidad es narrativamente una técnica recordada de otra persona (ver docs/historia.md); desbloquearla es a la vez progreso mecánico y revelación de historia.
 
 1. **Dash** — desplazamiento horizontal rápido. *(implementado)*
-2. **Trepar/saltar en pared** — asciende por grietas específicas marcadas en el entorno. *(pendiente)*
+2. **Salto de pared** — te agarras a una pared manteniendo la dirección hacia ella (resbalas despacio) y saltas desde ella, empujado hacia el lado contrario, lo que permite subir pozos estrechos saltando de una pared a la otra. Funciona en **cualquier pared**, no solo en grietas marcadas como se pensó al principio: encaja con el manejo tipo Hollow Knight y es más simple; si más adelante se quiere restringir a superficies concretas, es un cambio pequeño. *(implementado)*
 3. **Doble salto** — un salto extra en el aire, algo más corto que el primero. *(implementado)*
 4. **Excavar/romper suelo** — abre Las Minas del Origen como red de atajos entre regiones de superficie (ver docs/mundo.md).
 
@@ -53,6 +53,8 @@ Ninguna habilidad se tiene al empezar: se consiguen recogiendo un **recuerdo** (
 
 - El **dash** está en la plataforma elevada, y abre el hueco ancho que hay detrás.
 - El **doble salto** está en la última plataforma verde, y abre una plataforma alta a la derecha que sin él es inalcanzable.
+
+- El **salto de pared** está en la plataforma alta del doble salto, y abre un pozo estrecho a su derecha: sin él no se puede salir por arriba, ni siquiera con doble salto. Arriba hay una plataforma con otro Ancla.
 
 Es el bucle metroidvania: encuentro una técnica, y un camino antes cerrado se abre.
 

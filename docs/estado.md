@@ -10,7 +10,7 @@
 4. Diseño de la arquitectura — **hecho** (ver `arquitectura.md`): capas `core/`/`game/`, patrón de componentes, contratos.
 5. Diseño del núcleo jugable — hecho (ver `nucleo-jugable.md`).
 6. Prototipo jugable mínimo — hecho.
-7. Validación del núcleo — hecho: movimiento, combate, vida/muerte/Ecos, dash que abre camino, puntos de control con curación.
+7. Validación del núcleo — hecho: movimiento, combate con enemigos y feedback, vida/muerte/Ecos, mejora del arma, puntos de control con curación y las tres habilidades de movimiento (dash, doble salto, salto de pared) que se consiguen en el mundo y abren caminos.
 8. Vertical slice — siguiente fase, todavía no empezada.
 
 ## Qué existe ahora mismo
@@ -18,7 +18,7 @@
 ```
 core/         Base reutilizable: 12 componentes + 3 objetos + 1 efecto (ver core/README.md)
 game/         player, enemy (de prueba), echo, memory_anchor, ability_pickup, levels/test_level
-tests/        smoke_test.gd — 83 comprobaciones, todas en verde
+tests/        smoke_test.gd — 89 comprobaciones, todas en verde
 docs/         Diseño, decisiones, arquitectura y estado
 ```
 
@@ -28,6 +28,7 @@ de esta fase era validar cómo se siente, no cómo se ve.
 ## Controles actuales
 
 - Flecha izq/dcha: moverse · Espacio: saltar · Flecha arriba/abajo: mirar
+- En el aire, Espacio otra vez: doble salto (tras conseguirlo) · Junto a una pared, mantén la dirección hacia ella para agarrarte y pulsa Espacio para saltar de ella (tras conseguirlo)
 - X: atacar · Shift izquierdo: dash · H: curarse (si quedan cargas y no estás a vida completa) · Z: interactuar (descansar en un Ancla) · C: mejorar el Filo (en un Ancla)
 
 ## Qué falta del núcleo jugable
@@ -35,8 +36,6 @@ de esta fase era validar cómo se siente, no cómo se ve.
 - Reinicio de enemigos por zonas: hoy al morir o descansar reaparecen todos los
   del nivel; cuando haya varias zonas, limitarlo a la zona del Ancla.
 - Más usos para los Ecos aparte del Filo, y si el Filo mejora también alcance o velocidad (hoy solo sube el daño).
-- Trepar pared (dash y doble salto ya están hechos y se consiguen en el mundo). Se
-  añade como componente nuevo en `core/components/` (ver `arquitectura.md`).
 - Ajustar el ritmo del combate jugando (tiempos de aviso y recuperación, retroceso) y más tipos de enemigo (a distancia, voladores) y jefes.
 - Estadísticas del personaje más allá de la vida.
 - Capas de colisión (jugador, enemigos, entorno) cuando crezca el número de entidades.
