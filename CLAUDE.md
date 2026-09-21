@@ -80,7 +80,7 @@ Además hay que **jugarlo**: los tests miden reglas, no sensaciones.
 - `docs/historia.md` — premisa, mitología, protagonista, facciones.
 - `docs/mundo.md` — estructura geográfica, biomas, conexiones.
 - `docs/nucleo-jugable.md` — movimiento, combate, habilidades, economía, muerte/curación.
-- `docs/arte.md` — dirección artística (pixel art oscuro), resolución, paleta, tamaños de sprite y pipeline.
+- `docs/arte.md` — dirección artística (pixel art oscuro), resolución, paleta, tamaños de sprite y pipeline (sprites como texto, `tools/build_sprites.gd`).
 - `docs/estado.md` — en qué fase estamos, qué está validado, qué falta.
 
 Son documentos vivos: se actualizan según avanza el diseño, no se reescriben de
@@ -93,3 +93,9 @@ y `core/README.md` en el mismo commit.
 - Nunca hacer force push, reset destructivo, ni eliminar ramas sin aprobación explícita del usuario.
 - Preferir commits nuevos a `--amend`.
 - No modificar la configuración de git (local ni global) sin necesidad comprobada.
+
+## Arte
+
+- Los sprites se escriben como texto en `art/source/*.sprite` con la paleta de `art/palette.txt` y se convierten con `godot --headless --path . --script res://tools/build_sprites.gd` (genera los PNG junto a su escena y vistas previas ampliadas en `art/preview/`, que se pueden mirar con la herramienta de lectura de imágenes para revisar el dibujo).
+- Una sola fuente de verdad por sprite: si se retoca un PNG a mano, borrar antes su `.sprite`, o se perderá al regenerar.
+- Tras cambiar el arte, ejecutar `godot --headless --path . --import` para que Godot importe los PNG nuevos, y la prueba de humo.

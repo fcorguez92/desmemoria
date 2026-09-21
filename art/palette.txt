@@ -1,0 +1,33 @@
+# Paleta del juego. Una línea por color: <carácter> <#color hexadecimal>
+# El punto (.) siempre significa "transparente" y no se define aquí.
+# Ver docs/arte.md. Rampas de 4 tonos, de oscuro a claro.
+
+# Piedra: suelos, muros, arquitectura, ropa apagada
+1 #1b1a1f
+2 #3a3840
+3 #6a6670
+4 #a39fa8
+
+# Memoria (ámbar): objetos recordados, acentos cálidos
+a #4a2b12
+b #8a5320
+c #d18a2e
+d #f3c46a
+
+# Recuerdo (azul frío): habilidades, Ecos, luz de la Desmemoria
+e #12283a
+f #1f5573
+g #4aa3c7
+h #a9e3f2
+
+# Sangre (rojo): enemigos, daño, aviso de ataque
+r #3a1218
+s #7a2430
+t #c2453f
+u #f08a6a
+
+# Musgo (verde apagado): vegetación, zonas vivas
+m #15241a
+n #2c4a30
+o #587a4a
+p #9cb57a

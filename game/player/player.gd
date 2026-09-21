@@ -28,7 +28,8 @@ var _message_id: int = 0
 @onready var attack_visual: AttackVisualComponent = $AttackVisualComponent
 @onready var screen_shake: ScreenShakeComponent = $ScreenShakeComponent
 @onready var weapon: TieredUpgrade = $WeaponUpgrade
-@onready var visual: Polygon2D = $Visual
+@onready var visual: Sprite2D = $Visual
+@onready var animator: SheetAnimator = $SheetAnimator
 @onready var health_label: Label = $HUD/HealthLabel
 @onready var ecos_label: Label = $HUD/EcosLabel
 @onready var heal_label: Label = $HUD/HealLabel
@@ -63,6 +64,7 @@ func _physics_process(delta: float) -> void:
 	knockback.step(self, delta)
 
 	move_and_slide()
+	_update_animation()
 
 	if respawn.is_out_of_bounds(self):
 		die()
@@ -148,6 +150,15 @@ func die() -> void:
 ## inicial. Ver EntitySpawner en core/objects/.
 func _reset_world() -> void:
 	get_tree().call_group(&"resettable", &"reset")
+
+
+func _update_animation() -> void:
+	if not is_on_floor():
+		animator.play("jump" if velocity.y < 0.0 else "fall")
+	elif absf(velocity.x) > 10.0:
+		animator.play("run")
+	else:
+		animator.play("idle")
 
 
 func _on_facing_changed(facing: int) -> void:

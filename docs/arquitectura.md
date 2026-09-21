@@ -51,6 +51,11 @@ game/  ──usa──▶  core/  ──usa──▶  Godot
 │   ├── echo/                  Marcador de la última muerte
 │   ├── memory_anchor/         Punto de control (usa core/objects/checkpoint.gd)
 │   └── levels/                Niveles (hoy solo el de prueba)
+├── art/                       Fuentes del arte (no se cargan en el juego)
+│   ├── palette.txt            La paleta: un carácter por color
+│   └── source/                Sprites escritos como texto (*.sprite)
+├── tools/
+│   └── build_sprites.gd       Convierte los sprites de texto en hojas PNG
 ├── tests/
 │   └── smoke_test.gd          Prueba de humo automática
 └── docs/                      Diseño y decisiones (ver más abajo)

@@ -72,20 +72,53 @@ existan las primeras zonas reales; no antes.
 
 ## Cómo se produce (pipeline)
 
-1. Herramienta de dibujo: **Pixelorama** o **LibreSprite** (gratuitas). El arte
-   fuente se guarda en `art/source/` (proyectos de la herramienta) y lo exportado
-   en `game/.../` junto a la escena que lo usa (ver `arquitectura.md`).
-2. Exportar hojas de sprites en PNG con fondo transparente, un archivo por
-   personaje y animación.
-3. En Godot se usa `AnimatedSprite2D` o `Sprite2D` con la hoja de sprites; el
-   componente de animación se hará en cuanto exista el primer sprite real.
-4. Importación de las imágenes con el preajuste "Pixel art" (filtro Nearest, sin
-   mipmaps). Ya es el filtro por defecto del proyecto.
+El usuario no dibuja y Claude no genera imágenes, así que los sprites se escriben
+**como texto**: una cuadrícula de caracteres, uno por píxel, con los colores de
+`art/palette.txt` (el punto es transparente). Un programa los convierte en PNG.
+El texto se puede leer, corregir y versionar en Git como cualquier otro archivo.
+
+- `art/palette.txt` — la paleta: un carácter por color.
+- `art/source/*.sprite` — los sprites en texto. Se definen **piezas** (cabeza y
+  torso, capa, piernas...) y las animaciones se componen apilando piezas, así los
+  fotogramas reutilizan el mismo dibujo. El formato está explicado al principio de
+  `tools/build_sprites.gd`.
+- `tools/build_sprites.gd` — genera las hojas de sprites PNG y unas vistas previas
+  ampliadas ×8 en `art/preview/` (no se guarda en Git). Se ejecuta con:
+
+  ```
+  godot --headless --path . --script res://tools/build_sprites.gd
+  ```
+
+- **Hoja de sprites:** una fila por animación y una columna por fotograma, con el
+  personaje centrado y apoyado en los pies dentro de su lienzo. Los PNG resultantes
+  viven junto a su escena (`game/player/player_sheet.png`, `game/enemy/enemy_sheet.png`).
+- **En Godot:** el nodo `Sprite2D` usa la hoja (con `hframes` y `vframes`) y el
+  componente `SheetAnimator` (core) elige la fila y el fotograma según la
+  animación que pida el dueño.
+
+**Regla importante: una sola fuente de verdad por sprite.** Mientras exista su
+`.sprite`, ese texto manda y volver a generar sobrescribe el PNG. Si alguien
+retoca el PNG a mano en Pixelorama o LibreSprite, hay que borrar su `.sprite` (o
+guardar el retoque como nuevo fuente) para no perderlo. Así se pueden combinar las
+dos maneras: empezar con el texto y pasar a retocar a mano cuando compense.
+
+## Sprites actuales (primera pasada)
+
+| Sprite | Dibujo | Lienzo | Animaciones |
+|---|---|---|---|
+| Caminante (jugador) | 20×44, figura con capucha, ojo y bufanda de luz azul | 32×56 | reposo (2), correr (4), salto (1), caída (1) |
+| Cascarón (enemigo) | 24×44, figura pálida sin rostro con trapos rojos | 40×56 | reposo (2), andar (4) |
+
+Son un primer dibujo funcional, no arte final. Todavía no tienen animación de
+golpe recibido, muerte, dash ni agarre de pared; el ataque sigue usando el brazo
+provisional de `core/` (barra blanca o roja) superpuesto al sprite.
 
 ## Reglas sobre IA en el arte
 
-- De momento el arte lo hace el usuario con herramientas gratuitas, y Claude
-  ayuda con integración, animación y paletas. Claude no genera imágenes.
+- El usuario no dibuja. Claude no genera imágenes, pero sí escribe los sprites como
+  texto con la paleta (ver "Cómo se produce") y revisa el resultado viendo las
+  vistas previas. El usuario decide qué le gusta y qué cambiar, y puede retocar
+  los PNG en Pixelorama o LibreSprite cuando quiera.
 - Si más adelante se usa una herramienta de IA para sprites: revisar cada
   resultado, mantener la paleta de este documento y registrar qué parte es
   aportación humana. Steam solo pide declarar la IA cuyo contenido llega al

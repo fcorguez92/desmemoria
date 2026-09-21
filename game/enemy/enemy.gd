@@ -14,7 +14,8 @@ const TELEGRAPH_COLOR := Color(1.0, 0.85, 0.3)
 @onready var melee: MeleeAttackComponent = $MeleeAttackComponent
 @onready var knockback: KnockbackComponent = $KnockbackComponent
 @onready var attack_visual: AttackVisualComponent = $AttackVisualComponent
-@onready var visual: Polygon2D = $Visual
+@onready var visual: Sprite2D = $Visual
+@onready var animator: SheetAnimator = $SheetAnimator
 
 
 func _ready() -> void:
@@ -38,6 +39,7 @@ func _physics_process(delta: float) -> void:
 		ai.step(self, delta)
 
 	move_and_slide()
+	animator.play("walk" if absf(velocity.x) > 5.0 else "idle")
 
 
 ## Contrato "golpeable" (ver docs/arquitectura.md).

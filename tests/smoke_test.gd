@@ -36,6 +36,7 @@ func _run() -> void:
 	await _test_enemy_chases_telegraphs_and_hits()
 	await _test_enemy_attack_can_be_dodged_and_interrupted()
 	await _test_attack_feedback()
+	await _test_sprites_and_animations()
 	await _test_enemies_respawn_on_rest_and_death()
 	await _test_weapon_upgrade_at_anchor()
 	await _test_ability_pickups()
@@ -244,6 +245,33 @@ func _test_attack_feedback() -> void:
 	_check(ev.arm.rotation * ev.facing < ev.rest_angle - 0.5, "el enemigo levanta el brazo durante el aviso")
 	await _wait(60)
 	_check(absf(ev.arm.rotation * ev.facing - ev.rest_angle) < 0.1, "tras golpear, el brazo del enemigo vuelve al reposo")
+
+
+func _test_sprites_and_animations() -> void:
+	await _fresh_level("Sprites y animaciones", true, true, "EnemySpawn1")
+	var enemy: Node2D = _level.get_node("EnemySpawn1").instance
+	var player_sprite: Sprite2D = _player.visual
+	var enemy_sprite: Sprite2D = enemy.visual
+	_check(player_sprite.texture.get_size() == Vector2(player_sprite.hframes * 32, player_sprite.vframes * 56), "la hoja del jugador cuadra con su cuadrícula de 32x56")
+	_check(enemy_sprite.texture.get_size() == Vector2(enemy_sprite.hframes * 40, enemy_sprite.vframes * 56), "la hoja del enemigo cuadra con su cuadrícula de 40x56")
+
+	await _wait(15)
+	_check(_player.animator.current == "idle", "quieto en el suelo usa la animación de reposo")
+	Input.action_press("ui_right")
+	await _wait(10)
+	Input.action_release("ui_right")
+	_check(_player.animator.current == "run", "andando usa la animación de correr")
+	_check(player_sprite.frame >= 4 and player_sprite.frame < 8, "correr muestra fotogramas de la segunda fila de la hoja")
+
+	Input.action_press("ui_accept")
+	await _wait(6)
+	Input.action_release("ui_accept")
+	_check(_player.animator.current == "jump", "subiendo usa la animación de salto")
+	await _wait(60)
+	_check(_player.animator.current in ["idle", "run"], "al aterrizar vuelve a reposo o correr")
+
+	await _wait(30)
+	_check(enemy.animator.current in ["idle", "walk"], "el enemigo usa una de sus animaciones")
 
 
 func _test_enemies_respawn_on_rest_and_death() -> void:

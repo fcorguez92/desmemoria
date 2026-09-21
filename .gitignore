@@ -10,3 +10,6 @@
 # OS
 Thumbs.db
 .DS_Store
+
+# Vistas previas ampliadas de los sprites (las genera tools/build_sprites.gd)
+art/preview/

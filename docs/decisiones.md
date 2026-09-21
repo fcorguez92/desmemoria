@@ -67,6 +67,18 @@ Cada entrada: qué se decidió, por qué, qué alternativas se descartaron y por
 
 **Técnico**: se ajusta `project.godot` (ventana 864×486, ampliación a 1728×972, estirado "viewport" con escalado entero, filtro "Nearest" y ajuste al píxel). Se probó primero 640×360 y el usuario lo encontró demasiado cerrado; 864×486 muestra un 35 % más de mundo y cabe en ventana con escalado ×2 en su pantalla de 1920×1080 (área útil 1032 px de alto). Con la resolución por defecto de Godot (1152×648) se veía más mundo pero sin píxeles nítidos.
 
+## 2026-09-22 — Sprites escritos como texto y convertidos a PNG
+
+**Decisión**: los sprites se escriben como cuadrículas de texto con una paleta (`art/source/*.sprite`, `art/palette.txt`) y `tools/build_sprites.gd` los convierte en hojas PNG. Se define en piezas reutilizables (cabeza y torso, capa, piernas) que se apilan para formar los fotogramas. `SheetAnimator` (core) los anima en el juego.
+
+**Por qué**: el usuario no sabe dibujar y Claude no genera imágenes. Como texto, el arte es legible, se versiona en Git y Claude puede escribirlo y corregirlo; además Claude puede **ver** el resultado (vistas previas ampliadas y capturas del juego) y iterar, algo que no ocurre con herramientas de IA externas. Coste cero y sin dependencias.
+
+**Alternativas**: instalar Pixelorama/LibreSprite para que el usuario dibuje (sigue disponible para retocar), o una IA de sprites de pago (descartada por ahora por coste y consistencia).
+
+**Límite conocido**: las piezas apiladas dan animaciones sencillas y algo rígidas (el torso no se mueve entre fotogramas). Sirve para una primera versión; el arte final podrá retocarse a mano. Regla: una sola fuente de verdad por sprite (ver `arte.md`).
+
+**Resultado**: primer caminante (jugador) y primer cascarón (enemigo) con animaciones de reposo, correr/andar, salto y caída, integrados y probados.
+
 ## 2026-09-22 — Salto de pared en cualquier pared, dentro del movimiento
 
 **Decisión**: con la habilidad conseguida, mantener la dirección hacia una pared en el aire hace resbalar despacio (120 px/s), y saltar desde ella empuja hacia el lado contrario (350 px/s horizontal, -850 vertical) con un breve bloqueo de la dirección para que el empuje no se anule al instante. Funciona en cualquier pared. El salto de pared no gasta el doble salto.
