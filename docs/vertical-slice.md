@@ -52,7 +52,7 @@ explique.
   abajo y por los lados, y solo se pisan desde arriba (colisionan solo en una franja
   fina de 4 px en su borde superior; el resto es puro decorado). Por ejemplo, se
   puede pasar bajo el tejado de la cabaña o saltar a través de él para subirse.
-  Todavía no se puede bajar atravesándolos (por ejemplo, con abajo + salto).
+  Con abajo + salto sobre un tablón se baja atravesándolo (`can_drop_through` del motor).
 - `game/levels/ultimo_umbral.tscn` — un `TextTileMap` (core) con el `TileSet`
   `tiles_umbral.tres` y su leyenda.
 - `game/levels/ultimo_umbral.gd` — coloca jugador, Anclas y enemigos en los

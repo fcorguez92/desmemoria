@@ -27,7 +27,7 @@ de esta fase era validar cómo se siente, no cómo se ve.
 
 ## Controles actuales
 
-- Flecha izq/dcha: moverse · Espacio: saltar · Flecha arriba/abajo: mirar
+- Flecha izq/dcha: moverse · Espacio: saltar · Flecha arriba/abajo: mirar · Abajo + Espacio sobre un tablón: bajar atravesándolo
 - En el aire, Espacio otra vez: doble salto (tras conseguirlo) · Junto a una pared, mantén la dirección hacia ella para agarrarte y pulsa Espacio para saltar de ella (tras conseguirlo)
 - X: atacar · V: parry · Shift izquierdo: dash · H: curarse (si quedan cargas y no estás a vida completa) · Z: descansar en un Ancla y abrir su menú (Intro elige, Esc o Z cierra)
 
