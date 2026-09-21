@@ -412,8 +412,13 @@ func _test_anchor_menu_keyboard_and_pause() -> void:
 	await _wait(10)
 	_check(_player.global_position == before, "con el menú abierto el jugador no se mueve")
 
+	var panel: Control = menu.get_node("Root/Panel")
+	var size_before := panel.size
+	var rows_before: int = menu.menu.get_child_count()
 	await _press_action("ui_down")
 	_check(menu.menu.selected == 1, "la flecha abajo mueve la selección")
+	_check(panel.size == size_before, "el tamaño del menú no cambia al mover la selección")
+	_check(menu.menu.get_child_count() == rows_before, "mover la selección no duplica filas (ni un frame)")
 	await _press_action("ui_down")
 	_check(menu.menu.selected == 0, "la selección da la vuelta")
 	await _press_action("ui_cancel")
@@ -424,9 +429,28 @@ func _test_anchor_menu_keyboard_and_pause() -> void:
 	_check(not menu.is_open() and not paused, "volver a pulsar Z cierra el menú")
 
 	_player.rest_at(_player.global_position)
+	await _wait(30)
+	var standing_y: float = _player.global_position.y
 	await _press_action("ui_down")
 	await _press_action("ui_accept")
 	_check(not menu.is_open() and not paused, "la opción Salir cierra el menú")
+	var highest_y := standing_y
+	for i in 30:
+		await physics_frame
+		highest_y = minf(highest_y, _player.global_position.y)
+	_check(highest_y > standing_y - 5.0, "aceptar Salir no hace saltar al personaje")
+
+	# Lo mismo con Z estando junto al Ancla: abrir y cerrar con Z no debe reabrir el menú.
+	var anchor: Node2D = _level.get_node("MemoryAnchor2")
+	_player.global_position = anchor.global_position
+	_player.velocity = Vector2.ZERO
+	await _wait(15)
+	await _press_action("interact")
+	await _wait(5)
+	_check(menu.is_open(), "Z junto al Ancla abre el menú")
+	await _press_action("interact")
+	await _wait(15)
+	_check(not menu.is_open() and not paused, "cerrar con Z cierra el menú y no lo reabre")
 	# Sin Ecos suficientes, la mejora sale atenuada y el cursor empieza en Salir.
 	_player.ecos = 0
 	_player.rest_at(_player.global_position)

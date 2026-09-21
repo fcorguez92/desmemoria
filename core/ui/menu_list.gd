@@ -20,8 +20,10 @@ signal cancelled
 @export var normal_color: Color = Color("#a39fa8")
 @export var selected_color: Color = Color("#f3c46a")
 @export var disabled_color: Color = Color("#6a6670")
-## Texto que se antepone a la opción seleccionada.
-@export var cursor: String = "› "
+## Texto que se muestra junto a la opción seleccionada.
+@export var cursor: String = "›"
+## Ancho fijo (en píxeles) de la columna del cursor.
+@export var cursor_width: int = 18
 
 var selected: int = 0
 
@@ -83,20 +85,43 @@ func _input(event: InputEvent) -> void:
 	get_viewport().set_input_as_handled()
 
 
+## Las filas se crean una sola vez y después solo se actualizan (texto y color).
+## Borrar y recrear con `queue_free` dejaría un frame con filas viejas y nuevas a
+## la vez, y el menú "temblaría" al mover la selección.
 func _rebuild() -> void:
-	for child in get_children():
-		child.queue_free()
+	while get_child_count() > _texts.size():
+		var extra := get_child(get_child_count() - 1)
+		remove_child(extra)
+		extra.queue_free()
+	while get_child_count() < _texts.size():
+		add_child(_make_row())
 	for i in _texts.size():
-		var label := Label.new()
-		var is_selected := i == selected
-		label.text = (cursor if is_selected else " ".repeat(cursor.length())) + _texts[i]
-		var color := normal_color
-		if not _enabled[i]:
-			color = disabled_color
-		elif is_selected:
-			color = selected_color
-		label.add_theme_color_override(&"font_color", color)
-		add_child(label)
+		_style_row(get_child(i) as HBoxContainer, i)
+
+
+## Una fila: el cursor en su propia columna de ancho fijo (así el texto no se
+## desplaza ni cambia el ancho del menú) y el texto de la opción.
+func _make_row() -> HBoxContainer:
+	var cursor_label := Label.new()
+	cursor_label.custom_minimum_size.x = cursor_width
+	var row := HBoxContainer.new()
+	row.add_child(cursor_label)
+	row.add_child(Label.new())
+	return row
+
+
+func _style_row(row: HBoxContainer, index: int) -> void:
+	var color := normal_color
+	if not _enabled[index]:
+		color = disabled_color
+	elif index == selected:
+		color = selected_color
+	var cursor_label := row.get_child(0) as Label
+	var text_label := row.get_child(1) as Label
+	cursor_label.text = cursor if index == selected else ""
+	text_label.text = _texts[index]
+	cursor_label.add_theme_color_override(&"font_color", color)
+	text_label.add_theme_color_override(&"font_color", color)
 
 
 func _all_true(count: int) -> Array[bool]:

@@ -10,7 +10,7 @@ Cada entrada: qué se decidió, por qué, qué alternativas se descartaron y por
 
 **Por qué**: el menú es la estructura donde irán las nuevas opciones cuando existan; añadirlas será una entrada más. Para el inventario se esperará a que haya objetos que guardar.
 
-**Técnico**: el menú pausa el árbol y sus nodos usan `process_mode = When Paused`. Las pruebas simulan teclas con eventos de acción reales (`Input.parse_input_event`) y deben soltarlas después, o la acción queda pulsada para las pruebas siguientes.
+**Técnico**: el menú pausa el árbol y sus nodos usan `process_mode = When Paused`. Las pruebas simulan teclas con eventos de acción reales (`Input.parse_input_event`) y deben soltarlas después, o la acción queda pulsada para las pruebas siguientes. Al cerrar, el juego se reanuda dos frames de física más tarde (no en el mismo): la tecla que cierra el menú (Espacio, que también es el salto; Z, que también abre el Ancla) seguiría contando como "recién pulsada" y el juego la ejecutaría. `Input.action_release` no sirve para esto: pone la acción en "no pulsada" pero Godot sigue devolviendo `is_action_just_pressed` verdadero en ese frame. Al mover la selección, las filas de `MenuList` se reutilizan en vez de recrearse: `queue_free` deja las viejas vivas un frame y el panel temblaba.
 
 ## 2026-09-24 — Niveles como texto: mapa `.map` + `TileMapLayer` (sin editor de niveles)
 

@@ -35,8 +35,16 @@ func close() -> void:
 	if not root.visible:
 		return
 	root.visible = false
-	get_tree().paused = false
 	closed.emit()
+	# El juego se reanuda un par de frames de física después, no en el mismo: la
+	# pulsación que cierra el menú (Espacio, que también es el salto, o Z, que
+	# también abre el Ancla) seguiría contando como "recién pulsada" y el juego
+	# la interpretaría como una acción suya.
+	var tree := get_tree()
+	await tree.physics_frame
+	await tree.physics_frame
+	if not root.visible:
+		tree.paused = false
 
 
 ## `next_cost` es el coste de la siguiente mejora del Filo, o -1 si ya está al máximo.
