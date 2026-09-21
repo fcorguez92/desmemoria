@@ -43,7 +43,8 @@ game/  ──usa──▶  core/  ──usa──▶  Godot
 ├── core/                      BASE REUTILIZABLE
 │   ├── README.md              Catálogo de componentes y contratos
 │   ├── components/            Nodos con una responsabilidad cada uno
-│   └── objects/               Checkpoint, objeto de habilidad, generador de entidades
+│   ├── objects/               Checkpoint, objeto de habilidad, generador de entidades
+│   └── effects/               Efectos visuales autodestructivos (chispazo de impacto)
 ├── game/                      ESPECÍFICO DE ESTE JUEGO
 │   ├── player/                Orquesta los componentes + Ecos + HUD
 │   ├── enemy/                 Enemigo de prueba

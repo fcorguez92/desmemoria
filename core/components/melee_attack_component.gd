@@ -6,6 +6,9 @@ extends Node
 ## Consulta los solapamientos en el instante del ataque en lugar de usar
 ## señales, para evitar depender del orden de eventos de la física.
 
+## Se emite por cada cuerpo alcanzado por un golpe (para chispas, temblor...).
+signal hit_landed(body: Node)
+
 ## Área (normalmente hija del cuerpo) que define el alcance del golpe.
 @export var hitbox: Area2D
 @export var cooldown: float = 0.25
@@ -40,4 +43,5 @@ func try_attack(attacker: Node, facing: int) -> bool:
 		if target_group != &"" and not body.is_in_group(target_group):
 			continue
 		body.take_hit(damage, facing)
+		hit_landed.emit(body)
 	return true

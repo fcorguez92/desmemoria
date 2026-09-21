@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=3]
+[gd_scene load_steps=10 format=3]
 
 [ext_resource type="Script" path="res://game/enemy/enemy.gd" id="1_enemy"]
 [ext_resource type="Script" path="res://core/components/health_component.gd" id="2_health"]
@@ -6,6 +6,7 @@
 [ext_resource type="Script" path="res://core/components/melee_attack_component.gd" id="4_melee"]
 [ext_resource type="Script" path="res://core/components/knockback_component.gd" id="5_knockback"]
 [ext_resource type="Script" path="res://core/components/patrol_chase_ai.gd" id="6_ai"]
+[ext_resource type="Script" path="res://core/components/attack_visual_component.gd" id="7_attack_visual"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_enemy"]
 size = Vector2(32, 48)
@@ -57,3 +58,19 @@ duration = 0.12
 [node name="PatrolChaseAI" type="Node" parent="." node_paths=PackedStringArray("ledge_probe")]
 script = ExtResource("6_ai")
 ledge_probe = NodePath("../LedgeProbe")
+
+[node name="Slash" type="Polygon2D" parent="."]
+color = Color(1, 0.75, 0.6, 1)
+polygon = PackedVector2Array(12, -26, 32, -18, 42, 0, 32, 18, 12, 26, 26, 0)
+
+[node name="Arm" type="Node2D" parent="."]
+position = Vector2(0, -6)
+
+[node name="Blade" type="Polygon2D" parent="Arm"]
+color = Color(0.95, 0.55, 0.45, 1)
+polygon = PackedVector2Array(0, -3, 34, -3, 34, 3, 0, 3)
+
+[node name="AttackVisualComponent" type="Node" parent="." node_paths=PackedStringArray("arm", "slash")]
+script = ExtResource("7_attack_visual")
+arm = NodePath("../Arm")
+slash = NodePath("../Slash")

@@ -53,6 +53,16 @@ Cada entrada: qué se decidió, por qué, qué alternativas se descartaron y por
 
 **Decidido por**: el usuario pidió Z y un lugar temático; Claude propuso el concepto.
 
+## 2026-09-21 — Feedback visual del combate con formas simples
+
+**Decisión**: brazo con arma que golpea (y se levanta durante el aviso del enemigo), destello del arco del golpe, chispazo en el impacto y temblor de cámara. Todo genérico en `core/` (`AttackVisualComponent`, `ScreenShakeComponent`, `HitSpark`) y sin arte final.
+
+**Por qué**: el usuario no podía valorar el combate porque solo sabía que recibía o hacía daño, sin ver cómo atacaba cada uno ni notar el golpe. El feedback es una parte de la sensación del combate, no un adorno posterior al arte.
+
+**Alternativa aplazada**: pausa breve al impactar ("hit stop"). Escala `Engine.time_scale`, lo que altera los tiempos de las pruebas automáticas y del resto de temporizadores; se hará cuando se pueda probar con cuidado.
+
+**Técnico**: el brazo se voltea con `scale.x` y `rotation = ángulo * facing`, lo que refleja bien el giro. El temblor mueve `camera.position` para no chocar con el `offset` de mirar arriba/abajo.
+
 ## 2026-09-21 — Enemigos con IA: aviso esquivable y retroceso, sin daño por contacto
 
 **Decisión**: el enemigo básico patrulla, persigue y ataca con un aviso visual de 0,4 s (se pone amarillo) que se puede esquivar. Los golpes, del jugador o del enemigo, hacen retroceder a quien los recibe; un golpe al enemigo cancela su ataque. Se elimina el daño por contacto.

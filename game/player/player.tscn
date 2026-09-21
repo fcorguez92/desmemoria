@@ -1,4 +1,4 @@
-[gd_scene load_steps=13 format=3]
+[gd_scene load_steps=15 format=3]
 
 [ext_resource type="Script" path="res://game/player/player.gd" id="1_player"]
 [ext_resource type="Script" path="res://core/components/platformer_motor.gd" id="2_motor"]
@@ -10,6 +10,8 @@
 [ext_resource type="Script" path="res://core/components/hit_flash_component.gd" id="8_flash"]
 [ext_resource type="Script" path="res://core/components/tiered_upgrade.gd" id="9_upgrade"]
 [ext_resource type="Script" path="res://core/components/knockback_component.gd" id="10_knockback"]
+[ext_resource type="Script" path="res://core/components/attack_visual_component.gd" id="11_attack_visual"]
+[ext_resource type="Script" path="res://core/components/screen_shake_component.gd" id="12_shake"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_1"]
 radius = 12.0
@@ -99,3 +101,23 @@ text = "Filo: nivel 1 (daño 1)"
 [node name="MessageLabel" type="Label" parent="HUD"]
 offset_left = 16.0
 offset_top = 112.0
+
+[node name="Slash" type="Polygon2D" parent="."]
+color = Color(1, 1, 1, 1)
+polygon = PackedVector2Array(10, -24, 30, -16, 40, 0, 30, 16, 10, 24, 24, 0)
+
+[node name="Arm" type="Node2D" parent="."]
+position = Vector2(0, -6)
+
+[node name="Blade" type="Polygon2D" parent="Arm"]
+color = Color(0.95, 0.95, 1, 1)
+polygon = PackedVector2Array(0, -3, 34, -3, 34, 3, 0, 3)
+
+[node name="AttackVisualComponent" type="Node" parent="." node_paths=PackedStringArray("arm", "slash")]
+script = ExtResource("11_attack_visual")
+arm = NodePath("../Arm")
+slash = NodePath("../Slash")
+
+[node name="ScreenShakeComponent" type="Node" parent="." node_paths=PackedStringArray("camera")]
+script = ExtResource("12_shake")
+camera = NodePath("../Camera2D")

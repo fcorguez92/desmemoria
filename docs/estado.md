@@ -16,9 +16,9 @@
 ## Qué existe ahora mismo
 
 ```
-core/         Base reutilizable: 10 componentes + 3 objetos (ver core/README.md)
+core/         Base reutilizable: 12 componentes + 3 objetos + 1 efecto (ver core/README.md)
 game/         player, enemy (de prueba), echo, memory_anchor, ability_pickup, levels/test_level
-tests/        smoke_test.gd — 72 comprobaciones, todas en verde
+tests/        smoke_test.gd — 83 comprobaciones, todas en verde
 docs/         Diseño, decisiones, arquitectura y estado
 ```
 

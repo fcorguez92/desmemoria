@@ -21,6 +21,8 @@ var _message_id: int = 0
 @onready var respawn: RespawnComponent = $RespawnComponent
 @onready var hit_flash: HitFlashComponent = $HitFlashComponent
 @onready var knockback: KnockbackComponent = $KnockbackComponent
+@onready var attack_visual: AttackVisualComponent = $AttackVisualComponent
+@onready var screen_shake: ScreenShakeComponent = $ScreenShakeComponent
 @onready var weapon: TieredUpgrade = $WeaponUpgrade
 @onready var visual: Polygon2D = $Visual
 @onready var health_label: Label = $HUD/HealthLabel
@@ -36,6 +38,7 @@ func _ready() -> void:
 	health.changed.connect(_update_hud)
 	health.damaged.connect(_on_damaged)
 	health.died.connect(die)
+	melee.hit_landed.connect(_on_hit_landed)
 	weapon.changed.connect(_on_weapon_changed)
 	_on_weapon_changed()
 
@@ -44,8 +47,8 @@ func _physics_process(delta: float) -> void:
 	respawn.track_ground(self)
 	motor.step(self, delta)
 
-	if Input.is_action_just_pressed("attack"):
-		melee.try_attack(self, motor.facing)
+	if Input.is_action_just_pressed("attack") and melee.try_attack(self, motor.facing):
+		attack_visual.swing()
 	if Input.is_action_just_pressed("heal"):
 		health.use_heal_charge()
 
@@ -144,10 +147,18 @@ func _reset_world() -> void:
 func _on_facing_changed(facing: int) -> void:
 	visual.scale.x = facing
 	melee.set_facing(facing)
+	attack_visual.set_facing(facing)
 
 
 func _on_damaged(_amount: int) -> void:
 	hit_flash.flash()
+	screen_shake.shake(7.0, 0.18)
+
+
+## Feedback de un golpe propio que alcanza algo: chispazo y un temblor leve.
+func _on_hit_landed(body: Node) -> void:
+	HitSpark.spawn(get_parent(), (body as Node2D).global_position)
+	screen_shake.shake(3.0, 0.08)
 
 
 func _show_message(text: String) -> void:

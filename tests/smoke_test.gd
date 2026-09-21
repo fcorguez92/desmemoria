@@ -35,6 +35,7 @@ func _run() -> void:
 	await _test_enemy_patrols_and_respects_ledges()
 	await _test_enemy_chases_telegraphs_and_hits()
 	await _test_enemy_attack_can_be_dodged_and_interrupted()
+	await _test_attack_feedback()
 	await _test_enemies_respawn_on_rest_and_death()
 	await _test_weapon_upgrade_at_anchor()
 	await _test_ability_pickups()
@@ -205,6 +206,42 @@ func _test_enemy_attack_can_be_dodged_and_interrupted() -> void:
 	_check(enemy.ai.state == PatrolChaseAI.State.RECOVER, "un golpe recibido cancela su ataque")
 	await _wait(25)
 	_check(_player.health.health == 5, "el ataque interrumpido no daña")
+
+
+func _test_attack_feedback() -> void:
+	await _fresh_level("Feedback visual del combate", true, true, "EnemySpawn1")
+	var enemy: Node2D = _level.get_node("EnemySpawn1").instance
+	var pv: AttackVisualComponent = _player.attack_visual
+	var camera: Camera2D = _player.get_node("Camera2D")
+	_check(is_equal_approx(pv.arm.rotation, pv.rest_angle), "el brazo del jugador empieza en reposo")
+	pv.set_facing(-1)
+	_check(pv.arm.scale.x == -1.0 and is_equal_approx(pv.arm.rotation, -pv.rest_angle), "el brazo se voltea al mirar a la izquierda")
+	pv.set_facing(1)
+
+	_player.global_position = Vector2(665, 330)
+	await _wait(12)
+	Input.action_press("attack")
+	await _wait(3)
+	Input.action_release("attack")
+	_check(absf(pv.arm.rotation - pv.rest_angle) > 0.05, "atacar mueve el brazo del jugador")
+	_check(enemy.health.health == 2, "el ataque alcanzó al enemigo")
+	_check(_count_sparks() >= 1, "un golpe que alcanza deja un chispazo")
+	_check(camera.position.length() > 0.0, "un golpe que alcanza sacude la cámara")
+	await _wait(30)
+	_check(absf(pv.arm.rotation - pv.rest_angle) < 0.05, "el brazo vuelve al reposo")
+	_check(camera.position == Vector2.ZERO, "el temblor termina y la cámara vuelve a su sitio")
+
+	await _fresh_level("", false, true, "EnemySpawn1")
+	enemy = _level.get_node("EnemySpawn1").instance
+	var ev: AttackVisualComponent = enemy.attack_visual
+	_check(is_equal_approx(ev.arm.rotation * ev.facing, ev.rest_angle), "el brazo del enemigo empieza en reposo")
+	_player.global_position = Vector2(660, 330)
+	while enemy.ai.state != PatrolChaseAI.State.WINDUP:
+		await physics_frame
+	await _wait(20)
+	_check(ev.arm.rotation * ev.facing < ev.rest_angle - 0.5, "el enemigo levanta el brazo durante el aviso")
+	await _wait(60)
+	_check(absf(ev.arm.rotation * ev.facing - ev.rest_angle) < 0.1, "tras golpear, el brazo del enemigo vuelve al reposo")
 
 
 func _test_enemies_respawn_on_rest_and_death() -> void:
@@ -399,6 +436,14 @@ func _stand_at(x: float) -> void:
 	_player.global_position = Vector2(x, 330.0)
 	_player.velocity = Vector2.ZERO
 	await _wait(15)
+
+
+func _count_sparks() -> int:
+	var count := 0
+	for child in _level.get_children():
+		if child is HitSpark:
+			count += 1
+	return count
 
 
 func _wait(physics_frames: int) -> void:

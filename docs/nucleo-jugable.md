@@ -28,6 +28,14 @@ El combate se apoya en dos ideas: **las amenazas se ven venir** y **los golpes t
 - Tras recibir un golpe tienes 0,6 s de invulnerabilidad.
 - Los enemigos ya no dañan por contacto: solo con su ataque.
 
+**Feedback visual (implementado, provisional):** sin arte todavía, el combate se lee con formas simples.
+- **Brazo con arma:** el jugador y los enemigos llevan un brazo que golpea hacia delante. El del enemigo se **levanta durante el aviso** (además del tono amarillo) y cae al golpear; el tuyo golpea al instante al pulsar X.
+- **Destello del arco** del golpe, blanco el tuyo y anaranjado el del enemigo.
+- **Chispazo** en el punto de impacto cuando un golpe alcanza a alguien.
+- **Temblor de cámara:** fuerte al recibir un golpe, leve al darlo.
+- El destello rojo al recibir daño y el retroceso ya existían.
+- Falta la pausa breve al impactar ("hit stop"), que da mucho peso al golpe; se ha dejado fuera porque escala el tiempo del juego y hay que probarla con cuidado.
+
 Estas cifras son de partida y sirven para comprobar el ritmo del combate; el diseño de enemigos y jefes concretos sigue pendiente.
 
 ## Habilidades de progresión (boceto inicial — ampliable si el desarrollo lo permite)
