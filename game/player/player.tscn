@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=3]
+[gd_scene load_steps=13 format=3]
 
 [ext_resource type="Script" path="res://game/player/player.gd" id="1_player"]
 [ext_resource type="Script" path="res://core/components/platformer_motor.gd" id="2_motor"]
@@ -9,6 +9,7 @@
 [ext_resource type="Script" path="res://core/components/respawn_component.gd" id="7_respawn"]
 [ext_resource type="Script" path="res://core/components/hit_flash_component.gd" id="8_flash"]
 [ext_resource type="Script" path="res://core/components/tiered_upgrade.gd" id="9_upgrade"]
+[ext_resource type="Script" path="res://core/components/knockback_component.gd" id="10_knockback"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_1"]
 radius = 12.0
@@ -64,6 +65,9 @@ script = ExtResource("7_respawn")
 [node name="HitFlashComponent" type="Node" parent="." node_paths=PackedStringArray("target")]
 script = ExtResource("8_flash")
 target = NodePath("../Visual")
+
+[node name="KnockbackComponent" type="Node" parent="."]
+script = ExtResource("10_knockback")
 
 [node name="WeaponUpgrade" type="Node" parent="."]
 script = ExtResource("9_upgrade")

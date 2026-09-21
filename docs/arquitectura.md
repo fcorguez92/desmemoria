@@ -43,7 +43,7 @@ game/  ──usa──▶  core/  ──usa──▶  Godot
 ├── core/                      BASE REUTILIZABLE
 │   ├── README.md              Catálogo de componentes y contratos
 │   ├── components/            Nodos con una responsabilidad cada uno
-│   └── objects/               Daño por contacto, checkpoint, generador de entidades
+│   └── objects/               Checkpoint, objeto de habilidad, generador de entidades
 ├── game/                      ESPECÍFICO DE ESTE JUEGO
 │   ├── player/                Orquesta los componentes + Ecos + HUD
 │   ├── enemy/                 Enemigo de prueba
@@ -103,15 +103,16 @@ El orden importa y por eso está explícito en `game/player/player.gd`:
 
 | Contrato | Quién lo implementa | Quién lo usa |
 |---|---|---|
-| **Golpeable:** `take_hit(damage: int, from_direction: int)` | Jugador, enemigos | `MeleeAttackComponent`, `ContactDamageArea` |
+| **Golpeable:** `take_hit(damage: int, from_direction: int)` | Jugador, enemigos | `MeleeAttackComponent` |
 | **Descansable:** `rest_at(position: Vector2)` + pertenecer al grupo `target_group` | Jugador | `Checkpoint` |
 | **Reiniciable:** grupo `resettable` con método `reset()` | `EntitySpawner` | El jugador (`_reset_world()`) al morir y al descansar |
 | **Aprendiz:** `unlock_ability(id: StringName)` + pertenecer al grupo `target_group` | Jugador (decide qué activa cada `id`) | `AbilityPickup` |
-| **Grupo `player`** | El jugador se añade a sí mismo en `_ready()` | `ContactDamageArea`, `Checkpoint`, enemigos, Eco |
+| **Grupo `player`** | El jugador se añade a sí mismo en `_ready()` | `PatrolChaseAI`, `MeleeAttackComponent` (vía `target_group`), `Checkpoint`, `AbilityPickup`, Eco |
 | **Acciones de entrada:** `ui_left/right/up/down/accept` + `attack`, `dash`, `heal`, `interact`, `upgrade` | `project.godot` | `PlatformerMotor`, `DashComponent`, `CameraLookComponent`, `player.gd` |
 
-Filtrar por **grupo** (y no por "cualquier cosa con `take_hit`") en el daño por
-contacto evita que los enemigos se dañen entre sí o dañen el Eco.
+Los enemigos golpean solo al grupo `player` (`MeleeAttackComponent.target_group`)
+y no a "cualquier cosa con `take_hit`": así no se dañan entre sí. El ataque del
+jugador no filtra, y puede golpear a cualquier cosa golpeable.
 
 ## Convenciones
 
@@ -186,6 +187,10 @@ que las reglas se cumplen, no que se sienta bien.
   un margen (`arm_delay`) antes de poder recogerse, y los tests esperan frames.
 - Un `Area2D` hijo de un cuerpo se solapa con ese mismo cuerpo: hay que excluir
   al dueño al consultar (`MeleeAttackComponent` lo hace).
-- Si el área de daño de un enemigo mide exactamente lo mismo que su cuerpo
-  sólido, el empuje físico puede impedir que llegue a solaparse: hacerla más
-  grande que el cuerpo.
+- Si un área de daño mide exactamente lo mismo que el cuerpo sólido de quien la
+  lleva, el empuje físico puede impedir que llegue a solaparse con el objetivo:
+  hacerla más grande que el cuerpo (el hitbox de ataque de los enemigos y del
+  jugador sobresale por delante).
+- Un `RayCast2D` hijo de un cuerpo ignora a su propio padre, pero sí detecta a
+  cualquier otro cuerpo; el sondeo de bordes de `PatrolChaseAI` cuenta cualquier
+  cosa sólida como suelo.

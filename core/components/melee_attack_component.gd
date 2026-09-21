@@ -12,6 +12,9 @@ extends Node
 ## Distancia horizontal del centro del hitbox al cuerpo.
 @export var reach: float = 20.0
 @export var damage: int = 1
+## Si no está vacío, solo golpea a cuerpos de este grupo (p. ej. un enemigo solo
+## golpea al jugador). Vacío = golpea a cualquier cosa golpeable.
+@export var target_group: StringName = &""
 
 var _cooldown_timer: float = 0.0
 
@@ -32,6 +35,9 @@ func try_attack(attacker: Node, facing: int) -> bool:
 		return false
 	_cooldown_timer = cooldown
 	for body in hitbox.get_overlapping_bodies():
-		if body != attacker and body.has_method("take_hit"):
-			body.take_hit(damage, facing)
+		if body == attacker or not body.has_method("take_hit"):
+			continue
+		if target_group != &"" and not body.is_in_group(target_group):
+			continue
+		body.take_hit(damage, facing)
 	return true

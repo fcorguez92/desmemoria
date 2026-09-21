@@ -18,6 +18,18 @@ Un único arma cuerpo a cuerpo que mejora por niveles gastando Ecos, en vez de u
 - Las mejoras son permanentes: morir no las pierde (los Ecos sí).
 - Los costes y valores son de partida y se ajustarán jugando. Solo sube el daño; alcance y velocidad de ataque quedan sin decidir.
 
+## Combate contra enemigos (implementado, cifras de partida)
+
+El combate se apoya en dos ideas: **las amenazas se ven venir** y **los golpes tienen peso**.
+
+- **Enemigo básico** (`game/enemy/`): patrulla cerca de su punto de origen (60 px), te detecta a 220 px si estás a una altura parecida, y te persigue más rápido de lo que patrulla. No se cae por los bordes del suelo.
+- **Ataque con aviso:** al acercarse a unos 44 px se queda quieto y se pone **amarillo** durante 0,4 s; después golpea (1 de daño) por delante y descansa 0,7 s. Alejarte o esquivar durante el aviso evita el golpe.
+- **Retroceso en ambos sentidos:** cuando el golpe cae, empuja a quien lo recibe. Un golpe tuyo al enemigo lo empuja y **cancela su ataque**, dejándolo aturdido 0,3 s.
+- Tras recibir un golpe tienes 0,6 s de invulnerabilidad.
+- Los enemigos ya no dañan por contacto: solo con su ataque.
+
+Estas cifras son de partida y sirven para comprobar el ritmo del combate; el diseño de enemigos y jefes concretos sigue pendiente.
+
 ## Habilidades de progresión (boceto inicial — ampliable si el desarrollo lo permite)
 
 Cada habilidad es narrativamente una técnica recordada de otra persona (ver docs/historia.md); desbloquearla es a la vez progreso mecánico y revelación de historia.

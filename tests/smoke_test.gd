@@ -31,7 +31,10 @@ func _run() -> void:
 	await _test_fall_kills_and_second_death_replaces_echo()
 	await _test_echo_pickup_returns_ecos()
 	await _test_checkpoint_heals_and_moves_respawn()
-	await _test_enemy_reward_and_contact_damage()
+	await _test_enemy_reward()
+	await _test_enemy_patrols_and_respects_ledges()
+	await _test_enemy_chases_telegraphs_and_hits()
+	await _test_enemy_attack_can_be_dodged_and_interrupted()
 	await _test_enemies_respawn_on_rest_and_death()
 	await _test_weapon_upgrade_at_anchor()
 	await _test_ability_pickups()
@@ -121,13 +124,9 @@ func _test_checkpoint_heals_and_moves_respawn() -> void:
 	_check(not anchor.get_node("Prompt").visible, "el aviso se oculta al alejarse")
 
 
-func _test_enemy_reward_and_contact_damage() -> void:
-	await _fresh_level("Enemigos: daño por contacto y recompensa")
+func _test_enemy_reward() -> void:
+	await _fresh_level("Enemigos: vida y recompensa", true, true, "EnemySpawn1")
 	var enemy: Node2D = _level.get_node("EnemySpawn1").instance
-	_player.global_position = enemy.global_position
-	await _wait(10)
-	_check(_player.health.health == 4, "el contacto con un enemigo daña al jugador")
-	_check(is_instance_valid(enemy), "el enemigo no se daña a sí mismo")
 	enemy.take_hit(1, 1)
 	enemy.take_hit(1, 1)
 	_check(_player.ecos == 0, "el enemigo aún no dio Ecos con vida restante")
@@ -137,8 +136,79 @@ func _test_enemy_reward_and_contact_damage() -> void:
 	_check(not is_instance_valid(enemy), "el enemigo muerto se elimina")
 
 
+func _test_enemy_patrols_and_respects_ledges() -> void:
+	await _fresh_level("IA: patrulla sin caerse de los bordes", true, true, "EnemySpawn1")
+	var enemy: Node2D = _level.get_node("EnemySpawn1").instance
+	var home_x := enemy.global_position.x
+	var min_x := home_x
+	var max_x := home_x
+	for i in 240:
+		await physics_frame
+		min_x = minf(min_x, enemy.global_position.x)
+		max_x = maxf(max_x, enemy.global_position.x)
+	var reach: float = enemy.ai.patrol_distance + 6.0
+	_check(max_x - min_x > 20.0, "el enemigo patrulla (se mueve)")
+	_check(min_x >= home_x - reach and max_x <= home_x + reach, "la patrulla no se aleja de su zona")
+
+	# Con el origen pegado al borde derecho del suelo (880), patrullar hacia
+	# allí lo llevaría al vacío: el sondeo de bordes debe frenarlo.
+	enemy.global_position = Vector2(850, 356)
+	enemy.ai._home_x = 850.0
+	var fell := false
+	for i in 300:
+		await physics_frame
+		if enemy.global_position.y > 400.0:
+			fell = true
+	_check(not fell, "el enemigo no se cae por el borde del suelo")
+
+
+func _test_enemy_chases_telegraphs_and_hits() -> void:
+	await _fresh_level("IA: persecución, aviso y golpe con retroceso", true, true, "EnemySpawn1")
+	var enemy: Node2D = _level.get_node("EnemySpawn1").instance
+	_player.global_position = Vector2(660, 330)
+	var start_x := 660.0
+	var windup_frames := 0
+	var saw_windup := false
+	for i in 150:
+		await physics_frame
+		if _player.health.health < 5:
+			break
+		if enemy.ai.state == PatrolChaseAI.State.WINDUP:
+			saw_windup = true
+			windup_frames += 1
+	await _wait(3)
+	_check(saw_windup, "el enemigo avisa antes de atacar")
+	_check(windup_frames >= 20, "el aviso dura lo bastante para reaccionar")
+	_check(_player.health.health == 4, "el ataque acaba dañando al jugador")
+	_check(_player.global_position.x < start_x, "el golpe empuja al jugador lejos del enemigo")
+
+
+func _test_enemy_attack_can_be_dodged_and_interrupted() -> void:
+	await _fresh_level("IA: el ataque se puede esquivar e interrumpir", true, true, "EnemySpawn1")
+	var enemy: Node2D = _level.get_node("EnemySpawn1").instance
+	_player.global_position = Vector2(660, 330)
+	while enemy.ai.state != PatrolChaseAI.State.WINDUP:
+		await physics_frame
+	_player.global_position = Vector2(600, 330)
+	await _wait(35)
+	_check(_player.health.health == 5, "alejarse durante el aviso esquiva el golpe")
+
+	await _fresh_level("", false, true, "EnemySpawn1")
+	enemy = _level.get_node("EnemySpawn1").instance
+	_player.global_position = Vector2(660, 330)
+	while enemy.ai.state != PatrolChaseAI.State.WINDUP:
+		await physics_frame
+	var x_before := enemy.global_position.x
+	enemy.take_hit(1, 1)
+	await _wait(10)
+	_check(enemy.global_position.x > x_before + 10.0, "un golpe recibido empuja al enemigo")
+	_check(enemy.ai.state == PatrolChaseAI.State.RECOVER, "un golpe recibido cancela su ataque")
+	await _wait(25)
+	_check(_player.health.health == 5, "el ataque interrumpido no daña")
+
+
 func _test_enemies_respawn_on_rest_and_death() -> void:
-	await _fresh_level("Los enemigos reaparecen al descansar y al morir")
+	await _fresh_level("Los enemigos reaparecen al descansar y al morir", true, true)
 	var spawner: EntitySpawner = _level.get_node("EnemySpawn1")
 
 	var killed: Node = spawner.instance
@@ -154,12 +224,11 @@ func _test_enemies_respawn_on_rest_and_death() -> void:
 	var wounded: Node = spawner.instance
 	wounded.take_hit(1, 1)
 	_check(wounded.health.health == 2, "el enemigo herido pierde vida")
-	await _stand_at(330.0)
 	_player.health.take_hit(99)
 	await _wait(3)
 	_check(spawner.instance != wounded and not is_instance_valid(wounded), "al morir el jugador se reemplaza al enemigo herido")
 	_check(spawner.instance.health.health == 3, "el enemigo nuevo tiene la vida completa")
-	_check(spawner.instance.global_position == spawner.global_position, "reaparece en su posición original")
+	_check(spawner.instance.global_position.distance_to(spawner.global_position) < 30.0, "reaparece junto a su posición original")
 
 	var count := 0
 	for child in _level.get_children():
@@ -304,11 +373,18 @@ func _jump_across_gap(press_dash: bool, dash_unlocked: bool) -> bool:
 
 # --- Utilidades --------------------------------------------------------------
 
-func _fresh_level(title: String, announce: bool = true) -> void:
+## Carga el nivel de prueba desde cero. Por defecto SIN enemigos, para que no
+## interfieran con pruebas de otras cosas; los tests de enemigos los piden.
+## `only_spawner` deja solo ese generador de enemigos (por nombre), para que los
+## demás no ataquen al jugador durante una prueba de IA concreta.
+func _fresh_level(title: String, announce: bool = true, with_enemies: bool = false, only_spawner: String = "") -> void:
 	if is_instance_valid(_level):
 		_level.queue_free()
 		await process_frame
 	_level = load(LEVEL).instantiate()
+	for child in _level.get_children():
+		if child is EntitySpawner and (not with_enemies or (only_spawner != "" and child.name != only_spawner)):
+			child.free()
 	root.add_child(_level)
 	await process_frame
 	await process_frame

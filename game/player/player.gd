@@ -20,6 +20,7 @@ var _message_id: int = 0
 @onready var melee: MeleeAttackComponent = $MeleeAttackComponent
 @onready var respawn: RespawnComponent = $RespawnComponent
 @onready var hit_flash: HitFlashComponent = $HitFlashComponent
+@onready var knockback: KnockbackComponent = $KnockbackComponent
 @onready var weapon: TieredUpgrade = $WeaponUpgrade
 @onready var visual: Polygon2D = $Visual
 @onready var health_label: Label = $HUD/HealthLabel
@@ -51,6 +52,9 @@ func _physics_process(delta: float) -> void:
 	# El dash pisa la velocity, así que va después del movimiento normal.
 	dash.step(self, motor.facing, delta)
 
+	# El retroceso al recibir un golpe manda sobre todo lo demás.
+	knockback.step(self, delta)
+
 	move_and_slide()
 
 	if respawn.is_out_of_bounds(self):
@@ -58,8 +62,9 @@ func _physics_process(delta: float) -> void:
 
 
 ## Contrato "golpeable" (ver docs/arquitectura.md).
-func take_hit(damage: int, _from_direction: int) -> void:
-	health.take_hit(damage)
+func take_hit(damage: int, from_direction: int) -> void:
+	if health.take_hit(damage):
+		knockback.apply(from_direction)
 
 
 ## Contrato de checkpoint: lo llama core/objects/checkpoint.gd.

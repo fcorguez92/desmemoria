@@ -68,7 +68,7 @@ script = ExtResource("4_spawner")
 scene = ExtResource("2_enemy")
 
 [node name="EnemySpawn2" type="Node2D" parent="."]
-position = Vector2(250, 356)
+position = Vector2(330, 356)
 script = ExtResource("4_spawner")
 scene = ExtResource("2_enemy")
 

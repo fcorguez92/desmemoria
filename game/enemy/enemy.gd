@@ -1,22 +1,49 @@
 extends CharacterBody2D
-## Enemigo de prueba, sin IA: solo tiene vida, hace daño por contacto (con el
-## mismo alcance que el ataque del jugador, ver ContactDamageArea en la
-## escena) y da Ecos al morir. No es el diseño final de enemigo.
+## Enemigo básico: patrulla, persigue al jugador y ataca con un aviso (se pone
+## amarillo) que da tiempo a esquivar. Un golpe suyo o del jugador lo hace
+## retroceder y cancela su ataque. Da Ecos al morir.
+
+const TELEGRAPH_COLOR := Color(1.0, 0.85, 0.3)
 
 @export var ecos_reward: int = 2
+@export var gravity: float = 2250.0
 
 @onready var health: HealthComponent = $HealthComponent
 @onready var hit_flash: HitFlashComponent = $HitFlashComponent
+@onready var ai: PatrolChaseAI = $PatrolChaseAI
+@onready var melee: MeleeAttackComponent = $MeleeAttackComponent
+@onready var knockback: KnockbackComponent = $KnockbackComponent
+@onready var visual: Polygon2D = $Visual
 
 
 func _ready() -> void:
 	health.damaged.connect(_on_damaged)
 	health.died.connect(_on_died)
+	ai.facing_changed.connect(_on_facing_changed)
+	ai.attack_started.connect(_on_attack_started)
+	ai.attack_landed.connect(_on_attack_landed)
+
+
+func _physics_process(delta: float) -> void:
+	if is_on_floor():
+		velocity.y = 0.0
+	else:
+		velocity.y += gravity * delta
+
+	if knockback.is_active:
+		knockback.step(self, delta)
+	else:
+		ai.step(self, delta)
+
+	move_and_slide()
 
 
 ## Contrato "golpeable" (ver docs/arquitectura.md).
-func take_hit(damage: int, _from_direction: int) -> void:
-	health.take_hit(damage)
+func take_hit(damage: int, from_direction: int) -> void:
+	if health.take_hit(damage):
+		knockback.apply(from_direction)
+		ai.interrupt()
+		visual.modulate = Color.WHITE
 
 
 func _on_damaged(_amount: int) -> void:
@@ -28,3 +55,17 @@ func _on_died() -> void:
 	if player:
 		player.add_ecos(ecos_reward)
 	queue_free()
+
+
+func _on_facing_changed(facing: int) -> void:
+	visual.scale.x = facing
+	melee.set_facing(facing)
+
+
+func _on_attack_started() -> void:
+	visual.modulate = TELEGRAPH_COLOR
+
+
+func _on_attack_landed() -> void:
+	visual.modulate = Color.WHITE
+	melee.try_attack(self, ai.facing)

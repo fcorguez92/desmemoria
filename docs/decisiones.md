@@ -53,6 +53,16 @@ Cada entrada: qué se decidió, por qué, qué alternativas se descartaron y por
 
 **Decidido por**: el usuario pidió Z y un lugar temático; Claude propuso el concepto.
 
+## 2026-09-21 — Enemigos con IA: aviso esquivable y retroceso, sin daño por contacto
+
+**Decisión**: el enemigo básico patrulla, persigue y ataca con un aviso visual de 0,4 s (se pone amarillo) que se puede esquivar. Los golpes, del jugador o del enemigo, hacen retroceder a quien los recibe; un golpe al enemigo cancela su ataque. Se elimina el daño por contacto.
+
+**Por qué**: con enemigos quietos el combate, la mitad de la identidad "souls", no se podía validar. Un ataque con aviso convierte la muerte en algo justo (se pudo evitar) y prueba el ataque del jugador, el dash y la invulnerabilidad tras un golpe. Las cifras las propuso Claude (aviso corto de unos 0,4 s, daño 1, retroceso en ambos sentidos) y las aprobó el usuario.
+
+**Técnico**: `PatrolChaseAI` (core) solo decide y avisa mediante señales; el enemigo del juego pone la gravedad y el golpe (`MeleeAttackComponent` con `target_group = player`). `KnockbackComponent` es genérico y lo usan jugador y enemigos. Se retira `ContactDamageArea` de `core/` por quedar sin uso; si hacen falta trampas o pinchos se recuperará entonces. La IA usa un `RayCast2D` para no caerse de los bordes.
+
+**Pendiente**: ajustar tiempos jugando, y decidir tipos de enemigo distintos (a distancia, voladores) y jefes.
+
 ## 2026-09-20 — Habilidades que se consiguen, y doble salto
 
 **Decisión**: ninguna habilidad se tiene al empezar. Se consiguen recogiendo un "recuerdo" en el mundo (`AbilityPickup`), son permanentes, y cada una se coloca justo antes del obstáculo que abre. El dash pasa a estar bloqueado de inicio y se añade el doble salto (un salto extra en el aire, `air_jump_velocity` = -800 frente a -900 del primero).

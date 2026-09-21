@@ -16,9 +16,9 @@
 ## Qué existe ahora mismo
 
 ```
-core/         Base reutilizable: 8 componentes + 4 objetos (ver core/README.md)
+core/         Base reutilizable: 10 componentes + 3 objetos (ver core/README.md)
 game/         player, enemy (de prueba), echo, memory_anchor, ability_pickup, levels/test_level
-tests/        smoke_test.gd — 64 comprobaciones, todas en verde
+tests/        smoke_test.gd — 72 comprobaciones, todas en verde
 docs/         Diseño, decisiones, arquitectura y estado
 ```
 
@@ -37,6 +37,7 @@ de esta fase era validar cómo se siente, no cómo se ve.
 - Más usos para los Ecos aparte del Filo, y si el Filo mejora también alcance o velocidad (hoy solo sube el daño).
 - Trepar pared (dash y doble salto ya están hechos y se consiguen en el mundo). Se
   añade como componente nuevo en `core/components/` (ver `arquitectura.md`).
+- Ajustar el ritmo del combate jugando (tiempos de aviso y recuperación, retroceso) y más tipos de enemigo (a distancia, voladores) y jefes.
 - Estadísticas del personaje más allá de la vida.
 - Capas de colisión (jugador, enemigos, entorno) cuando crezca el número de entidades.
 - Sustituir el HUD de texto plano por uno real.
