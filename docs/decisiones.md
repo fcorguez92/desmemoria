@@ -2,6 +2,16 @@
 
 Cada entrada: qué se decidió, por qué, qué alternativas se descartaron y por qué. Se añade una entrada nueva por decisión importante, no se reescribe el historial.
 
+## 2026-09-25 — Menú del Ancla con el juego en pausa; sin inventario ni entradas vacías
+
+**Decisión**: descansar en un Ancla (Z) cura, fija la reaparición y abre un menú con el juego en pausa. Hoy tiene dos opciones: *Mejorar el Filo* y *Salir*. Desaparece la tecla C. La lista de opciones (`MenuList`) es un control genérico en `core/ui/`; el menú (`game/ui/anchor_menu`) recibe los números del jugador y avisa con señales, como el HUD.
+
+**Alternativas**: un menú con tienda, viaje entre Anclas e inventario desde el principio (descartado: no existe ninguna de esas mecánicas, serían entradas vacías) y mantener las teclas Z y C sin menú (no crece).
+
+**Por qué**: el menú es la estructura donde irán las nuevas opciones cuando existan; añadirlas será una entrada más. Para el inventario se esperará a que haya objetos que guardar.
+
+**Técnico**: el menú pausa el árbol y sus nodos usan `process_mode = When Paused`. Las pruebas simulan teclas con eventos de acción reales (`Input.parse_input_event`) y deben soltarlas después, o la acción queda pulsada para las pruebas siguientes.
+
 ## 2026-09-24 — Niveles como texto: mapa `.map` + `TileMapLayer` (sin editor de niveles)
 
 **Decisión**: el terreno de cada zona se dibuja como un archivo de texto (`*.map`, un carácter por baldosa de 16 px) que el nodo `TextTileMap` (core) convierte en un `TileMapLayer` al cargar. Los caracteres sin baldosa asociada son marcadores (jugador, Ancla, enemigo) que el script del nivel convierte en entidades.

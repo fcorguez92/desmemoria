@@ -6,6 +6,7 @@ extends CharacterBody2D
 
 const EchoScene := preload("res://game/echo/echo.tscn")
 const Hud := preload("res://game/ui/hud.gd")
+const AnchorMenu := preload("res://game/ui/anchor_menu.gd")
 const ABILITY_NAMES := {
 	&"dash": "Dash",
 	&"double_jump": "Doble salto",
@@ -34,6 +35,7 @@ var _message_id: int = 0
 @onready var visual: Sprite2D = $Visual
 @onready var animator: SheetAnimator = $SheetAnimator
 @onready var hud: Hud = $HUD
+@onready var anchor_menu: AnchorMenu = $AnchorMenu
 
 
 func _ready() -> void:
@@ -45,6 +47,7 @@ func _ready() -> void:
 	melee.hit_landed.connect(_on_hit_landed)
 	parry.parried.connect(_on_parried)
 	weapon.changed.connect(_on_weapon_changed)
+	anchor_menu.upgrade_requested.connect(_on_upgrade_requested)
 	_on_weapon_changed()
 
 
@@ -86,6 +89,8 @@ func rest_at(anchor_position: Vector2) -> void:
 	respawn.set_checkpoint(anchor_position)
 	health.restore()
 	_reset_world()
+	_refresh_anchor_menu()
+	anchor_menu.open()
 
 
 func add_ecos(amount: int) -> void:
@@ -120,14 +125,14 @@ func try_upgrade_weapon() -> bool:
 	return true
 
 
-## Texto de la opción de mejora que muestra el Ancla.
-func upgrade_prompt() -> String:
-	if weapon.is_max():
-		return "El Filo está al máximo"
-	var cost := weapon.next_cost()
-	if ecos >= cost:
-		return "Mejorar el Filo (%d Ecos)" % cost
-	return "Mejorar el Filo (%d Ecos, te faltan %d)" % [cost, cost - ecos]
+func _on_upgrade_requested() -> void:
+	try_upgrade_weapon()
+	_refresh_anchor_menu()
+
+
+func _refresh_anchor_menu() -> void:
+	var next_cost := -1 if weapon.is_max() else weapon.next_cost()
+	anchor_menu.show_state(ecos, weapon.level + 1, weapon.current_value(), next_cost)
 
 
 func die() -> void:

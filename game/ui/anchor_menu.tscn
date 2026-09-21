@@ -1,0 +1,80 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://game/ui/anchor_menu.gd" id="1_menu"]
+[ext_resource type="Script" path="res://core/ui/menu_list.gd" id="2_list"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
+content_margin_left = 24.0
+content_margin_top = 18.0
+content_margin_right = 24.0
+content_margin_bottom = 16.0
+bg_color = Color(0.106, 0.102, 0.122, 0.96)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.416, 0.4, 0.44, 1)
+
+[node name="AnchorMenu" type="CanvasLayer"]
+process_mode = 2
+layer = 10
+script = ExtResource("1_menu")
+
+[node name="Root" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Dim" type="ColorRect" parent="Root"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.04, 0.04, 0.06, 0.7)
+
+[node name="Panel" type="PanelContainer" parent="Root"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+
+[node name="Content" type="VBoxContainer" parent="Root/Panel"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Title" type="Label" parent="Root/Panel/Content"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.953, 0.769, 0.416, 1)
+theme_override_font_sizes/font_size = 22
+text = "Ancla de Memoria"
+horizontal_alignment = 1
+
+[node name="Stats" type="Label" parent="Root/Panel/Content"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.663, 0.89, 0.949, 1)
+horizontal_alignment = 1
+
+[node name="Separator" type="HSeparator" parent="Root/Panel/Content"]
+layout_mode = 2
+
+[node name="Options" type="VBoxContainer" parent="Root/Panel/Content"]
+layout_mode = 2
+script = ExtResource("2_list")
+
+[node name="Hint" type="Label" parent="Root/Panel/Content"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.416, 0.4, 0.44, 1)
+theme_override_font_sizes/font_size = 12
+text = "↑ ↓ elegir · Intro confirmar · Esc o Z cerrar"
+horizontal_alignment = 1

@@ -40,6 +40,7 @@ func _run() -> void:
 	await _test_sprites_and_animations()
 	await _test_enemies_respawn_on_rest_and_death()
 	await _test_weapon_upgrade_at_anchor()
+	await _test_anchor_menu_keyboard_and_pause()
 	await _test_ability_pickups()
 	await _test_dash_gates_the_far_platform()
 	await _test_double_jump_reaches_high_platform()
@@ -125,6 +126,8 @@ func _test_checkpoint_heals_and_moves_respawn() -> void:
 	_check(_player.health.health == 5, "el checkpoint cura del todo")
 	_check(_player.health.heal_charges == 3, "el checkpoint recarga las curaciones")
 	_check(_player.respawn.spawn_position == anchor.global_position, "el checkpoint fija el respawn")
+	_check(_player.anchor_menu.is_open(), "descansar abre el menú del Ancla")
+	_player.anchor_menu.close()
 	_player.global_position = Vector2(700, 300)
 	await _wait(10)
 	_check(not anchor.get_node("Prompt").visible, "el aviso se oculta al alejarse")
@@ -337,6 +340,7 @@ func _test_enemies_respawn_on_rest_and_death() -> void:
 	await _wait(2)
 	_check(not is_instance_valid(killed), "el enemigo muerto no está")
 	_player.rest_at(_player.global_position)
+	_player.anchor_menu.close()
 	await _wait(3)
 	_check(is_instance_valid(spawner.instance) and spawner.instance != killed, "reaparece al descansar")
 	_check(spawner.instance.health.health == 3, "reaparece con vida completa")
@@ -365,7 +369,6 @@ func _test_weapon_upgrade_at_anchor() -> void:
 	_player.add_ecos(3)
 	_check(not _player.try_upgrade_weapon(), "no se puede mejorar sin Ecos suficientes")
 	_check(_player.ecos == 3 and weapon.level == 0, "una mejora fallida no cobra nada")
-	_check("te faltan 1" in _player.upgrade_prompt(), "el aviso indica cuántos Ecos faltan")
 
 	_player.add_ecos(1)
 	_check(_player.try_upgrade_weapon(), "se puede mejorar con Ecos suficientes")
@@ -376,28 +379,59 @@ func _test_weapon_upgrade_at_anchor() -> void:
 	await _wait(2)
 	_check(weapon.level == 1 and _player.melee.damage == 2, "morir no pierde las mejoras")
 
-	# Desde el Ancla: la tecla de mejora funciona solo estando al alcance.
-	var anchor: Node2D = _level.get_node("MemoryAnchor2")
+	# Desde el menú del Ancla: la primera opción mejora el Filo y cobra.
+	var options: MenuList = _player.anchor_menu.menu
 	_player.add_ecos(8)
-	Input.action_press("upgrade")
-	await _wait(2)
-	Input.action_release("upgrade")
-	_check(weapon.level == 1, "la mejora no funciona lejos de un Ancla")
-	_player.global_position = anchor.global_position
-	await _wait(10)
-	_check("Mejorar el Filo" in anchor.get_node("Prompt").text, "el Ancla muestra la opción de mejora")
-	Input.action_press("upgrade")
-	await _wait(2)
-	Input.action_release("upgrade")
-	await _wait(2)
-	_check(weapon.level == 2 and _player.ecos == 0, "la tecla de mejora en el Ancla mejora el Filo")
+	_player.rest_at(_player.global_position)
+	_check(options.activate(), "la opción de mejorar está activa con Ecos suficientes")
+	_check(weapon.level == 2 and _player.ecos == 0, "elegir mejorar en el menú sube el Filo y cobra")
+	_check(not options.activate(), "sin Ecos la opción de mejora queda desactivada")
+	_player.anchor_menu.close()
 
 	while not weapon.is_max():
 		weapon.advance()
 	_player.add_ecos(100)
 	_check(not _player.try_upgrade_weapon(), "no se puede pasar del nivel máximo")
 	_check(_player.melee.damage == 5, "el nivel máximo da el daño máximo")
-	_check(_player.upgrade_prompt() == "El Filo está al máximo", "el aviso indica que está al máximo")
+	_player.rest_at(_player.global_position)
+	options.selected = 0
+	_check(not options.activate(), "al máximo la opción de mejora queda desactivada")
+	_player.anchor_menu.close()
+
+
+func _test_anchor_menu_keyboard_and_pause() -> void:
+	await _fresh_level("Menú del Ancla: pausa y teclado")
+	var menu = _player.anchor_menu
+	_player.add_ecos(6)
+	_check(not menu.is_open() and not paused, "el menú empieza cerrado y el juego sin pausa")
+	_player.rest_at(_player.global_position)
+	_check(menu.is_open() and paused, "descansar abre el menú y pausa el juego")
+	var before: Vector2 = _player.global_position
+	_player.velocity = Vector2(300, 0)
+	await _wait(10)
+	_check(_player.global_position == before, "con el menú abierto el jugador no se mueve")
+
+	await _press_action("ui_down")
+	_check(menu.menu.selected == 1, "la flecha abajo mueve la selección")
+	await _press_action("ui_down")
+	_check(menu.menu.selected == 0, "la selección da la vuelta")
+	await _press_action("ui_cancel")
+	_check(not menu.is_open() and not paused, "Esc cierra el menú y reanuda el juego")
+
+	_player.rest_at(_player.global_position)
+	await _press_action("interact")
+	_check(not menu.is_open() and not paused, "volver a pulsar Z cierra el menú")
+
+	_player.rest_at(_player.global_position)
+	await _press_action("ui_down")
+	await _press_action("ui_accept")
+	_check(not menu.is_open() and not paused, "la opción Salir cierra el menú")
+	# Sin Ecos suficientes, la mejora sale atenuada y el cursor empieza en Salir.
+	_player.ecos = 0
+	_player.rest_at(_player.global_position)
+	_check(menu.menu.selected == 1, "sin Ecos el cursor empieza en la primera opción disponible")
+	await _press_action("ui_accept")
+	_check(not menu.is_open() and not paused, "Intro sobre la opción disponible funciona a la primera")
 
 
 func _test_dash_gates_the_far_platform() -> void:
@@ -619,7 +653,24 @@ func _test_ultimo_umbral_builds_from_text_map() -> void:
 	_check(_player.global_position.x < 32.0 * 16.0 or _player.global_position.y < 400.0, "caer al foso reaparece al jugador")
 
 
+## Simula que se pulsa una acción del Mapa de entrada como un evento real (llega a
+## `_unhandled_input`, a diferencia de `Input.action_press`).
+func _press_action(action: StringName) -> void:
+	var event := InputEventAction.new()
+	event.action = action
+	event.pressed = true
+	Input.parse_input_event(event)
+	await _wait(2)
+	# Hay que soltarla: si no, la acción queda pulsada para las pruebas siguientes.
+	var release := InputEventAction.new()
+	release.action = action
+	release.pressed = false
+	Input.parse_input_event(release)
+	await _wait(2)
+
+
 func _fresh_level(title: String, announce: bool = true, with_enemies: bool = false, only_spawner: String = "") -> void:
+	paused = false
 	if is_instance_valid(_level):
 		_level.queue_free()
 		await process_frame

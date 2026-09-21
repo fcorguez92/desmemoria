@@ -12,7 +12,7 @@ Un único arma cuerpo a cuerpo que mejora por niveles gastando Ecos, en vez de u
 
 ### Mejora del Filo (implementada)
 
-- Se mejora **en un Ancla de Memoria** pulsando **C** (junto a Z para descansar). El Ancla muestra el coste de la siguiente mejora y, si no llegan los Ecos, cuántos faltan.
+- Se mejora **en el menú del Ancla de Memoria**: al pulsar **Z** se descansa y se abre un menú (con el juego en pausa) que muestra los Ecos, el nivel del Filo y la opción de mejorarlo con su coste. Si no llegan los Ecos, la opción sale atenuada y dice cuántos faltan. El menú tendrá más opciones cuando existan (tienda, viaje entre Anclas, otras mejoras).
 - Cinco niveles. Cada subida aumenta el **daño**: 1, 2, 3, 4, 5. Costes de cada subida en Ecos: 4, 8, 14, 22.
 - Los enemigos de prueba tienen 3 de vida y dan 2 Ecos, así que la primera mejora cuesta matar a 2 enemigos y con el nivel 3 caen de un golpe.
 - Las mejoras son permanentes: morir no las pierde (los Ecos sí).
