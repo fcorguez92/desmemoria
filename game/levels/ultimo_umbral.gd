@@ -3,18 +3,21 @@ extends Node2D
 ##
 ## El terreno se dibuja como texto en ultimo_umbral.map (lo construye TextTileMap).
 ## Este script pone las entidades del juego en los marcadores del mapa:
-##   P = inicio del jugador, A = Ancla de Memoria, E = enemigo.
+##   P = inicio del jugador, A = Ancla de Memoria, E = enemigo, R = objeto
+##   rompible decorativo (no reaparece: ver core/objects/breakable_prop.gd).
 ## Cada entidad se coloca con los pies en la parte de abajo de su celda.
 
 const PlayerScene := preload("res://game/player/player.tscn")
 const EnemyScene := preload("res://game/enemy/enemy.tscn")
 const AnchorScene := preload("res://game/memory_anchor/memory_anchor.tscn")
+const BreakableUrnScene := preload("res://game/environment/breakable_urn.tscn")
 
 const CELL := 16.0
 ## Mitad de la altura de cada entidad, para apoyar sus pies en la celda.
 const PLAYER_HALF_HEIGHT := 24.0
 const ENEMY_HALF_HEIGHT := 24.0
 const ANCHOR_HALF_HEIGHT := 28.0
+const BREAKABLE_HALF_HEIGHT := 11.0
 
 @onready var tiles: TextTileMap = $Tiles
 
@@ -22,6 +25,8 @@ const ANCHOR_HALF_HEIGHT := 28.0
 func _ready() -> void:
 	for at in tiles.markers.get("A", []):
 		_place(AnchorScene.instantiate(), at, ANCHOR_HALF_HEIGHT)
+	for at in tiles.markers.get("R", []):
+		_place(BreakableUrnScene.instantiate(), at, BREAKABLE_HALF_HEIGHT)
 	for at in tiles.markers.get("E", []):
 		var spawner := EntitySpawner.new()
 		spawner.scene = EnemyScene

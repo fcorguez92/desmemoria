@@ -30,24 +30,31 @@ De izquierda a derecha:
 5. **Escalera de tablones** (columnas 62–77): sube hasta un segundo Ancla en lo
    alto (columna 74), una recompensa visible desde abajo.
 
-## Narrativa ambiental (a hacer)
+## Ambiente
 
-Por ahora solo hay terreno. Pendiente para las siguientes pasadas: restos de
-enseres en la cabaña, una inscripción legible junto al Ancla, huellas de arrastre
-hacia el foso. Regla: que el jugador pueda deducir qué pasó sin que nadie se lo
-explique.
+Un fondo con dos capas de parallax (colinas lejanas y ruinas a media distancia,
+ambas siluetas de colores planos, sin arte final todavía) da profundidad al
+cielo negro. Junto al camino hay urnas rompibles: no dan nada al romperlas, son
+solo decoración, como los tarros de Hollow Knight o Dark Souls (ver "Cómo está
+construida").
+
+Pendiente para las siguientes pasadas: restos de enseres en la cabaña, una
+inscripción legible junto al Ancla, huellas de arrastre hacia el foso. Regla:
+que el jugador pueda deducir qué pasó sin que nadie se lo explique.
 
 ## Fuera del alcance de esta pasada (decidido a propósito)
 
 - Personajes no jugadores y diálogo, jefe final, tienda o mejoras nuevas.
-- Fondos con parallax y atmósfera: siguiente paso tras validar el terreno.
 - Reinicio de enemigos limitado a la zona (con una sola zona no hace falta).
+- Que los objetos rompibles reaparezcan al reiniciar el mundo: no afectan a la
+  partida, así que quedan rotos hasta recargar el nivel.
 
 ## Cómo está construida
 
 - `game/levels/ultimo_umbral.map` — el terreno como texto. Leyenda: `T` suelo con
   musgo, `G` relleno de piedra, `B` ladrillo, `C` remate de muro, `S` tablón de
-  madera; `P` inicio del jugador, `A` Ancla de Memoria, `E` enemigo; `.` vacío.
+  madera; `P` inicio del jugador, `A` Ancla de Memoria, `E` enemigo, `R` urna
+  rompible; `.` vacío.
   Los tablones (`S`) son **plataformas de un solo sentido**: se atraviesan desde
   abajo y por los lados, y solo se pisan desde arriba (colisionan solo en una franja
   fina de 4 px en su borde superior; el resto es puro decorado). Por ejemplo, se
@@ -55,8 +62,14 @@ explique.
   Con abajo + salto sobre un tablón se baja atravesándolo (`can_drop_through` del motor).
 - `game/levels/ultimo_umbral.tscn` — un `TextTileMap` (core) con el `TileSet`
   `tiles_umbral.tres` y su leyenda.
-- `game/levels/ultimo_umbral.gd` — coloca jugador, Anclas y enemigos en los
-  marcadores y limita la cámara al mapa.
+- `game/levels/ultimo_umbral.gd` — coloca jugador, Anclas, enemigos y urnas
+  rompibles en los marcadores y limita la cámara al mapa.
+- `game/environment/breakable_urn.tscn` — una urna rompible (`core/objects/breakable_prop.gd`
+  con un dibujo de polígonos). Bloquea el paso hasta que se rompe de un golpe;
+  no suelta nada ni afecta a la partida.
+- El fondo (`Background` en `ultimo_umbral.tscn`) es un `ParallaxBackground` con
+  dos siluetas de polígonos anchas (más que el nivel, para cubrir todo el
+  recorrido de la cámara sin repetirse).
 - `art/source/tiles_umbral.sprite` — las 5 baldosas (16×16), en el mismo formato
   de texto que los demás sprites.
 

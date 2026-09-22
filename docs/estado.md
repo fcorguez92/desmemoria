@@ -11,14 +11,14 @@
 5. Diseño del núcleo jugable — hecho (ver `nucleo-jugable.md`).
 6. Prototipo jugable mínimo — hecho.
 7. Validación del núcleo — hecho: movimiento, combate con enemigos y feedback, vida/muerte/Ecos, mejora del arma, puntos de control con curación y las tres habilidades de movimiento (dash, doble salto, salto de pared) que se consiguen en el mundo y abren caminos.
-8. Vertical slice — **en marcha.**  Estilo de arte decidido (pixel art oscuro, ver `arte.md`) y Godot configurado para pixel art (864×486, escalado entero). Primer arte hecho (caminante con espada y cascarón con cuchillo, con animaciones básicas de movimiento y ataque, ver `arte.md`). El terreno de El Último Umbral ya existe (mapa de texto + baldosas, ver `vertical-slice.md`) y es el nivel principal. Falta: fondos y atmósfera, objetos y narrativa ambiental, y jugarlo para ajustar el recorrido.
+8. Vertical slice — **en marcha.**  Estilo de arte decidido (pixel art oscuro, ver `arte.md`) y Godot configurado para pixel art (864×486, escalado entero). Primer arte hecho (caminante con espada y cascarón con cuchillo, con animaciones básicas de movimiento y ataque, ver `arte.md`). El terreno de El Último Umbral ya existe (mapa de texto + baldosas, ver `vertical-slice.md`) y es el nivel principal. Ya tiene fondo con parallax y urnas rompibles decorativas (geometría de colores, ver `docs/vertical-slice.md`). Falta: más narrativa ambiental (objetos, inscripciones) y jugarlo para ajustar el recorrido.
 
 ## Qué existe ahora mismo
 
 ```
-core/         Base reutilizable: 14 componentes + 4 objetos + 1 efecto + 2 controles de HUD (ver core/README.md)
+core/         Base reutilizable: 14 componentes + 5 objetos + 1 efecto + 3 controles de interfaz (ver core/README.md)
 game/         player, enemy (de prueba), echo, memory_anchor, ability_pickup, levels (El Último Umbral + banco de pruebas)
-tests/        smoke_test.gd — 116 comprobaciones, todas en verde
+tests/        smoke_test.gd — 166 comprobaciones, todas en verde
 docs/         Diseño, decisiones, arquitectura y estado
 ```
 

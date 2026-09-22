@@ -49,6 +49,7 @@ func _run() -> void:
 	await _test_wall_jump_opens_the_shaft()
 	await _test_ultimo_umbral_builds_from_text_map()
 	await _test_planks_are_one_way_platforms()
+	await _test_breakable_props()
 	await _test_enemy_does_not_jitter_against_a_wall()
 
 
@@ -703,6 +704,52 @@ func _test_planks_are_one_way_platforms() -> void:
 		highest_y = minf(highest_y, _player.global_position.y)
 	Input.action_release("ui_down")
 	_check(highest_y < ground_y - 20.0, "en suelo sólido, abajo + salto sigue saltando")
+
+
+
+
+func _test_breakable_props() -> void:
+	print("\n[Los objetos rompibles bloquean, se rompen y no afectan a la partida]")
+	if is_instance_valid(_level):
+		_level.queue_free()
+		await process_frame
+	paused = false
+	_level = load("res://game/levels/ultimo_umbral.tscn").instantiate()
+	root.add_child(_level)
+	await process_frame
+	await process_frame
+	_player = get_first_node_in_group("player")
+	var urn: BreakableProp = null
+	for child in _level.get_children():
+		if child is BreakableProp:
+			urn = child
+			break
+	_check(urn != null, "hay objetos rompibles colocados por los marcadores R")
+	_check(urn.hits == 1, "por defecto se rompen de un golpe")
+
+	# Hasta romperse, es un obstáculo físico: el jugador no lo atraviesa caminando.
+	_player.global_position = urn.global_position + Vector2(-30.0, -20.0)
+	_player.velocity = Vector2.ZERO
+	Input.action_press("ui_right")
+	await _wait(30)
+	Input.action_release("ui_right")
+	_check(_player.global_position.x < urn.global_position.x, "antes de romperse bloquea el paso")
+
+	var ecos_before: int = _player.ecos
+	var health_before: int = _player.health.health
+	urn.take_hit(1, 1)
+	await _wait(2)
+	_check(not is_instance_valid(urn), "un golpe lo destruye")
+	_check(_count_sparks() >= 1, "al romperse deja un chispazo")
+	_check(_player.ecos == ecos_before and _player.health.health == health_before, "romperlo no da Ecos ni cambia la vida: es solo decoración")
+
+	# Después de roto, ya no bloquea: se puede caminar por donde estaba.
+	var before_x: float = _player.global_position.x - 30.0
+	_player.global_position = Vector2(before_x, _player.global_position.y)
+	Input.action_press("ui_right")
+	await _wait(30)
+	Input.action_release("ui_right")
+	_check(_player.global_position.x > before_x + 25.0, "una vez roto ya no bloquea el paso")
 
 
 

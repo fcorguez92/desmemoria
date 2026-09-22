@@ -1,0 +1,27 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://core/objects/breakable_prop.gd" id="1_prop"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_urn"]
+size = Vector2(14, 22)
+
+[node name="BreakableUrn" type="StaticBody2D"]
+script = ExtResource("1_prop")
+spark_color = Color(0.82, 0.53, 0.18, 1)
+
+[node name="Visual" type="Node2D" parent="."]
+
+[node name="Body" type="Polygon2D" parent="Visual"]
+color = Color(0.34, 0.2, 0.09, 1)
+polygon = PackedVector2Array(-6, 11, 6, 11, 7, -2, 5, -8, -5, -8, -7, -2)
+
+[node name="Neck" type="Polygon2D" parent="Visual"]
+color = Color(0.34, 0.2, 0.09, 1)
+polygon = PackedVector2Array(-4, -8, 4, -8, 3, -11, -3, -11)
+
+[node name="Band" type="Polygon2D" parent="Visual"]
+color = Color(0.54, 0.33, 0.13, 1)
+polygon = PackedVector2Array(-7, -2, 7, -2, 7, 1, -7, 1)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("RectangleShape2D_urn")
