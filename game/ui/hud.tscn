@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource type="Script" path="res://game/ui/hud.gd" id="1_hud"]
 [ext_resource type="Script" path="res://core/ui/segmented_bar.gd" id="2_bar"]
@@ -8,6 +8,18 @@
 [sub_resource type="AtlasTexture" id="AtlasTexture_echo"]
 atlas = ExtResource("4_icons")
 region = Rect2(32, 0, 16, 16)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_message"]
+content_margin_left = 16.0
+content_margin_top = 10.0
+content_margin_right = 16.0
+content_margin_bottom = 10.0
+bg_color = Color(0.106, 0.102, 0.122, 0.72)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.416, 0.4, 0.44, 0.5)
 
 [node name="HUD" type="CanvasLayer"]
 script = ExtResource("1_hud")
@@ -52,13 +64,22 @@ stretch_mode = 3
 layout_mode = 2
 text = "0"
 
-[node name="MessageLabel" type="Label" parent="."]
+[node name="MessageBox" type="PanelContainer" parent="."]
+visible = false
 anchors_preset = 10
 anchor_right = 1.0
+offset_left = 180.0
 offset_top = 16.0
-offset_bottom = 42.0
+offset_right = -180.0
+offset_bottom = 96.0
 grow_horizontal = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_message")
+
+[node name="MessageLabel" type="Label" parent="MessageBox"]
+layout_mode = 2
 horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 2
 
 [node name="ControlsLabel" type="Label" parent="."]
 anchors_preset = 12

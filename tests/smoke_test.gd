@@ -50,6 +50,7 @@ func _run() -> void:
 	await _test_ultimo_umbral_builds_from_text_map()
 	await _test_planks_are_one_way_platforms()
 	await _test_breakable_props()
+	await _test_inscription_is_readable()
 	await _test_enemy_does_not_jitter_against_a_wall()
 
 
@@ -483,6 +484,9 @@ func _test_ability_pickups() -> void:
 	_check(_player.dash.unlocked, "recoger el objeto desbloquea el dash")
 	_check(not is_instance_valid(pickup), "el objeto desaparece al recogerlo")
 	_check("Dash" in _player.hud.message_label.text, "se muestra un mensaje con la habilidad")
+	_check(_player.hud.message_box.visible, "el recuadro del mensaje se muestra mientras hay texto")
+	await _wait(int(_player.MESSAGE_SECONDS * 60) + 5)
+	_check(not _player.hud.message_box.visible, "el recuadro se oculta al desaparecer el mensaje")
 	_player.health.take_hit(99)
 	await _wait(2)
 	_check(_player.dash.unlocked, "morir no pierde las habilidades")
@@ -750,6 +754,47 @@ func _test_breakable_props() -> void:
 	await _wait(30)
 	Input.action_release("ui_right")
 	_check(_player.global_position.x > before_x + 25.0, "una vez roto ya no bloquea el paso")
+
+
+
+
+func _test_inscription_is_readable() -> void:
+	print("\n[La inscripción se lee con Z, sin afectar a la partida]")
+	if is_instance_valid(_level):
+		_level.queue_free()
+		await process_frame
+	paused = false
+	_level = load("res://game/levels/ultimo_umbral.tscn").instantiate()
+	root.add_child(_level)
+	await process_frame
+	await process_frame
+	_player = get_first_node_in_group("player")
+	var inscription: Readable = null
+	for child in _level.get_children():
+		if child is Readable:
+			inscription = child
+			break
+	_check(inscription != null, "hay una inscripción colocada por el marcador I")
+	_check(not inscription.text.is_empty(), "tiene un texto que leer")
+
+	_player.global_position = inscription.global_position
+	_player.velocity = Vector2.ZERO
+	await _wait(10)
+	_check(inscription.get_node("Prompt").visible, "se muestra el aviso al estar al alcance")
+
+	var ecos_before: int = _player.ecos
+	Input.action_press("interact")
+	await _wait(2)
+	Input.action_release("interact")
+	await _wait(2)
+	_check(_player.hud.message_label.text == inscription.text, "leerla muestra el texto completo en el HUD")
+	_check(_player.hud.message_box.visible, "el texto se muestra en su recuadro translúcido")
+	_check(not paused, "leer no pausa el juego")
+	_check(_player.ecos == ecos_before, "leer no da ni quita Ecos: es solo ambientación")
+
+	_player.global_position = Vector2(700, 300)
+	await _wait(10)
+	_check(not inscription.get_node("Prompt").visible, "el aviso se oculta al alejarse")
 
 
 

@@ -42,6 +42,7 @@ de cada variable exportada (se ven en el Inspector).
 | `AbilityPickup` | `Area2D` | Al entrar un cuerpo del grupo objetivo, llama a `unlock_ability(ability_id)` en él y desaparece. No conoce las habilidades: solo entrega el identificador |
 | `EntitySpawner` | `Node2D` | Crea `scene` al cargar; al recibir `reset()` (vía el grupo `reset_group`) destruye la instancia actual y crea una nueva desde cero. `instance` es la entidad actual |
 | `BreakableProp` | `StaticBody2D` | Objeto rompible decorativo: implementa "golpeable" y se destruye con un chispazo tras `hits` golpes (1 por defecto). No suelta nada ni afecta a la partida, así que no forma parte de `resettable`. Hasta que se rompe, es un obstáculo físico normal |
+| `Readable` | `Area2D` | Objeto legible: con la acción de interacción y un cuerpo del grupo objetivo dentro, llama a `read_text(text: String)` en él (contrato "lector"). No decide cómo se muestra el texto ni afecta a la partida |
 | `TextTileMap` | `TileMapLayer` | Construye el nivel desde un `.map` de texto (un carácter por baldosa, según `legend`). Los caracteres que no están en la leyenda son **marcadores**: no ponen baldosa y su posición queda en `markers[carácter]` para que el nivel coloque entidades. Al exportar hay que incluir `*.map` en los filtros de recursos no gráficos |
 
 ## Interfaz (`core/ui/`)
@@ -73,6 +74,8 @@ Controles genéricos para el HUD. No saben de dónde vienen los números: el due
   quien golpea (puede ser null) y permite, p. ej., aturdirlo si el golpe se desvía.
 - **Checkpoint:** el cuerpo objetivo implementa `rest_at(position: Vector2)` y
   pertenece al grupo configurado en `target_group`.
+- **Lector:** el cuerpo objetivo de un `Readable` implementa `read_text(text: String)`
+  y pertenece al grupo configurado en `target_group`.
 - **Acciones de entrada:** los nombres de acción son variables exportadas
   (`action_left`, `action_jump`, `action_dash`...). Por defecto usan las
   acciones integradas de Godot (`ui_left`, `ui_right`, `ui_accept`, `ui_up`,

@@ -38,9 +38,17 @@ cielo negro. Junto al camino hay urnas rompibles: no dan nada al romperlas, son
 solo decoración, como los tarros de Hollow Knight o Dark Souls (ver "Cómo está
 construida").
 
-Pendiente para las siguientes pasadas: restos de enseres en la cabaña, una
-inscripción legible junto al Ancla, huellas de arrastre hacia el foso. Regla:
-que el jugador pueda deducir qué pasó sin que nadie se lo explique.
+Narrativa ambiental, sin ningún diálogo ni texto explicativo salvo la
+inscripción (que el jugador elige leer, no se le impone):
+
+- **Junto a la entrada**, antes incluso del primer Ancla, una piedra con
+  nombres grabados (Z para leerla): los supervivientes que se fueron dejaron
+  constancia de a quién no querían olvidar.
+- **Dentro de la cabaña en ruinas**, un carro volcado con una rueda suelta y un
+  saco reventado: alguien se marchó deprisa, sin tiempo de recoger.
+- **Junto al montón de escombros, antes del foso**, unas marcas de arrastre en
+  el suelo que llevan hacia el borde: se puede deducir qué pasó ahí sin que
+  nadie lo diga.
 
 ## Fuera del alcance de esta pasada (decidido a propósito)
 
@@ -54,7 +62,7 @@ que el jugador pueda deducir qué pasó sin que nadie se lo explique.
 - `game/levels/ultimo_umbral.map` — el terreno como texto. Leyenda: `T` suelo con
   musgo, `G` relleno de piedra, `B` ladrillo, `C` remate de muro, `S` tablón de
   madera; `P` inicio del jugador, `A` Ancla de Memoria, `E` enemigo, `R` urna
-  rompible; `.` vacío.
+  rompible, `I` inscripción legible; `.` vacío.
   Los tablones (`S`) son **plataformas de un solo sentido**: se atraviesan desde
   abajo y por los lados, y solo se pisan desde arriba (colisionan solo en una franja
   fina de 4 px en su borde superior; el resto es puro decorado). Por ejemplo, se
@@ -62,11 +70,20 @@ que el jugador pueda deducir qué pasó sin que nadie se lo explique.
   Con abajo + salto sobre un tablón se baja atravesándolo (`can_drop_through` del motor).
 - `game/levels/ultimo_umbral.tscn` — un `TextTileMap` (core) con el `TileSet`
   `tiles_umbral.tres` y su leyenda.
-- `game/levels/ultimo_umbral.gd` — coloca jugador, Anclas, enemigos y urnas
-  rompibles en los marcadores y limita la cámara al mapa.
+- `game/levels/ultimo_umbral.gd` — coloca jugador, Anclas, enemigos, urnas
+  rompibles e inscripciones en los marcadores y limita la cámara al mapa.
 - `game/environment/breakable_urn.tscn` — una urna rompible (`core/objects/breakable_prop.gd`
   con un dibujo de polígonos). Bloquea el paso hasta que se rompe de un golpe;
   no suelta nada ni afecta a la partida.
+- `game/environment/inscription.tscn` — una piedra con un texto (`core/objects/readable.gd`).
+  Con Z al alcance, el jugador lo lee en el HUD el tiempo que tarde en leerse
+  (según su longitud); no afecta a la partida. Hoy solo hay una, con el texto
+  fijado en la propia escena (ver la nota en `ultimo_umbral.gd` sobre qué
+  cambiaría si una zona necesitara varias con textos distintos).
+- El carro volcado y el saco reventado de la cabaña, y las marcas de arrastre
+  junto al foso, son polígonos fijos dentro de `ultimo_umbral.tscn` (nodo
+  `SetDressing`): decorado propio de esta zona, sin colisión, no un objeto
+  reutilizable como la urna o la inscripción.
 - El fondo (`Background` en `ultimo_umbral.tscn`) es un `ParallaxBackground` con
   dos siluetas de polígonos anchas (más que el nivel, para cubrir todo el
   recorrido de la cámara sin repetirse).
