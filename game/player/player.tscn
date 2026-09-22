@@ -36,12 +36,12 @@ shape = SubResource("CapsuleShape2D_1")
 texture = ExtResource("13_sheet")
 offset = Vector2(0, -4)
 hframes = 4
-vframes = 6
+vframes = 7
 
 [node name="SheetAnimator" type="Node" parent="." node_paths=PackedStringArray("sprite")]
 script = ExtResource("14_animator")
 sprite = NodePath("../Visual")
-animations = {"attack": [4, 3, 12.0, false], "parry": [5, 2, 10.0, false], "fall": [3, 1, 1.0, false], "idle": [0, 2, 4.0, true], "jump": [2, 1, 1.0, false], "run": [1, 4, 12.0, true]}
+animations = {"attack": [4, 3, 12.0, false], "hit": [6, 2, 8.0, false], "parry": [5, 2, 10.0, false], "fall": [3, 1, 1.0, false], "idle": [0, 2, 4.0, true], "jump": [2, 1, 1.0, false], "run": [1, 4, 12.0, true]}
 
 [node name="Camera2D" type="Camera2D" parent="."]
 position_smoothing_enabled = true

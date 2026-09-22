@@ -36,7 +36,8 @@ El combate se apoya en dos ideas: **las amenazas se ven venir** y **los golpes t
 - **Chispazo** en el punto de impacto cuando un golpe alcanza a alguien.
 - **Temblor de cámara:** fuerte al recibir un golpe, leve al darlo.
 - El destello rojo al recibir daño y el retroceso ya existían.
-- Falta la pausa breve al impactar ("hit stop"), que da mucho peso al golpe; se ha dejado fuera porque escala el tiempo del juego y hay que probarla con cuidado.
+- **Hit stop:** una pausa de 0,06 s al conectar un golpe (jugador o enemigo), que da peso al impacto. Ver `decisiones.md`, 2026-09-23.
+- **Animación de encajar el golpe:** jugador y enemigo tienen una pose propia al recibir daño, no solo el tinte de color.
 
 Estas cifras son de partida y sirven para comprobar el ritmo del combate; el diseño de enemigos y jefes concretos sigue pendiente.
 

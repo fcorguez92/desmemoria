@@ -2,6 +2,16 @@
 
 Cada entrada: qué se decidió, por qué, qué alternativas se descartaron y por qué. Se añade una entrada nueva por decisión importante, no se reescribe el historial.
 
+## 2026-09-23 — Golpes con peso: animación de recibir daño y hit stop
+
+**Decisión**: primera pasada de pulido del combate, a partir de una auditoría propia de qué hacía sentir el juego "básico" (ver `estado.md`). Dos cosas: una pose de "encajar el golpe" (jugador y enemigo, animación `hit` en sus hojas de sprites) y un hit stop de 0,06 s que escala `Engine.time_scale` a 0,05 al conectar un golpe, con `HitStop` (`core/effects/`) nuevo.
+
+**Por qué se retomó el hit stop ahora**: el riesgo que lo aplazó (que escalar el tiempo alterase los temporizadores de las pruebas) se mitiga así: el propio temporizador que restaura `HitStop` se crea con `ignore_time_scale = true`, así que su cuenta atrás corre en tiempo real y no se alarga con la pausa que él mismo provoca; el resto de temporizadores del juego sí se ven afectados mientras dura, pero la pausa es tan breve (0,06 s) que el efecto es del orden de milisegundos. `Engine.time_scale` es una variable global del motor: si dos golpes se solapan, un identificador incremental (`_active_id`) asegura que solo el más reciente restaura el tiempo, para que uno más antiguo no lo pise.
+
+**Reutilizando arte existente**: la pose de golpe combina piezas que ya existían (piernas de salto/caída, capa alterna, arma con el offset cambiado) en vez de dibujar piezas nuevas; es una silueta claramente distinta a estar de pie, pero un cambio menor si se quiere un dibujo propio más adelante.
+
+**Un detalle de orden al conectarlo**: en el enemigo, `attack_visual.reset()` (que cancela su ataque en curso) y `animator.play_action("hit")` usan el mismo hueco de "acción" del `SheetAnimator` (solo puede haber una activa); `reset()` tiene que llamarse primero, o borraría la animación de golpe recién puesta. Se detectó porque la prueba automática de la animación de golpe fallaba, no por inspección visual.
+
 ## 2026-09-28 — Narrativa ambiental de El Último Umbral: inscripción legible y decorado fijo
 
 **Decisión**: tres detalles que se explican solos, sin ningún diálogo. Una inscripción junto a la entrada (Z para leerla, texto fijo en `game/environment/inscription.tscn`) con nombres grabados por los supervivientes. Un carro volcado y un saco reventado dentro de la cabaña, y marcas de arrastre en el suelo junto al foso, los tres como polígonos fijos sin colisión dentro de `ultimo_umbral.tscn` (nodo `SetDressing`), no como objetos reutilizables.
@@ -159,7 +169,7 @@ Cada entrada: qué se decidió, por qué, qué alternativas se descartaron y por
 
 **Por qué**: el usuario no podía valorar el combate porque solo sabía que recibía o hacía daño, sin ver cómo atacaba cada uno ni notar el golpe. El feedback es una parte de la sensación del combate, no un adorno posterior al arte.
 
-**Alternativa aplazada**: pausa breve al impactar ("hit stop"). Escala `Engine.time_scale`, lo que altera los tiempos de las pruebas automáticas y del resto de temporizadores; se hará cuando se pueda probar con cuidado.
+**Alternativa aplazada**: pausa breve al impactar ("hit stop"); implementada más tarde, ver la entrada del 2026-09-23.
 
 **Técnico**: el brazo se voltea con `scale.x` y `rotation = ángulo * facing`, lo que refleja bien el giro. El temblor mueve `camera.position` para no chocar con el `offset` de mirar arriba/abajo.
 

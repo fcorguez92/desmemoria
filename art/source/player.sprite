@@ -195,3 +195,7 @@ frame upper cloak legs_idle sword_rest@16,20
 anim parry
 frame upper cloak legs_idle sword_guard@14,5
 frame upper cloak legs_idle sword_guard@14,2
+
+anim hit
+frame upper cloak_b legs_jump sword_rest@6,24
+frame upper cloak legs_fall sword_rest@10,22

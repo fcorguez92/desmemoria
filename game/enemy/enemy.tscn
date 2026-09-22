@@ -26,12 +26,12 @@ shape = SubResource("RectangleShape2D_enemy")
 texture = ExtResource("8_sheet")
 offset = Vector2(0, -4)
 hframes = 4
-vframes = 4
+vframes = 5
 
 [node name="SheetAnimator" type="Node" parent="." node_paths=PackedStringArray("sprite")]
 script = ExtResource("9_animator")
 sprite = NodePath("../Visual")
-animations = {"idle": [0, 2, 3.0, true], "strike": [3, 2, 12.0, false], "walk": [1, 4, 8.0, true], "windup": [2, 2, 5.0, false]}
+animations = {"idle": [0, 2, 3.0, true], "hit": [4, 2, 8.0, false], "strike": [3, 2, 12.0, false], "walk": [1, 4, 8.0, true], "windup": [2, 2, 5.0, false]}
 
 [node name="AttackHitbox" type="Area2D" parent="."]
 position = Vector2(20, 0)

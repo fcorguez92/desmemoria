@@ -207,12 +207,19 @@ func _on_facing_changed(facing: int) -> void:
 func _on_damaged(_amount: int) -> void:
 	hit_flash.flash()
 	screen_shake.shake(7.0, 0.18)
+	# Si el golpe llega a mitad de un ataque propio, se corta (arco y animación)
+	# antes de poner la pose de encajar el golpe: comparten el mismo hueco de
+	# "acción" del SheetAnimator, y si no, la pose se vería con el brillo del
+	# espadazo aún desvaneciéndose por encima (ver enemy.gd take_hit()).
+	attack_visual.reset()
+	animator.play_action("hit")
 
 
 ## Feedback de un golpe propio que alcanza algo: chispazo y un temblor leve.
 func _on_hit_landed(body: Node) -> void:
 	HitSpark.spawn(get_parent(), (body as Node2D).global_position)
 	screen_shake.shake(3.0, 0.08)
+	HitStop.trigger(self)
 
 
 func _show_message(text: String, duration: float = MESSAGE_SECONDS) -> void:

@@ -36,6 +36,7 @@ func _run() -> void:
 	await _test_enemy_chases_telegraphs_and_hits()
 	await _test_enemy_attack_can_be_dodged_and_interrupted()
 	await _test_attack_feedback()
+	await _test_hit_stop()
 	await _test_parry()
 	await _test_sprites_and_animations()
 	await _test_enemies_respawn_on_rest_and_death()
@@ -190,6 +191,11 @@ func _test_enemy_chases_telegraphs_and_hits() -> void:
 		if enemy.ai.state == PatrolChaseAI.State.WINDUP:
 			saw_windup = true
 			windup_frames += 1
+	# La animación de golpe dura 0.25 s nominales (bastante más que lo que tarda
+	# en llegar esta comprobación), así que es segura aunque el hit stop la
+	# ralentice un poco. El propio hit stop (0.06 s en tiempo real) se prueba
+	# aparte, en _test_hit_stop(), donde no compite con ningún otro _wait().
+	_check(_player.animator.current == "hit", "el jugador reproduce su animación de recibir un golpe")
 	await _wait(3)
 	_check(saw_windup, "el enemigo avisa antes de atacar")
 	_check(windup_frames >= 20, "el aviso dura lo bastante para reaccionar")
@@ -235,9 +241,11 @@ func _test_attack_feedback() -> void:
 	_check(enemy.health.health == 2, "el ataque alcanzó al enemigo")
 	_check(_count_sparks() >= 1, "un golpe que alcanza deja un chispazo")
 	_check(camera.position.length() > 0.0, "un golpe que alcanza sacude la cámara")
+	_check(enemy.animator.current == "hit", "el enemigo reproduce su animación de recibir un golpe")
 	await _wait(30)
 	_check(player_animator.current != "attack", "tras el ataque el jugador recupera sus animaciones de movimiento")
 	_check(camera.position == Vector2.ZERO, "el temblor termina y la cámara vuelve a su sitio")
+	_check(enemy.animator.current in ["idle", "walk"], "el enemigo recupera sus animaciones de movimiento tras encajar el golpe")
 
 	await _fresh_level("", false, true, "EnemySpawn1")
 	enemy = _level.get_node("EnemySpawn1").instance
@@ -253,6 +261,28 @@ func _test_attack_feedback() -> void:
 	_check(enemy_animator.current == "strike", "al caer el golpe el enemigo reproduce su animación de golpe")
 	await _wait(25)
 	_check(enemy_animator.current in ["idle", "walk"], "tras golpear, el enemigo recupera sus animaciones de movimiento")
+
+
+## HitStop aparte de cualquier combate real: así su margen de tiempo (medido en
+## segundos reales, no en fotogramas de física) no compite con ningún otro _wait().
+func _test_hit_stop() -> void:
+	print("\n[HitStop: pausa breve del tiempo al golpear]")
+	_check(Engine.time_scale == 1.0, "el tiempo empieza a velocidad normal")
+	HitStop.trigger(_player, 0.06, 0.05)
+	_check(Engine.time_scale == 0.05, "activarlo escala el tiempo de inmediato, sin esperar a nada")
+	await _wait(10)
+	_check(Engine.time_scale == 1.0, "y lo restaura solo pasada su duración (aquí, con margen de sobra)")
+
+	# Dos golpes seguidos: el segundo manda; cuando el primero termina su espera
+	# (hacia el tick 6 desde que empezó), no debe restaurar el tiempo encima del
+	# segundo (que empezó 3 ticks más tarde y sigue corriendo hasta el tick 9).
+	HitStop.trigger(_player, 0.10, 0.05)
+	await _wait(3)
+	HitStop.trigger(_player, 0.10, 0.05)
+	await _wait(4)
+	_check(Engine.time_scale == 0.05, "un segundo golpe durante la pausa la alarga en vez de cortarla")
+	await _wait(6)
+	_check(Engine.time_scale == 1.0, "y al final ambos golpes dejan el tiempo restaurado")
 
 
 func _test_parry() -> void:
@@ -718,6 +748,7 @@ func _test_breakable_props() -> void:
 		_level.queue_free()
 		await process_frame
 	paused = false
+	Engine.time_scale = 1.0
 	_level = load("res://game/levels/ultimo_umbral.tscn").instantiate()
 	root.add_child(_level)
 	await process_frame
@@ -764,6 +795,7 @@ func _test_inscription_is_readable() -> void:
 		_level.queue_free()
 		await process_frame
 	paused = false
+	Engine.time_scale = 1.0
 	_level = load("res://game/levels/ultimo_umbral.tscn").instantiate()
 	root.add_child(_level)
 	await process_frame
@@ -804,6 +836,7 @@ func _test_enemy_does_not_jitter_against_a_wall() -> void:
 		_level.queue_free()
 		await process_frame
 	paused = false
+	Engine.time_scale = 1.0
 	_level = load("res://game/levels/ultimo_umbral.tscn").instantiate()
 	root.add_child(_level)
 	await process_frame
@@ -951,6 +984,7 @@ func _press_action(action: StringName) -> void:
 
 func _fresh_level(title: String, announce: bool = true, with_enemies: bool = false, only_spawner: String = "") -> void:
 	paused = false
+	Engine.time_scale = 1.0
 	if is_instance_valid(_level):
 		_level.queue_free()
 		await process_frame

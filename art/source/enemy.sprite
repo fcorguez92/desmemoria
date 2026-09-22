@@ -211,3 +211,7 @@ frame upper rags legs_idle blade_up@18,-10
 anim strike
 frame upper rags legs_idle blade_strike@20,8
 frame upper rags legs_idle blade_strike@20,11
+
+anim hit
+frame upper rags_b legs_walk2 blade_rest@10,20
+frame upper rags legs_idle blade_rest@14,17
