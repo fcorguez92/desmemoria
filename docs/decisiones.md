@@ -2,6 +2,16 @@
 
 Cada entrada: qué se decidió, por qué, qué alternativas se descartaron y por qué. Se añade una entrada nueva por decisión importante, no se reescribe el historial.
 
+## 2026-09-28 — Narrativa ambiental de El Último Umbral: inscripción legible y decorado fijo
+
+**Decisión**: tres detalles que se explican solos, sin ningún diálogo. Una inscripción junto a la entrada (Z para leerla, texto fijo en `game/environment/inscription.tscn`) con nombres grabados por los supervivientes. Un carro volcado y un saco reventado dentro de la cabaña, y marcas de arrastre en el suelo junto al foso, los tres como polígonos fijos sin colisión dentro de `ultimo_umbral.tscn` (nodo `SetDressing`), no como objetos reutilizables.
+
+**Nuevo contrato "lector"**: `Readable` (`core/objects/`) es igual que `Checkpoint` en estructura (área, `target_group`, `action_interact`, aviso opcional) pero llama a `read_text(text)` en vez de `rest_at(position)`, y no cambia ningún estado del juego. El tiempo que el texto queda en el HUD se calcula por su longitud (`MIN_READING_SECONDS`, `READING_CHARS_PER_SECOND` en `player.gd`), no es un tiempo fijo como los mensajes de habilidad.
+
+**Alternativas**: un sistema de diálogo con ventanas y retratos — descartado, muy por encima de lo que hace falta para un solo texto corto (ver filosofía de ingeniería). Colocar el carro, el saco y las marcas como objetos reutilizables con marcador en el mapa (como la urna) — descartado: son una composición única de esta cabaña y este foso, no un tipo de objeto que vaya a repetirse en otro sitio con la misma forma.
+
+**Un fallo al construirlo**: la primera posición elegida para la inscripción (junto al Ancla, muy cerca) quedaba dentro del área de detección del Ancla; al pulsar Z se activaban las dos a la vez y el Ancla pausaba el juego a mitad de la prueba. Se movió la inscripción junto a la entrada, lejos de cualquier otra zona de interacción; queda como aviso para futuras zonas: comprobar que las áreas de objetos interactivos cercanos no se solapen.
+
 ## 2026-09-27 — Ambiente de El Último Umbral: parallax y objetos rompibles decorativos
 
 **Decisión**: un `ParallaxBackground` con dos capas de siluetas (colinas lejanas y ruinas a media distancia) da profundidad al fondo negro. Se añaden urnas rompibles junto al camino: `BreakableProp` (`core/objects/`) implementa el contrato "golpeable" y se destruye de un golpe con un chispazo; hasta entonces es un obstáculo físico normal. No sueltan nada ni dan Ecos, así que no reaparecen al reiniciar el mundo (no pertenecen al grupo `resettable`).

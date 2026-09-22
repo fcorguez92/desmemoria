@@ -1,0 +1,35 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://core/objects/readable.gd" id="1_readable"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_inscription"]
+size = Vector2(20, 26)
+
+[node name="Inscription" type="Area2D" node_paths=PackedStringArray("prompt")]
+script = ExtResource("1_readable")
+text = "Aquí grabamos los nombres que aún recordamos: Ossenna. Fara. El niño del molino, que nunca dijo el suyo. Mientras alguien lea esto, siguen siendo alguien."
+prompt = NodePath("Prompt")
+
+[node name="Slab" type="Polygon2D" parent="."]
+color = Color(0.227, 0.216, 0.259, 1)
+polygon = PackedVector2Array(-8, 13, 8, 13, 9, -10, 6, -14, -6, -14, -9, -10)
+
+[node name="Carving" type="Polygon2D" parent="."]
+color = Color(0.416, 0.4, 0.44, 1)
+polygon = PackedVector2Array(-5, -6, 5, -6, 5, -3, -5, -3)
+
+[node name="CarvingLine2" type="Polygon2D" parent="."]
+color = Color(0.416, 0.4, 0.44, 1)
+polygon = PackedVector2Array(-5, 0, 4, 0, 4, 3, -5, 3)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("RectangleShape2D_inscription")
+
+[node name="Prompt" type="Label" parent="."]
+visible = false
+offset_left = -80.0
+offset_top = -46.0
+offset_right = 80.0
+offset_bottom = -14.0
+text = "Z: Leer"
+horizontal_alignment = 1

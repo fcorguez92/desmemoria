@@ -14,6 +14,10 @@ const ABILITY_NAMES := {
 	&"wall_jump": "Salto de pared",
 }
 const MESSAGE_SECONDS := 3.0
+## Para textos que hay que leer (inscripciones): tiempo mínimo y por carácter,
+## a un ritmo de lectura tranquilo (unos 15 caracteres por segundo).
+const MIN_READING_SECONDS := 4.0
+const READING_CHARS_PER_SECOND := 15.0
 
 var ecos: int = 0
 ## Eco de la última muerte, si aún no se recuperó.
@@ -211,13 +215,20 @@ func _on_hit_landed(body: Node) -> void:
 	screen_shake.shake(3.0, 0.08)
 
 
-func _show_message(text: String) -> void:
+func _show_message(text: String, duration: float = MESSAGE_SECONDS) -> void:
 	_message_id += 1
 	var this_message := _message_id
 	hud.set_message(text)
-	await get_tree().create_timer(MESSAGE_SECONDS).timeout
+	await get_tree().create_timer(duration).timeout
 	if this_message == _message_id:
 		hud.set_message("")
+
+
+## Contrato "lector": lo llama core/objects/readable.gd. El tiempo en pantalla
+## se ajusta a lo largo que sea el texto, para dar tiempo a leerlo.
+func read_text(text: String) -> void:
+	var duration := maxf(MIN_READING_SECONDS, text.length() / READING_CHARS_PER_SECOND)
+	_show_message(text, duration)
 
 
 ## Golpe desviado: sin daño, con efectos azules, y el atacante queda aturdido.
