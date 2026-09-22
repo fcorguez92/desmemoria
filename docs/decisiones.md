@@ -2,6 +2,14 @@
 
 Cada entrada: qué se decidió, por qué, qué alternativas se descartaron y por qué. Se añade una entrada nueva por decisión importante, no se reescribe el historial.
 
+## 2026-09-27 — Ambiente de El Último Umbral: parallax y objetos rompibles decorativos
+
+**Decisión**: un `ParallaxBackground` con dos capas de siluetas (colinas lejanas y ruinas a media distancia) da profundidad al fondo negro. Se añaden urnas rompibles junto al camino: `BreakableProp` (`core/objects/`) implementa el contrato "golpeable" y se destruye de un golpe con un chispazo; hasta entonces es un obstáculo físico normal. No sueltan nada ni dan Ecos, así que no reaparecen al reiniciar el mundo (no pertenecen al grupo `resettable`).
+
+**Alternativas**: dibujar el fondo y las urnas con el pipeline de sprites de texto (como los personajes y las baldosas) — descartado por ahora: el entorno y los objetos siguen en fase de geometría de colores planos (ver `docs/estado.md`), y una silueta de colinas grande e irregular encaja peor en una rejilla de caracteres que en polígonos ajustados a mano. Objetos rompibles que sueltan Ecos o curaciones — descartado: el usuario pidió que fuesen solo decoración, sin afectar al balance del juego.
+
+**Técnico**: las siluetas del parallax son más anchas que el nivel entero (unos 2100 px) para cubrir todo el recorrido de la cámara sin necesitar mosaico ni repetición. Al colocar una urna cerca de un enemigo hubo que comprobar que no cayera dentro de su radio de patrulla: al ser un obstáculo físico, el enemigo la trata como una pared y patrulla contra ella, lo que en la prueba automática de patrulla se contaba como más cambios de dirección de los esperados (bloqueo legítimo, no la vibración corregida antes) — se resolvió recolocando la urna, no cambiando la IA.
+
 ## 2026-09-26 — Menú de pausa con Personaje y Controles; capa modal común
 
 **Decisión**: Esc abre un menú de pausa con *Continuar*, *Personaje* (vida, Ecos, Filo y habilidades recordadas), *Controles* (las teclas, que salen del HUD) y *Salir del juego*. Las habilidades sin recordar aparecen como `???` para no desvelar qué queda por encontrar. El HUD solo conserva la nota "Esc: pausa y controles". La lógica de pausar y reanudar se extrae a `ModalLayer` (`core/ui`), que usan el menú de pausa y el del Ancla.
