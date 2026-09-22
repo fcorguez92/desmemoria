@@ -484,6 +484,9 @@ func _test_ability_pickups() -> void:
 	_check(_player.dash.unlocked, "recoger el objeto desbloquea el dash")
 	_check(not is_instance_valid(pickup), "el objeto desaparece al recogerlo")
 	_check("Dash" in _player.hud.message_label.text, "se muestra un mensaje con la habilidad")
+	_check(_player.hud.message_box.visible, "el recuadro del mensaje se muestra mientras hay texto")
+	await _wait(int(_player.MESSAGE_SECONDS * 60) + 5)
+	_check(not _player.hud.message_box.visible, "el recuadro se oculta al desaparecer el mensaje")
 	_player.health.take_hit(99)
 	await _wait(2)
 	_check(_player.dash.unlocked, "morir no pierde las habilidades")
@@ -785,6 +788,7 @@ func _test_inscription_is_readable() -> void:
 	Input.action_release("interact")
 	await _wait(2)
 	_check(_player.hud.message_label.text == inscription.text, "leerla muestra el texto completo en el HUD")
+	_check(_player.hud.message_box.visible, "el texto se muestra en su recuadro translúcido")
 	_check(not paused, "leer no pausa el juego")
 	_check(_player.ecos == ecos_before, "leer no da ni quita Ecos: es solo ambientación")
 

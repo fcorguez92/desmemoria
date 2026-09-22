@@ -6,7 +6,8 @@ extends CanvasLayer
 @onready var health_bar: SegmentedBar = $HealthBar
 @onready var heal_flasks: IconRow = $HealFlasks
 @onready var ecos_label: Label = $Ecos/Amount
-@onready var message_label: Label = $MessageLabel
+@onready var message_box: PanelContainer = $MessageBox
+@onready var message_label: Label = $MessageBox/MessageLabel
 
 
 func set_health(value: int, max_value: int) -> void:
@@ -21,5 +22,8 @@ func set_ecos(amount: int) -> void:
 	ecos_label.text = str(amount)
 
 
+## Un recuadro translúcido con el texto, o nada si `text` está vacío (así no
+## queda un recuadro vacío flotando cuando no hay ningún mensaje).
 func set_message(text: String) -> void:
 	message_label.text = text
+	message_box.visible = not text.is_empty()
