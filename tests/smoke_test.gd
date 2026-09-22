@@ -27,6 +27,7 @@ func _init() -> void:
 
 func _run() -> void:
 	await _test_health_and_healing()
+	await _test_lethal_hit_does_not_knockback_at_respawn()
 	await _test_death_drops_echo_at_last_ground()
 	await _test_fall_kills_and_second_death_replaces_echo()
 	await _test_echo_pickup_returns_ecos()
@@ -67,6 +68,14 @@ func _test_health_and_healing() -> void:
 	_check(health.use_heal_charge(), "puede curarse con cargas y vida incompleta")
 	_check(health.health == 5 and health.heal_charges == 2, "curar restaura vida y gasta 1 carga")
 	_check(not health.use_heal_charge(), "no gasta carga a vida completa")
+
+
+func _test_lethal_hit_does_not_knockback_at_respawn() -> void:
+	await _fresh_level("Golpe mortal: sin retroceso en el punto de reaparición")
+	_check(not _player.knockback.is_active, "el retroceso empieza inactivo")
+	_player.take_hit(99, 1)
+	_check(not _player.knockback.is_active, "un golpe mortal no deja el retroceso activo tras reaparecer")
+	_check(_player.global_position == _player.respawn.spawn_position, "el jugador reaparece exactamente en su punto de reaparición")
 
 
 func _test_death_drops_echo_at_last_ground() -> void:

@@ -2,6 +2,16 @@
 
 Cada entrada: qué se decidió, por qué, qué alternativas se descartaron y por qué. Se añade una entrada nueva por decisión importante, no se reescribe el historial.
 
+## 2026-09-29 — Fix: el retroceso de un golpe mortal no debe aplicarse tras reaparecer
+
+**Bug**: en `Player.take_hit()` (`game/player/player.gd`), el retroceso se aplicaba siempre que `health.take_hit(damage)` devolvía `true`, sin distinguir si el golpe había matado al jugador. `HealthComponent.take_hit()` (`core/components/health_component.gd`) emite `died` de forma síncrona en cuanto la vida llega a 0, y esa señal está conectada directamente a `Player.die()`, que reaparece al jugador (teletransporte, vida y velocidad reiniciadas) antes de devolver el control a `take_hit()`. El resultado: el empuje de un golpe mortal se aplicaba en el punto de reaparición, no donde murió el jugador. Casi imperceptible en la práctica (un empuje pequeño justo tras reaparecer), pero un orden de ejecución incorrecto.
+
+**Arreglo**: `take_hit()` guarda `health.health` en `health_before` antes de llamar a `health.take_hit(damage)`, y solo aplica el retroceso si el golpe se aplicó y no fue mortal (`damage < health_before`). Como la regla de `HealthComponent` es `health -= amount; if health <= 0: died`, un golpe es mortal exactamente cuando `amount >= health_before`, así que esta comprobación es equivalente y no duplica ninguna constante mágica.
+
+**`enemy.gd` tiene la misma estructura** (`if health.take_hit(...): knockback.apply(...)`) pero no se ha tocado: al morir, el enemigo llama a `queue_free()`, que solo marca el nodo para borrarlo al final del frame; no vuelve a correr `_physics_process` antes de desaparecer, así que el `knockback.apply()` posterior no tiene ningún efecto observable. Cambiarlo habría sido una modificación sin ningún beneficio real.
+
+**Prueba añadida**: `_test_lethal_hit_does_not_knockback_at_respawn` en `tests/smoke_test.gd` comprueba que, tras un golpe mortal, `knockback.is_active` sigue en `false` y el jugador reaparece exactamente en `respawn.spawn_position`, sin ningún desplazamiento.
+
 ## 2026-09-28 — Narrativa ambiental de El Último Umbral: inscripción legible y decorado fijo
 
 **Decisión**: tres detalles que se explican solos, sin ningún diálogo. Una inscripción junto a la entrada (Z para leerla, texto fijo en `game/environment/inscription.tscn`) con nombres grabados por los supervivientes. Un carro volcado y un saco reventado dentro de la cabaña, y marcas de arrastre en el suelo junto al foso, los tres como polígonos fijos sin colisión dentro de `ultimo_umbral.tscn` (nodo `SetDressing`), no como objetos reutilizables.

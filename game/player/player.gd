@@ -86,7 +86,11 @@ func _physics_process(delta: float) -> void:
 func take_hit(damage: int, from_direction: int, attacker: Node = null) -> void:
 	if parry.try_deflect(from_direction, motor.facing, attacker):
 		return
-	if health.take_hit(damage):
+	# Si el golpe es mortal, health.take_hit() ya ha reaparecido al jugador
+	# (vía la señal `died`, síncrona) antes de devolver el control aquí: el
+	# retroceso no debe aplicarse sobre el punto de reaparición.
+	var health_before := health.health
+	if health.take_hit(damage) and damage < health_before:
 		knockback.apply(from_direction)
 
 
