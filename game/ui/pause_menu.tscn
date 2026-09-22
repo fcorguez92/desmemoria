@@ -1,6 +1,6 @@
 [gd_scene load_steps=4 format=3]
 
-[ext_resource type="Script" path="res://game/ui/anchor_menu.gd" id="1_menu"]
+[ext_resource type="Script" path="res://game/ui/pause_menu.gd" id="1_menu"]
 [ext_resource type="Script" path="res://core/ui/menu_list.gd" id="2_list"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
@@ -15,9 +15,9 @@ border_width_right = 2
 border_width_bottom = 2
 border_color = Color(0.416, 0.4, 0.44, 1)
 
-[node name="AnchorMenu" type="CanvasLayer" node_paths=PackedStringArray("root")]
+[node name="PauseMenu" type="CanvasLayer" node_paths=PackedStringArray("root")]
 process_mode = 2
-layer = 10
+layer = 11
 script = ExtResource("1_menu")
 root = NodePath("Root")
 
@@ -51,7 +51,7 @@ grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
 
 [node name="Content" type="VBoxContainer" parent="Root/Panel"]
-custom_minimum_size = Vector2(340, 0)
+custom_minimum_size = Vector2(575, 350)
 layout_mode = 2
 theme_override_constants/separation = 10
 
@@ -59,12 +59,7 @@ theme_override_constants/separation = 10
 layout_mode = 2
 theme_override_colors/font_color = Color(0.953, 0.769, 0.416, 1)
 theme_override_font_sizes/font_size = 22
-text = "Ancla de Memoria"
-horizontal_alignment = 1
-
-[node name="Stats" type="Label" parent="Root/Panel/Content"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.663, 0.89, 0.949, 1)
+text = "Pausa"
 horizontal_alignment = 1
 
 [node name="Separator" type="HSeparator" parent="Root/Panel/Content"]
@@ -72,11 +67,27 @@ layout_mode = 2
 
 [node name="Options" type="VBoxContainer" parent="Root/Panel/Content"]
 layout_mode = 2
+size_flags_vertical = 3
 script = ExtResource("2_list")
+
+[node name="Info" type="HBoxContainer" parent="Root/Panel/Content"]
+visible = false
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 24
+
+[node name="Left" type="Label" parent="Root/Panel/Content/Info"]
+layout_mode = 2
+size_flags_vertical = 0
+theme_override_colors/font_color = Color(0.663, 0.89, 0.949, 1)
+
+[node name="Right" type="Label" parent="Root/Panel/Content/Info"]
+layout_mode = 2
+size_flags_vertical = 0
+theme_override_colors/font_color = Color(0.639, 0.624, 0.659, 1)
 
 [node name="Hint" type="Label" parent="Root/Panel/Content"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.416, 0.4, 0.44, 1)
 theme_override_font_sizes/font_size = 12
-text = "↑ ↓ elegir · Intro confirmar · Esc o Z cerrar"
 horizontal_alignment = 1

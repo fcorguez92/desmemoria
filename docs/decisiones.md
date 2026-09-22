@@ -2,6 +2,14 @@
 
 Cada entrada: qué se decidió, por qué, qué alternativas se descartaron y por qué. Se añade una entrada nueva por decisión importante, no se reescribe el historial.
 
+## 2026-09-26 — Menú de pausa con Personaje y Controles; capa modal común
+
+**Decisión**: Esc abre un menú de pausa con *Continuar*, *Personaje* (vida, Ecos, Filo y habilidades recordadas), *Controles* (las teclas, que salen del HUD) y *Salir del juego*. Las habilidades sin recordar aparecen como `???` para no desvelar qué queda por encontrar. El HUD solo conserva la nota "Esc: pausa y controles". La lógica de pausar y reanudar se extrae a `ModalLayer` (`core/ui`), que usan el menú de pausa y el del Ancla.
+
+**Alternativas**: un inventario completo (descartado: aún no hay objetos) y mantener las teclas fijas en el HUD (ocupan sitio y crecen con cada mecánica).
+
+**Técnico**: la tecla Esc que abre la pausa la escucha el jugador (`_unhandled_input`), no el propio menú: un nodo con `process_mode = When Paused` no recibe teclas mientras se juega. Con el juego ya en pausa (menú del Ancla abierto) Esc no abre la pausa. Todas las pantallas del menú miden lo mismo, para que no "se mueva" al cambiar de una a otra.
+
 ## 2026-09-25 — Menú del Ancla con el juego en pausa; sin inventario ni entradas vacías
 
 **Decisión**: descansar en un Ancla (Z) cura, fija la reaparición y abre un menú con el juego en pausa. Hoy tiene dos opciones: *Mejorar el Filo* y *Salir*. Desaparece la tecla C. La lista de opciones (`MenuList`) es un control genérico en `core/ui/`; el menú (`game/ui/anchor_menu`) recibe los números del jugador y avisa con señales, como el HUD.

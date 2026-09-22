@@ -1,12 +1,13 @@
 extends CharacterBody2D
 ## Personaje jugable. Orquesta los componentes de core/ y añade lo propio de
-## este juego: los Ecos, el Eco que marca la última muerte y el HUD.
+## este juego: los Ecos, el Eco que marca la última muerte, el HUD y los menús.
 ##
 ## El orden de _physics_process es deliberado (ver docs/arquitectura.md).
 
 const EchoScene := preload("res://game/echo/echo.tscn")
 const Hud := preload("res://game/ui/hud.gd")
 const AnchorMenu := preload("res://game/ui/anchor_menu.gd")
+const PauseMenu := preload("res://game/ui/pause_menu.gd")
 const ABILITY_NAMES := {
 	&"dash": "Dash",
 	&"double_jump": "Doble salto",
@@ -36,6 +37,7 @@ var _message_id: int = 0
 @onready var animator: SheetAnimator = $SheetAnimator
 @onready var hud: Hud = $HUD
 @onready var anchor_menu: AnchorMenu = $AnchorMenu
+@onready var pause_menu: PauseMenu = $PauseMenu
 
 
 func _ready() -> void:
@@ -96,6 +98,27 @@ func rest_at(anchor_position: Vector2) -> void:
 func add_ecos(amount: int) -> void:
 	ecos += amount
 	_update_hud()
+
+
+## Esc abre la pausa. Esta capa solo funciona con el juego en pausa, así que la
+## tecla que la abre la escucha el jugador, que sí recibe entrada mientras se juega.
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed(&"ui_cancel") and not get_tree().paused:
+		_refresh_pause_menu()
+		pause_menu.open()
+		get_viewport().set_input_as_handled()
+
+
+## ¿Está recordada esta habilidad?
+func has_ability(id: StringName) -> bool:
+	match id:
+		&"dash":
+			return dash.unlocked
+		&"double_jump":
+			return motor.max_air_jumps > 0
+		&"wall_jump":
+			return motor.can_wall_jump
+	return false
 
 
 ## Contrato de habilidades: lo llama core/objects/ability_pickup.gd. Las
@@ -216,3 +239,10 @@ func _update_hud() -> void:
 	hud.set_health(health.health, health.max_health)
 	hud.set_heal_charges(health.heal_charges, health.max_heal_charges)
 	hud.set_ecos(ecos)
+
+
+func _refresh_pause_menu() -> void:
+	var abilities := {}
+	for id in ABILITY_NAMES:
+		abilities[ABILITY_NAMES[id]] = has_ability(id)
+	pause_menu.show_character(health.health, health.max_health, ecos, weapon.level + 1, weapon.current_value(), abilities)
