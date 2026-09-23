@@ -74,7 +74,7 @@ func _test_death_drops_echo_at_last_ground() -> void:
 	await _stand_at(330.0)
 	var ground: Vector2 = _player.respawn.last_grounded_position
 	_player.add_ecos(4)
-	_player.global_position = Vector2(300, 100)
+	_teleport(_player, Vector2(300, 100))
 	_player.health.take_hit(99)
 	_check(_player.ecos == 0, "los Ecos se pierden al morir")
 	_check(_player.health.health == 5, "la vida se restaura al reaparecer")
@@ -109,7 +109,7 @@ func _test_echo_pickup_returns_ecos() -> void:
 	_player.health.take_hit(99)
 	var echo: Node = _player.active_echo
 	_check(is_instance_valid(echo), "el Eco no se recoge solo al aparecer")
-	_player.global_position = echo.global_position
+	_teleport(_player, echo.global_position)
 	await _wait(30)
 	_check(_player.ecos == 5, "tocar el Eco devuelve los Ecos")
 	_check(_player.active_echo == null, "el Eco desaparece al recogerlo")
@@ -120,7 +120,7 @@ func _test_checkpoint_heals_and_moves_respawn() -> void:
 	var anchor: Node2D = _level.get_node("MemoryAnchor2")
 	_player.health.health = 2
 	_player.health.heal_charges = 0
-	_player.global_position = anchor.global_position
+	_teleport(_player, anchor.global_position)
 	await _wait(10)
 	_check(_player.health.health == 2, "acercarse al checkpoint no descansa sin pulsar interactuar")
 	_check(anchor.get_node("Prompt").visible, "se muestra el aviso al estar al alcance")
@@ -133,7 +133,7 @@ func _test_checkpoint_heals_and_moves_respawn() -> void:
 	_check(_player.respawn.spawn_position == anchor.global_position, "el checkpoint fija el respawn")
 	_check(_player.anchor_menu.is_open(), "descansar abre el menú del Ancla")
 	_player.anchor_menu.close()
-	_player.global_position = Vector2(700, 300)
+	_teleport(_player, Vector2(700, 300))
 	await _wait(10)
 	_check(not anchor.get_node("Prompt").visible, "el aviso se oculta al alejarse")
 
@@ -166,7 +166,7 @@ func _test_enemy_patrols_and_respects_ledges() -> void:
 
 	# Con el origen pegado al borde derecho del suelo (880), patrullar hacia
 	# allí lo llevaría al vacío: el sondeo de bordes debe frenarlo.
-	enemy.global_position = Vector2(850, 356)
+	_teleport(enemy, Vector2(850, 356))
 	enemy.ai._home_x = 850.0
 	var fell := false
 	for i in 300:
@@ -179,7 +179,7 @@ func _test_enemy_patrols_and_respects_ledges() -> void:
 func _test_enemy_chases_telegraphs_and_hits() -> void:
 	await _fresh_level("IA: persecución, aviso y golpe con retroceso", true, true, "EnemySpawn1")
 	var enemy: Node2D = _level.get_node("EnemySpawn1").instance
-	_player.global_position = Vector2(660, 330)
+	_teleport(_player, Vector2(660, 330))
 	var start_x := 660.0
 	var windup_frames := 0
 	var saw_windup := false
@@ -200,16 +200,16 @@ func _test_enemy_chases_telegraphs_and_hits() -> void:
 func _test_enemy_attack_can_be_dodged_and_interrupted() -> void:
 	await _fresh_level("IA: el ataque se puede esquivar e interrumpir", true, true, "EnemySpawn1")
 	var enemy: Node2D = _level.get_node("EnemySpawn1").instance
-	_player.global_position = Vector2(660, 330)
+	_teleport(_player, Vector2(660, 330))
 	while enemy.ai.state != PatrolChaseAI.State.WINDUP:
 		await physics_frame
-	_player.global_position = Vector2(600, 330)
+	_teleport(_player, Vector2(600, 330))
 	await _wait(35)
 	_check(_player.health.health == 5, "alejarse durante el aviso esquiva el golpe")
 
 	await _fresh_level("", false, true, "EnemySpawn1")
 	enemy = _level.get_node("EnemySpawn1").instance
-	_player.global_position = Vector2(660, 330)
+	_teleport(_player, Vector2(660, 330))
 	while enemy.ai.state != PatrolChaseAI.State.WINDUP:
 		await physics_frame
 	var x_before := enemy.global_position.x
@@ -226,7 +226,7 @@ func _test_attack_feedback() -> void:
 	var enemy: Node2D = _level.get_node("EnemySpawn1").instance
 	var player_animator: SheetAnimator = _player.animator
 	var camera: Camera2D = _player.get_node("Camera2D")
-	_player.global_position = Vector2(665, 330)
+	_teleport(_player, Vector2(665, 330))
 	await _wait(12)
 	Input.action_press("attack")
 	await _wait(3)
@@ -242,7 +242,7 @@ func _test_attack_feedback() -> void:
 	await _fresh_level("", false, true, "EnemySpawn1")
 	enemy = _level.get_node("EnemySpawn1").instance
 	var enemy_animator: SheetAnimator = enemy.animator
-	_player.global_position = Vector2(660, 330)
+	_teleport(_player, Vector2(660, 330))
 	while enemy.ai.state != PatrolChaseAI.State.WINDUP:
 		await physics_frame
 	await _wait(4)
@@ -273,7 +273,7 @@ func _test_parry() -> void:
 	# Parry a tiempo contra un ataque real.
 	await _fresh_level("", false, true, "EnemySpawn1")
 	var enemy: Node2D = _level.get_node("EnemySpawn1").instance
-	_player.global_position = Vector2(660, 330)
+	_teleport(_player, Vector2(660, 330))
 	while enemy.ai.state != PatrolChaseAI.State.WINDUP:
 		await physics_frame
 	# Se pulsa cuando ya queda poco para que caiga el golpe.
@@ -295,7 +295,7 @@ func _test_parry() -> void:
 	# Un parry demasiado pronto no salva: la ventana se cierra antes del golpe.
 	await _fresh_level("", false, true, "EnemySpawn1")
 	enemy = _level.get_node("EnemySpawn1").instance
-	_player.global_position = Vector2(660, 330)
+	_teleport(_player, Vector2(660, 330))
 	while enemy.ai.state != PatrolChaseAI.State.WINDUP:
 		await physics_frame
 	Input.action_press("parry")
@@ -446,8 +446,7 @@ func _test_anchor_menu_keyboard_and_pause() -> void:
 
 	# Lo mismo con Z estando junto al Ancla: abrir y cerrar con Z no debe reabrir el menú.
 	var anchor: Node2D = _level.get_node("MemoryAnchor2")
-	_player.global_position = anchor.global_position
-	_player.velocity = Vector2.ZERO
+	_teleport(_player, anchor.global_position)
 	await _wait(15)
 	await _press_action("interact")
 	await _wait(5)
@@ -479,7 +478,7 @@ func _test_ability_pickups() -> void:
 	_check(not _player.dash.unlocked, "el dash empieza bloqueado")
 	_check(_player.motor.max_air_jumps == 0, "el doble salto empieza bloqueado")
 	var pickup: Node2D = _level.get_node("DashPickup")
-	_player.global_position = pickup.global_position
+	_teleport(_player, pickup.global_position)
 	await _wait(10)
 	_check(_player.dash.unlocked, "recoger el objeto desbloquea el dash")
 	_check(not is_instance_valid(pickup), "el objeto desaparece al recogerlo")
@@ -510,8 +509,7 @@ func _wall_probe(unlocked: bool) -> Dictionary:
 	_player.unlock_ability(&"double_jump")
 	if unlocked:
 		_player.unlock_ability(&"wall_jump")
-	_player.global_position = Vector2(2332, -250)
-	_player.velocity = Vector2.ZERO
+	_teleport(_player, Vector2(2332, -250))
 	Input.action_press("ui_left")
 	var max_fall := 0.0
 	for i in 8:
@@ -541,8 +539,7 @@ func _climb_shaft(wall_jump: bool) -> bool:
 	_player.unlock_ability(&"double_jump")
 	if wall_jump:
 		_player.unlock_ability(&"wall_jump")
-	_player.global_position = Vector2(2380, -74)
-	_player.velocity = Vector2.ZERO
+	_teleport(_player, Vector2(2380, -74))
 
 	var holding_jump := false
 	var cooldown := 0
@@ -589,8 +586,7 @@ func _reach_high_platform(double_jump: bool) -> bool:
 	await _fresh_level("", false)
 	if double_jump:
 		_player.unlock_ability(&"double_jump")
-	_player.global_position = Vector2(1700, 200)
-	_player.velocity = Vector2.ZERO
+	_teleport(_player, Vector2(1700, 200))
 	Input.action_press("ui_right")
 	await physics_frame
 	# Se mantiene el salto pulsado hasta el punto más alto: soltarlo antes
@@ -622,8 +618,7 @@ func _jump_across_gap(press_dash: bool, dash_unlocked: bool) -> bool:
 	await _fresh_level("", false)
 	if dash_unlocked:
 		_player.unlock_ability(&"dash")
-	_player.global_position = Vector2(1140, 210)
-	_player.velocity = Vector2.ZERO
+	_teleport(_player, Vector2(1140, 210))
 	Input.action_press("ui_right")
 	await physics_frame
 	Input.action_press("ui_accept")
@@ -660,8 +655,7 @@ func _test_planks_are_one_way_platforms() -> void:
 	_check(tiles.get_cell_atlas_coords(roof_cell) == Vector2i(4, 0), "hay un tablón donde se espera (tejado de la cabaña)")
 	var roof_top: float = tiles.to_global(tiles.map_to_local(roof_cell)).y - 8.0
 	var ground_top: float = tiles.to_global(tiles.map_to_local(Vector2i(18, 20))).y - 8.0
-	_player.global_position = Vector2(tiles.to_global(tiles.map_to_local(roof_cell)).x, ground_top - 24.0)
-	_player.velocity = Vector2.ZERO
+	_teleport(_player, Vector2(tiles.to_global(tiles.map_to_local(roof_cell)).x, ground_top - 24.0))
 	await _wait(20)
 	_check(_player.is_on_floor() and _player.global_position.y > roof_top, "de pie bajo el tejado, sin que lo toque")
 	Input.action_press("ui_accept")
@@ -732,8 +726,7 @@ func _test_breakable_props() -> void:
 	_check(urn.hits == 1, "por defecto se rompen de un golpe")
 
 	# Hasta romperse, es un obstáculo físico: el jugador no lo atraviesa caminando.
-	_player.global_position = urn.global_position + Vector2(-30.0, -20.0)
-	_player.velocity = Vector2.ZERO
+	_teleport(_player, urn.global_position + Vector2(-30.0, -20.0))
 	Input.action_press("ui_right")
 	await _wait(30)
 	Input.action_release("ui_right")
@@ -749,7 +742,7 @@ func _test_breakable_props() -> void:
 
 	# Después de roto, ya no bloquea: se puede caminar por donde estaba.
 	var before_x: float = _player.global_position.x - 30.0
-	_player.global_position = Vector2(before_x, _player.global_position.y)
+	_teleport(_player, Vector2(before_x, _player.global_position.y))
 	Input.action_press("ui_right")
 	await _wait(30)
 	Input.action_release("ui_right")
@@ -777,8 +770,7 @@ func _test_inscription_is_readable() -> void:
 	_check(inscription != null, "hay una inscripción colocada por el marcador I")
 	_check(not inscription.text.is_empty(), "tiene un texto que leer")
 
-	_player.global_position = inscription.global_position
-	_player.velocity = Vector2.ZERO
+	_teleport(_player, inscription.global_position)
 	await _wait(10)
 	_check(inscription.get_node("Prompt").visible, "se muestra el aviso al estar al alcance")
 
@@ -792,7 +784,7 @@ func _test_inscription_is_readable() -> void:
 	_check(not paused, "leer no pausa el juego")
 	_check(_player.ecos == ecos_before, "leer no da ni quita Ecos: es solo ambientación")
 
-	_player.global_position = Vector2(700, 300)
+	_teleport(_player, Vector2(700, 300))
 	await _wait(10)
 	_check(not inscription.get_node("Prompt").visible, "el aviso se oculta al alejarse")
 
@@ -927,8 +919,7 @@ func _test_ultimo_umbral_builds_from_text_map() -> void:
 	await _wait(60)
 	_check(absf(_player.global_position.x - start_x) < 200.0 and _player.global_position.x > 32.0, "el muro sellado del extremo izquierdo detiene al jugador")
 	# El foso (x 32..41 baldosas) no tiene suelo: caer debe matar y reaparecer.
-	_player.global_position = Vector2(36.0 * 16.0, 250.0)
-	_player.velocity = Vector2.ZERO
+	_teleport(_player, Vector2(36.0 * 16.0, 250.0))
 	await _wait(90)
 	_check(_player.global_position.x < 32.0 * 16.0 or _player.global_position.y < 400.0, "caer al foso reaparece al jugador")
 
@@ -969,9 +960,23 @@ func _fresh_level(title: String, announce: bool = true, with_enemies: bool = fal
 ## Coloca al jugador sobre el suelo inicial en `x` y espera a que lo pise, para
 ## que su "último suelo" sea ese punto y no el de reaparición.
 func _stand_at(x: float) -> void:
-	_player.global_position = Vector2(x, 330.0)
-	_player.velocity = Vector2.ZERO
+	_teleport(_player, Vector2(x, 330.0))
 	await _wait(15)
+
+
+## Teletransporta `body` (jugador o enemigo) a `position` y fuerza un
+## `move_and_slide()` con velocidad cero para que is_on_floor()/is_on_wall()
+## reflejen la posición nueva de inmediato. Un CharacterBody2D solo actualiza
+## esos estados al llamar a move_and_slide(): si no se fuerza aquí, conserva
+## el contacto de suelo de ANTES del teletransporte (p. ej. el del punto de
+## aparición), y como el motor anula la gravedad mientras cree estar en el
+## suelo, el estado incorrecto no se corrige solo. Fue la causa de una prueba
+## intermitente (ver docs/decisiones.md).
+func _teleport(body: CharacterBody2D, position: Vector2) -> void:
+	body.global_position = position
+	body.velocity = Vector2.ZERO
+	body.move_and_slide()
+	body.velocity = Vector2.ZERO
 
 
 func _count_sparks() -> int:
