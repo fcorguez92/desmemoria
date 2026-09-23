@@ -352,7 +352,7 @@ func _test_sprites_and_animations() -> void:
 	await _wait(10)
 	Input.action_release("ui_right")
 	_check(_player.animator.current == "run", "andando usa la animación de correr")
-	_check(player_sprite.frame >= 4 and player_sprite.frame < 8, "correr muestra fotogramas de la segunda fila de la hoja")
+	_check(player_sprite.frame >= player_sprite.hframes and player_sprite.frame < player_sprite.hframes * 2, "correr muestra fotogramas de la segunda fila de la hoja")
 
 	Input.action_press("ui_accept")
 	await _wait(6)

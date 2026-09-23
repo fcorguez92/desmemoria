@@ -99,6 +99,7 @@ El texto se puede leer, corregir y versionar en Git como cualquier otro archivo.
   animación que pida el dueño.
 
 - **Baldosas de nivel:** `art/source/tiles_umbral.sprite` es una hoja de una fila (una baldosa de 16×16 por fotograma) que genera `game/levels/tiles_umbral.png`; el `TileSet` `tiles_umbral.tres` las usa por su posición en la fila. El terreno se dibuja en `.map` (ver `vertical-slice.md`).
+- **Fotogramas intermedios sin dibujar piezas nuevas:** para suavizar un ciclo (p. ej. correr/andar) sin partir de cero, se puede recortar progresivamente la pierna que va a "desaparecer" en el fotograma siguiente (quitarle el pie primero, luego más) reutilizando las mismas piezas ya dibujadas. Como el lienzo ancla el cuerpo por los pies (ver más arriba), una pieza de pierna con menos filas también agacha un poco el cuerpo entero: por eso conviene recortar por filas completas (el pie, luego la pantorrilla) y no caracteres sueltos dentro de una fila, o la silueta queda rota.
 
 **Regla importante: una sola fuente de verdad por sprite.** Mientras exista su
 `.sprite`, ese texto manda y volver a generar sobrescribe el PNG. Si alguien
@@ -110,8 +111,8 @@ dos maneras: empezar con el texto y pasar a retocar a mano cuando compense.
 
 | Sprite | Dibujo | Lienzo | Animaciones |
 |---|---|---|---|
-| Caminante (jugador) | 20×44, figura con capucha, ojo y bufanda de luz azul; espada ("el Filo") de acero con canto azul | 64×56 | reposo (2), correr (4), salto (1), caída (1), ataque (3), guardia (2), golpe recibido (2) |
-| Cascarón (enemigo) | 24×44, figura pálida sin rostro con trapos rojos; cuchillo pesado oxidado | 64×56 | reposo (2), andar (4), aviso (2), golpe (2), golpe recibido (2) |
+| Caminante (jugador) | 20×44, figura con capucha, ojo y bufanda de luz azul; espada ("el Filo") de acero con canto azul | 64×56 | reposo (2), correr (6), salto (1), caída (1), ataque (3), guardia (2), golpe recibido (2) |
+| Cascarón (enemigo) | 24×44, figura pálida sin rostro con trapos rojos; cuchillo pesado oxidado | 64×56 | reposo (2), andar (6), aviso (2), golpe (2), golpe recibido (2) |
 | Iconos del HUD | 16×16: frasco de curación (lleno y vacío, ámbar) y Eco (gota azul) | 16×16 | una fila de 3 fotogramas (`game/ui/hud_icons.png`) |
 
 Son un primer dibujo funcional, no arte final. **Las armas van integradas en el

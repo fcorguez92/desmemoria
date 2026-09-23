@@ -2,6 +2,12 @@
 
 Cada entrada: qué se decidió, por qué, qué alternativas se descartaron y por qué. Se añade una entrada nueva por decisión importante, no se reescribe el historial.
 
+## 2026-09-23 — Correr y andar de 4 a 6 fotogramas, sin dibujar piezas nuevas
+
+**Decisión**: las animaciones de correr (jugador) y andar (enemigo), pedidas explícitamente por el usuario ("más frames... que la animación de andar fuese un poco más dinámica"), pasan de 4 a 6 fotogramas. Se mantiene la duración del ciclo completo (se sube el fps en la misma proporción), así que se ven más fluidas sin caminar más deprisa.
+
+**Técnica**: en vez de dibujar dos poses nuevas por personaje desde cero, los dos fotogramas añadidos recortan progresivamente (por filas completas, no por caracteres sueltos dentro de una fila) la pierna que va a desaparecer en el fotograma vecino, reutilizando las piezas ya dibujadas. Se generaron con un script que localiza la pierna por patrón (no por una columna fija) para no arrastrar errores de conteo manual de píxeles; se comprobó visualmente con capturas de la hoja generada antes de darlo por bueno. Queda anotado en `arte.md` como técnica reutilizable.
+
 ## 2026-09-23 — Golpes con peso: animación de recibir daño y hit stop
 
 **Decisión**: primera pasada de pulido del combate, a partir de una auditoría propia de qué hacía sentir el juego "básico" (ver `estado.md`). Dos cosas: una pose de "encajar el golpe" (jugador y enemigo, animación `hit` en sus hojas de sprites) y un hit stop de 0,06 s que escala `Engine.time_scale` a 0,05 al conectar un golpe, con `HitStop` (`core/effects/`) nuevo.
