@@ -61,6 +61,7 @@ Controles genéricos para el HUD. No saben de dónde vienen los números: el due
 | Efecto | Responsabilidad |
 |---|---|
 | `HitSpark` | Chispazo breve de impacto que se autodestruye. Uso: `HitSpark.spawn(parent, posición_global, color)` (el color es opcional) |
+| `HitStop` | Pausa breve del tiempo de juego al golpear ("hit stop"): escala `Engine.time_scale` un instante y lo restaura solo, en tiempo real (no de juego), para no alargarse con su propia pausa. Uso: `HitStop.trigger(caller, duration, scale)` (`caller` solo hace falta para llegar a `get_tree()`); si dos golpes se solapan, el más reciente manda y el anterior no restaura encima de él |
 
 ## Contratos que asumen
 

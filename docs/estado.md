@@ -16,9 +16,9 @@
 ## Qué existe ahora mismo
 
 ```
-core/         Base reutilizable: 14 componentes + 6 objetos + 1 efecto + 3 controles de interfaz (ver core/README.md)
+core/         Base reutilizable: 14 componentes + 6 objetos + 2 efectos + 3 controles de interfaz (ver core/README.md)
 game/         player, enemy (de prueba), echo, memory_anchor, ability_pickup, levels (El Último Umbral + banco de pruebas)
-tests/        smoke_test.gd — 173 comprobaciones, todas en verde
+tests/        smoke_test.gd — 184 comprobaciones, todas en verde
 docs/         Diseño, decisiones, arquitectura y estado
 ```
 

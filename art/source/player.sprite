@@ -104,6 +104,25 @@ part legs_run4
 ..........133331....
 ..........111111....
 
+# Fotogramas intermedios: se parte de la pose de contacto y se recorta la pierna
+# trasera SOLO donde el siguiente fotograma (run2/run4) también la recorta, nunca
+# más — si no, la pierna "reaparecería" de golpe en el fotograma siguiente.
+part legs_run_mid1
+....1221......1221..
+...1221.......1221..
+...1221.......1221..
+..122221.....122221.
+..133331............
+..111111............
+
+part legs_run_mid2
+..1221........1221..
+..1221.......1221...
+...1221......1221...
+..122221.....122221.
+.............133331.
+.............111111.
+
 part legs_jump
 .....1221..1221.....
 ....122221.122221...
@@ -177,8 +196,10 @@ frame upper cloak_b legs_idle sword_rest@14,20
 
 anim run
 frame upper cloak legs_run1 sword_rest@14,20
+frame upper cloak_b legs_run_mid1 sword_rest@14,20
 frame upper cloak_b legs_run2 sword_rest@14,20
 frame upper cloak legs_run3 sword_rest@14,20
+frame upper cloak legs_run_mid2 sword_rest@14,20
 frame upper cloak_b legs_run4 sword_rest@14,20
 
 anim jump
@@ -195,3 +216,7 @@ frame upper cloak legs_idle sword_rest@16,20
 anim parry
 frame upper cloak legs_idle sword_guard@14,5
 frame upper cloak legs_idle sword_guard@14,2
+
+anim hit
+frame upper cloak_b legs_jump sword_rest@6,24
+frame upper cloak legs_fall sword_rest@10,22

@@ -59,7 +59,11 @@ func take_hit(damage: int, from_direction: int, _attacker: Node = null) -> void:
 		knockback.apply(from_direction)
 		ai.interrupt(maxf(0.3, _stun_timer))
 		visual.modulate = STUN_COLOR if stunned else Color.WHITE
+		# reset() cancela su propio ataque en curso (windup/strike) si lo había;
+		# va antes de la animación de golpe recibido porque las dos usan el mismo
+		# hueco de "acción" del SheetAnimator y si no, reset() la borraría.
 		attack_visual.reset()
+		animator.play_action("hit")
 
 
 ## Le han desviado el golpe: se queda aturdido, sin poder atacar, y recibe doble
@@ -101,3 +105,4 @@ func _on_attack_landed() -> void:
 
 func _on_hit_landed(body: Node) -> void:
 	HitSpark.spawn(get_parent(), (body as Node2D).global_position)
+	HitStop.trigger(self)
