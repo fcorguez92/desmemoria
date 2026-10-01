@@ -1,10 +1,10 @@
 class_name MapView
 extends Control
-## Dibuja un `MapData`: las zonas descubiertas (su fondo, sus baldosas y su
-## borde), los marcadores y el foco. Dos modos:
+## Dibuja un `MapData`: lo que se ha visto de cada zona (su fondo y sus
+## baldosas; lo no visto queda en blanco), los marcadores y el foco. Dos modos:
 ## - `follow_focus = true` (minimapa): centrado en el foco, a `cell_pixels`
 ##   píxeles por baldosa; lo que sale del recuadro se recorta.
-## - `follow_focus = false` (mapa completo): encaja todas las zonas descubiertas,
+## - `follow_focus = false` (mapa completo): encaja todo lo visto,
 ##   con la escala entera más grande que quepa, hasta `cell_pixels`.
 ## Solo presentación: no descubre zonas ni mueve nada.
 
@@ -15,9 +15,8 @@ extends Control
 ## Fondo y marco del recuadro. Un alfa de 0 en el fondo lo deja transparente.
 @export var back_color: Color = Color(0.106, 0.102, 0.122, 0.72)
 @export var frame_color: Color = Color(0.416, 0.4, 0.44, 0.6)
-## Relleno y borde de cada zona descubierta.
+## Relleno de lo visto (el aire; las baldosas se pintan encima con su color).
 @export var area_color: Color = Color(0.2, 0.192, 0.231, 0.9)
-@export var area_border_color: Color = Color(0.5, 0.48, 0.53, 1)
 @export var focus_color: Color = Color(0.953, 0.769, 0.416, 1)
 ## Margen entre el borde del recuadro y el mapa en el modo de mapa completo.
 @export var padding: int = 8
@@ -40,7 +39,7 @@ func _ready() -> void:
 func current_scale() -> int:
 	if follow_focus or data == null:
 		return cell_pixels
-	var bounds := data.revealed_bounds()
+	var bounds := data.seen_bounds()
 	if bounds.size == Vector2i.ZERO:
 		return cell_pixels
 	var room := size - Vector2(padding, padding) * 2.0
@@ -53,7 +52,7 @@ func cell_to_view(cell: Vector2) -> Vector2:
 	var px := current_scale()
 	var center := data.focus_cell
 	if not follow_focus:
-		center = Rect2(data.revealed_bounds()).get_center()
+		center = Rect2(data.seen_bounds()).get_center()
 	return (size / 2.0 - center * px).round() + cell * px
 
 
@@ -67,15 +66,14 @@ func _draw() -> void:
 func _draw_map() -> void:
 	var px := current_scale()
 	for area in data.areas:
-		if not area.revealed:
-			continue
 		var rect := Rect2(cell_to_view(Vector2(area.rect.position)), Vector2(area.rect.size) * px)
-		draw_rect(rect, area_color)
+		if not rect.intersects(Rect2(Vector2.ZERO, size)):
+			continue
+		draw_texture_rect(area.mask, rect, false, area_color)
 		draw_texture_rect(area.texture, rect, false)
-		draw_rect(rect, area_border_color, false, 1.0)
 	for id in data.markers:
 		var marker: Dictionary = data.markers[id]
-		if data.area_at(marker.cell).get("revealed", false):
+		if data.is_seen(marker.cell):
 			_draw_dot(cell_to_view(marker.cell), marker.color, maxi(3, px + 1))
 	_draw_dot(cell_to_view(data.focus_cell), focus_color, maxi(4, px + 2))
 

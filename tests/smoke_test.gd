@@ -1073,11 +1073,20 @@ func _test_map_data() -> void:
 	data.add_area(&"a", "Zona A", Rect2i(0, 0, 4, 2), blank)
 	data.add_area(&"b", "Zona B", Rect2i(4, 0, 4, 2), blank)
 	_check(data.area_at(Vector2(5.5, 1.0)).id == &"b" and data.area_at(Vector2(20, 20)).is_empty(), "area_at encuentra la zona que contiene una celda")
-	_check(not data.is_revealed(&"a") and data.revealed_bounds().size == Vector2i.ZERO, "las zonas empiezan sin descubrir")
-	_check(data.reveal(&"a") and not data.reveal(&"a"), "reveal avisa solo la primera vez")
-	_check(data.revealed_bounds() == Rect2i(0, 0, 4, 2), "los límites descubiertos son los de la zona A")
-	data.reveal(&"b")
-	_check(data.revealed_bounds() == Rect2i(0, 0, 8, 2), "y crecen al descubrir la B")
+	_check(not data.is_visited(&"a") and data.seen_bounds().size == Vector2i.ZERO, "las zonas empiezan sin visitar y sin nada visto")
+	_check(data.visit(&"a") and not data.visit(&"a"), "visit avisa solo la primera vez")
+	_check(data.seen_bounds().size == Vector2i.ZERO, "visitar una zona no descubre nada de ella")
+	_check(data.reveal_around(Vector2(1.5, 0.5), 1.0), "reveal_around descubre lo que está cerca")
+	_check(data.is_seen(Vector2(1.5, 0.5)) and data.is_seen(Vector2(2.5, 0.5)) and not data.is_seen(Vector2(3.5, 1.5)), "solo dentro del radio")
+	_check(data.seen_bounds() == Rect2i(0, 0, 3, 2), "los límites de lo visto crecen con lo descubierto")
+	_check(not data.reveal_around(Vector2(1.5, 0.5), 1.0), "volver a mirar lo ya visto no descubre nada nuevo")
+	data.reveal_around(Vector2(4.0, 1.0), 1.0)
+	_check(data.is_seen(Vector2(3.5, 0.5)) and data.is_seen(Vector2(4.5, 0.5)), "un mismo círculo descubre en dos zonas vecinas")
+	var copy := MapData.new()
+	copy.add_area(&"a", "Zona A", Rect2i(0, 0, 4, 2), blank)
+	copy.add_area(&"b", "Zona B", Rect2i(4, 0, 4, 2), blank)
+	copy.set_seen_data(data.get_seen_data())
+	_check(copy.seen_bounds() == data.seen_bounds() and copy.is_seen(Vector2(4.5, 0.5)) and not copy.is_seen(Vector2(7.5, 1.5)), "lo visto se puede exportar e importar (para guardarlo)")
 	var emitted := [0]
 	data.changed.connect(func() -> void: emitted[0] += 1)
 	data.set_focus(Vector2(1, 1))
@@ -1116,12 +1125,14 @@ func _test_world_is_made_of_connected_rooms() -> void:
 	_check(get_nodes_in_group("player").size() == 1, "un solo jugador en todo el mundo")
 	_check(_level.current_room == _room, "se empieza en El Último Umbral")
 	var data: MapData = _level.map_data
-	_check(data.is_revealed(&"UltimoUmbral") and not data.is_revealed(&"TerrazasSecas"), "en el mapa solo está descubierta la sala de inicio")
+	await _wait(2)
+	_check(data.is_visited(&"UltimoUmbral") and not data.is_visited(&"TerrazasSecas"), "solo se ha visitado la sala de inicio")
+	_check(data.is_seen(data.focus_cell) and not data.is_seen(Vector2(74, 10)), "en el mapa solo se ve lo que rodea al jugador, no la sala entera")
 	var anchors := 0
 	for id in data.markers:
 		if String(id).begins_with("anchor_"):
 			anchors += 1
-	_check(anchors == 4, "las cuatro Anclas están marcadas en el mapa (se ven al descubrir su sala)")
+	_check(anchors == 4, "las cuatro Anclas están marcadas en el mapa (se ven al pasar cerca)")
 	_check(_player.hud.message_label.text.is_empty(), "la sala de inicio no se anuncia")
 	var dash_pickup := 0
 	var jump_pickup := 0
@@ -1147,7 +1158,8 @@ func _test_walking_into_the_next_room() -> void:
 	_check(_level.current_room.name == "TerrazasSecas", "al cruzar el borde se está en Las Terrazas Secas")
 	_check(_player.is_on_floor() and _player.active_echo == null, "el suelo continúa sin huecos entre las dos salas")
 	_check(camera.limit_left == 1280 and camera.limit_right == 1280 + 64 * 16, "la cámara pasa a limitarse a la sala nueva")
-	_check(_level.map_data.is_revealed(&"TerrazasSecas"), "la sala nueva se descubre en el mapa")
+	_check(_level.map_data.is_visited(&"TerrazasSecas") and _level.map_data.is_seen(_level.map_data.focus_cell), "la sala nueva cuenta como visitada y se ve en el mapa lo que la rodea")
+	_check(not _level.map_data.is_seen(Vector2(80 + 60, 10)), "pero no el resto de la sala")
 	_check(_player.hud.message_label.text == "Las Terrazas Secas", "la primera vez se anuncia su nombre")
 	_check(_level.sky_shown, "en las Terrazas se ve el cielo")
 
@@ -1306,7 +1318,7 @@ func _test_minimap_and_pause_map() -> void:
 	_check(pause.map_view.visible and not pause.info.visible and not pause.menu.visible, "se ve el mapa y no la lista ni el texto")
 	_check(pause_panel.size == pause_size, "el panel mide lo mismo en Mapa que en el menú principal")
 	var map_view: MapView = pause.map_view
-	var bounds := data.revealed_bounds()
+	var bounds := data.seen_bounds()
 	var drawn := Vector2(bounds.size) * map_view.current_scale()
 	_check(drawn.x <= map_view.size.x and drawn.y <= map_view.size.y, "el mapa completo cabe en su recuadro")
 	await _press_action("ui_cancel")

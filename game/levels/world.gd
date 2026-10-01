@@ -7,7 +7,9 @@ extends Node2D
 ## - limita la cámara a la sala (con deslizamiento suave, no un corte),
 ## - muestra u oculta el cielo de fondo (no hay cielo bajo tierra),
 ## - mueve el límite de caída mortal al fondo de la sala,
-## - descubre la sala en el mapa y, la primera vez, anuncia su nombre.
+## - la primera vez, anuncia su nombre.
+## Además, cada paso de físicas descubre en el mapa lo que queda cerca del
+## jugador (REVEAL_RADIUS): el mapa solo muestra lo que se ha explorado.
 ##
 ## El mapa (MapData, de core/ui) se rellena aquí y se lo pasa al jugador, que lo
 ## reparte entre el minimapa del HUD y el mapa del menú de pausa.
@@ -25,6 +27,8 @@ const ROOM_HYSTERESIS := 32.0
 ## Lo que tarda el cielo en aparecer o desaparecer al cambiar de sala: la cámara
 ## se desliza a la sala nueva y un corte seco se notaría a mitad de camino.
 const SKY_FADE_SECONDS := 0.5
+## Hasta cuántas baldosas alrededor del jugador se descubre el mapa al pasar.
+const REVEAL_RADIUS := 12.0
 ## Colores del mapa.
 const MAP_TILE_COLOR := Color(0.62, 0.6, 0.66)
 const MAP_PLANK_COLOR := Color(0.54, 0.33, 0.13)
@@ -72,6 +76,7 @@ func _physics_process(_delta: float) -> void:
 		if room != null and room != current_room:
 			_enter_room(room)
 	map_data.set_focus(player.global_position / CELL)
+	map_data.reveal_around(map_data.focus_cell, REVEAL_RADIUS)
 	if is_instance_valid(player.active_echo):
 		map_data.set_marker(&"echo", player.active_echo.global_position / CELL, MAP_ECHO_COLOR)
 	else:
@@ -110,7 +115,7 @@ func _enter_room(room: Node2D, announce: bool = true) -> void:
 	_limit_camera(rect)
 	_show_sky(room.has_sky)
 	player.respawn.fall_limit_y = rect.end.y + FALL_MARGIN
-	if map_data.reveal(room.name) and announce:
+	if map_data.visit(room.name) and announce:
 		player.announce_area(room.title)
 
 
