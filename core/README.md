@@ -43,11 +43,11 @@ de cada variable exportada (se ven en el Inspector).
 | `EntitySpawner` | `Node2D` | Crea `scene` al cargar; al recibir `reset()` (vía el grupo `reset_group`) destruye la instancia actual y crea una nueva desde cero. `instance` es la entidad actual |
 | `BreakableProp` | `StaticBody2D` | Objeto rompible decorativo: implementa "golpeable" y se destruye con un chispazo tras `hits` golpes (1 por defecto). No suelta nada ni afecta a la partida, así que no forma parte de `resettable`. Hasta que se rompe, es un obstáculo físico normal |
 | `Readable` | `Area2D` | Objeto legible: con la acción de interacción y un cuerpo del grupo objetivo dentro, llama a `read_text(text: String)` en él (contrato "lector"). No decide cómo se muestra el texto ni afecta a la partida |
-| `TextTileMap` | `TileMapLayer` | Construye el nivel desde un `.map` de texto (un carácter por baldosa, según `legend`). Los caracteres que no están en la leyenda son **marcadores**: no ponen baldosa y su posición queda en `markers[carácter]` para que el nivel coloque entidades. Al exportar hay que incluir `*.map` en los filtros de recursos no gráficos |
+| `TextTileMap` | `TileMapLayer` | Construye el nivel desde un `.map` de texto (un carácter por baldosa, según `legend`). Los caracteres que no están en la leyenda son **marcadores**: no ponen baldosa y su posición queda en `markers[carácter]` para que el nivel coloque entidades. `map_size` es el tamaño del mapa de texto en baldosas, vacío incluido (a diferencia de `get_used_rect()`). Al exportar hay que incluir `*.map` en los filtros de recursos no gráficos |
 
 ## Interfaz (`core/ui/`)
 
-Controles genéricos para el HUD. No saben de dónde vienen los números: el dueño llama a `set_values()`.
+Controles genéricos para el HUD y los menús. No saben de dónde vienen los números: el dueño llama a `set_values()` (o, en el mapa, rellena un `MapData`).
 
 | Control | Base | Responsabilidad |
 |---|---|---|
@@ -55,6 +55,8 @@ Controles genéricos para el HUD. No saben de dónde vienen los números: el due
 | `IconRow` | `Control` | Fila de iconos de una hoja de sprites: `count` llenos y el resto hasta `max_count` vacíos (`full_frame`/`empty_frame`). Sirve para cargas de curación, llaves, munición. `set_values(cantidad, máximo)` |
 | `MenuList` | `VBoxContainer` | Lista de opciones con teclado o mando (`ui_up`/`ui_down`/`ui_accept`/`ui_cancel`). `set_entries(textos, activas)`, `select_first_enabled()`; avisa con `chosen(índice)` y `cancelled`. Las opciones desactivadas salen atenuadas y no se pueden elegir. Lee las teclas en `_input` (antes que la interfaz de Godot) Para menús con el juego en pausa, el nodo necesita `process_mode = When Paused` |
 | `ModalLayer` | `CanvasLayer` | Capa de interfaz modal: `open()` la muestra y pausa el juego, `close()` la oculta y reanuda dos frames de física DESPUÉS (para que la tecla que cierra no se cuele en el juego: Espacio acepta en el menú y también salta). Señales `opened`/`closed`. Exporta `root` (el Control que se muestra u oculta); hay que poner `process_mode = When Paused` en la capa y `node_paths` en el `.tscn` |
+| `MapData` | `RefCounted` | Datos del mapa del mundo, en baldosas: zonas (`add_area(id, título, rect, imagen)`) que empiezan sin descubrir (`reveal(id)`), marcadores (`set_marker(id, celda, color)`, `remove_marker`) y foco (`set_focus(celda)`, normalmente el jugador). Avisa con `changed`. `image_from_layer(capa, tamaño, color, colores_por_atlas)` dibuja una `TileMapLayer` a un píxel por baldosa. No sabe qué es una zona ni qué significa cada marcador |
+| `MapView` | `Control` | Dibuja un `MapData` (asignado a `data`): zonas descubiertas con su fondo, baldosas y borde; marcadores (solo los que caen en zonas descubiertas) y el foco. Con `follow_focus` se centra en el foco a `cell_pixels` px por baldosa (minimapa); sin él encaja todo lo descubierto con la escala entera mayor que quepa (mapa completo). Varias vistas pueden compartir los mismos datos |
 
 ## Efectos (`core/effects/`)
 
