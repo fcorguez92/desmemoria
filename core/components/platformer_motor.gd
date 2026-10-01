@@ -69,7 +69,9 @@ var _wall_lock_timer: float = 0.0
 
 func step(body: CharacterBody2D, delta: float) -> void:
 	var on_floor := body.is_on_floor()
-	var direction := Input.get_axis(action_left, action_right)
+	# Todo o nada, como con el teclado: con la palanca del mando, pasar de la zona
+	# muerta ya es correr a toda velocidad (no hay paso lento a media inclinación).
+	var direction := signf(Input.get_axis(action_left, action_right))
 
 	if on_floor:
 		body.velocity.y = 0.0

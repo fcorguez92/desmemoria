@@ -48,6 +48,7 @@ func _run() -> void:
 	await _test_weapon_upgrade_at_anchor()
 	await _test_anchor_menu_keyboard_and_pause()
 	await _test_pause_menu()
+	await _test_gamepad_controls()
 	await _test_ability_pickups()
 	await _test_dash_gates_the_far_platform()
 	await _test_double_jump_reaches_high_platform()
@@ -533,6 +534,91 @@ func _test_dash_gates_the_far_platform() -> void:
 	_check(not reached_without_dash, "saltar sin dash no alcanza la plataforma final")
 
 
+func _test_gamepad_controls() -> void:
+	await _fresh_level("Mando: mismos botones por posición en Xbox, PlayStation y Nintendo")
+	# Godot numera los botones del mando por POSICIÓN, no por la letra impresa:
+	# JOY_BUTTON_A es el de abajo (A en Xbox, Cruz en PlayStation, B en Nintendo).
+	# Así, cada acción cae en el mismo sitio en todos los mandos.
+	var expected := {
+		&"ui_accept": _pad_button(JOY_BUTTON_A),
+		&"attack": _pad_button(JOY_BUTTON_X),
+		&"heal": _pad_button(JOY_BUTTON_B),
+		&"ui_cancel": _pad_button(JOY_BUTTON_B),
+		&"interact": _pad_button(JOY_BUTTON_Y),
+		&"dash": _pad_axis(JOY_AXIS_TRIGGER_RIGHT),
+		&"parry": _pad_axis(JOY_AXIS_TRIGGER_LEFT),
+		&"pause": _pad_button(JOY_BUTTON_START),
+	}
+	var all_mapped := true
+	for action in expected:
+		if not InputMap.event_is_action(expected[action], action, true):
+			all_mapped = false
+			print("    falta el botón de %s" % action)
+	_check(all_mapped, "cada acción tiene su botón del mando (saltar abajo, atacar izquierda, curar derecha, Ancla arriba, dash RT, guardia LT, pausa Start)")
+	_check(not InputMap.event_is_action(_pad_button(JOY_BUTTON_B), &"pause"), "el botón de curarse no abre la pausa")
+
+	# Moverse con la palanca: pasada la zona muerta, a toda velocidad.
+	await _stand_at(400.0)
+	Input.parse_input_event(_pad_axis(JOY_AXIS_LEFT_X, 0.6))
+	await _wait(3)
+	_check(is_equal_approx(_player.velocity.x, _player.motor.speed), "con la palanca a media inclinación se corre a toda velocidad")
+	Input.parse_input_event(_pad_axis(JOY_AXIS_LEFT_X, 0.0))
+	await _stand_at(400.0)
+
+	var standing_y: float = _player.global_position.y
+	await _press_event(_pad_button(JOY_BUTTON_A))
+	_check(_player.global_position.y < standing_y - 1.0, "A / Cruz salta")
+	await _stand_at(400.0)
+	await _press_event(_pad_button(JOY_BUTTON_X))
+	_check(_player.animator.current == "attack", "X / Cuadrado ataca")
+	await _wait(30)
+	_player.take_hit(1, 0)
+	await _press_event(_pad_button(JOY_BUTTON_B))
+	_check(_player.health.health == _player.health.max_health and not paused, "B / Círculo cura y no abre la pausa")
+	await _press_event(_pad_axis(JOY_AXIS_TRIGGER_LEFT))
+	_check(_player.parry.is_active, "LT / L2 alza la guardia")
+	await _wait(60)
+	_player.unlock_ability(&"dash")
+	await _press_event(_pad_axis(JOY_AXIS_TRIGGER_RIGHT))
+	_check(_player.dash.is_dashing, "RT / R2 hace el dash")
+	await _wait(30)
+
+	# Start abre y cierra la pausa, también desde una subpantalla.
+	var pause = _player.pause_menu
+	await _press_event(_pad_button(JOY_BUTTON_START))
+	_check(pause.is_open() and paused, "Start abre la pausa")
+	await _press_event(_pad_button(JOY_BUTTON_START))
+	_check(not pause.is_open(), "Start la cierra")
+	await _wait(5)
+	await _press_event(_pad_button(JOY_BUTTON_START))
+	await _press_action("ui_down")
+	await _press_action("ui_down")
+	await _press_action("ui_down")
+	await _press_event(_pad_button(JOY_BUTTON_A))
+	_check(pause.title_label.text == "Controles" and "Cuadrado" in pause.pad_label.text, "Controles muestra también los botones del mando")
+	await _press_event(_pad_button(JOY_BUTTON_START))
+	_check(not pause.is_open(), "Start cierra la pausa desde una subpantalla")
+	await _wait(5)
+
+	# En los menús, la palanca mueve una opción por inclinación, no una por evento.
+	_player.add_ecos(6)
+	_player.rest_at(_player.global_position)
+	var menu: MenuList = _player.anchor_menu.menu
+	_check(menu.selected == 0, "el menú del Ancla empieza en la primera opción")
+	for value in [0.6, 0.8, 1.0, 0.9]:
+		Input.parse_input_event(_pad_axis(JOY_AXIS_LEFT_Y, value))
+		await physics_frame
+	_check(menu.selected == 1, "inclinar la palanca hacia abajo baja una sola opción")
+	Input.parse_input_event(_pad_axis(JOY_AXIS_LEFT_Y, 0.0))
+	await physics_frame
+	Input.parse_input_event(_pad_axis(JOY_AXIS_LEFT_Y, 1.0))
+	await physics_frame
+	_check(menu.selected == 0, "soltarla y volver a inclinarla baja otra")
+	Input.parse_input_event(_pad_axis(JOY_AXIS_LEFT_Y, 0.0))
+	await _press_event(_pad_button(JOY_BUTTON_B))
+	_check(not _player.anchor_menu.is_open(), "B / Círculo cierra el menú del Ancla")
+
+
 func _test_ability_pickups() -> void:
 	await _fresh_level("Habilidades: se consiguen con objetos")
 	_check(not _player.dash.unlocked, "el dash empieza bloqueado")
@@ -864,17 +950,17 @@ func _test_pause_menu() -> void:
 	await _wait(30)
 	var standing_y: float = _player.global_position.y
 
-	await _press_action("ui_cancel")
+	await _press_event(_key(KEY_ESCAPE))
 	_check(pause.is_open() and paused, "Esc abre la pausa y detiene el juego")
 	_check(pause.title_label.text == "Pausa" and options.visible, "se muestra la lista principal")
 	var pause_panel: Control = pause.get_node("Root/Panel")
 	var pause_size := pause_panel.size
-	await _press_action("ui_cancel")
+	await _press_event(_key(KEY_ESCAPE))
 	_check(not pause.is_open() and not paused, "Esc cierra la pausa y reanuda el juego")
 
 	# Personaje: datos y habilidades por descubrir.
 	_player.add_ecos(7)
-	await _press_action("ui_cancel")
+	await _press_action("pause")
 	await _press_action("ui_down")
 	await _press_action("ui_down")
 	await _press_action("ui_accept")
@@ -897,7 +983,7 @@ func _test_pause_menu() -> void:
 	# Con una habilidad recordada, sale su nombre. La pantalla se recompone al reabrir.
 	await _press_action("ui_cancel")
 	_player.unlock_ability(&"dash")
-	await _press_action("ui_cancel")
+	await _press_action("pause")
 	await _press_action("ui_down")
 	await _press_action("ui_down")
 	await _press_action("ui_accept")
@@ -917,7 +1003,7 @@ func _test_pause_menu() -> void:
 
 	# Esc con el menú del Ancla abierto no abre la pausa encima.
 	_player.rest_at(_player.global_position)
-	await _press_action("ui_cancel")
+	await _press_event(_key(KEY_ESCAPE))
 	_check(not pause.is_open(), "Esc con el menú del Ancla abierto no abre la pausa")
 	_check(not _player.anchor_menu.is_open(), "Esc cierra el menú del Ancla")
 
@@ -963,15 +1049,44 @@ func _test_ultimo_umbral_builds_from_text_map() -> void:
 func _press_action(action: StringName) -> void:
 	var event := InputEventAction.new()
 	event.action = action
-	event.pressed = true
+	await _press_event(event)
+
+
+## Pulsa y suelta un evento de entrada real (tecla, botón o gatillo del mando),
+## para probar el Mapa de entrada de project.godot y no solo las acciones.
+## Un gatillo o una palanca se "sueltan" volviendo a 0.
+func _press_event(event: InputEvent) -> void:
+	# Hay que soltarlo: si no, la acción queda pulsada para las pruebas siguientes.
+	var release: InputEvent = event.duplicate()
+	if event is InputEventJoypadMotion:
+		release.axis_value = 0.0
+	else:
+		event.pressed = true
+		release.pressed = false
 	Input.parse_input_event(event)
 	await _wait(2)
-	# Hay que soltarla: si no, la acción queda pulsada para las pruebas siguientes.
-	var release := InputEventAction.new()
-	release.action = action
-	release.pressed = false
 	Input.parse_input_event(release)
 	await _wait(2)
+
+
+func _key(keycode: Key) -> InputEventKey:
+	var event := InputEventKey.new()
+	event.keycode = keycode
+	event.physical_keycode = keycode
+	return event
+
+
+func _pad_button(button: JoyButton) -> InputEventJoypadButton:
+	var event := InputEventJoypadButton.new()
+	event.button_index = button
+	return event
+
+
+func _pad_axis(axis: JoyAxis, value: float = 1.0) -> InputEventJoypadMotion:
+	var event := InputEventJoypadMotion.new()
+	event.axis = axis
+	event.axis_value = value
+	return event
 
 
 func _fresh_level(title: String, announce: bool = true, with_enemies: bool = false, only_spawner: String = "") -> void:
@@ -1332,7 +1447,7 @@ func _test_minimap_and_pause_map() -> void:
 
 	var pause = _player.pause_menu
 	var pause_panel: Control = pause.get_node("Root/Panel")
-	await _press_action("ui_cancel")
+	await _press_action("pause")
 	var pause_size := pause_panel.size
 	await _press_action("ui_down")
 	await _press_action("ui_accept")
@@ -1560,7 +1675,7 @@ func _test_pause_returns_to_title() -> void:
 	await _load_world()
 	_player.add_ecos(5)
 	var pause = _player.pause_menu
-	await _press_action("ui_cancel")
+	await _press_action("pause")
 	for i in pause.OPTION_TITLE:
 		await _press_action("ui_down")
 	await _press_action("ui_accept")
