@@ -44,6 +44,9 @@ var _page: Page = Page.MAIN
 
 
 func _ready() -> void:
+	# Al volver desde la pausa, el mundo deja el árbol en pausa hasta el cambio de
+	# escena (para que no siga jugándose ni guardándose a medias): se quita aquí.
+	get_tree().paused = false
 	_load_options()
 	menu.chosen.connect(_on_chosen)
 	menu.cancelled.connect(_on_cancelled)
@@ -52,8 +55,10 @@ func _ready() -> void:
 	menu.select_first_enabled()
 
 
+## Solo cuenta una partida que se puede leer: una rota o de otra versión no se
+## puede continuar (el mundo empezaría de cero sin avisar).
 func has_save() -> bool:
-	return SaveSlot.new(save_path).exists()
+	return not SaveSlot.new(save_path).read().is_empty()
 
 
 func _on_chosen(index: int) -> void:
@@ -116,8 +121,15 @@ func _start(new_game: bool) -> void:
 	if new_game:
 		SaveSlot.new(save_path).erase()
 	game_started.emit(new_game)
-	if get_tree().current_scene == self:
-		get_tree().change_scene_to_file(WORLD_SCENE)
+	if get_tree().current_scene != self:
+		return
+	# Se espera a que pasen dos pasos de físicas: la tecla que elige la opción
+	# (Intro o Espacio, que también es saltar) seguiría contando como recién
+	# pulsada en el mundo y el personaje saltaría nada más aparecer.
+	menu.set_process_input(false)
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	get_tree().change_scene_to_file(WORLD_SCENE)
 
 
 func _load_options() -> void:

@@ -196,10 +196,14 @@ func save_game() -> void:
 ## Guarda y vuelve al menú principal.
 func return_to_title() -> void:
 	save_game()
-	get_tree().paused = false
-	# En las pruebas el mundo no es la escena principal: basta con guardar.
+	# El árbol sigue en pausa hasta que cambie la escena (al final del fotograma):
+	# si no, el mundo seguiría jugándose ese rato y podría volver a guardar. La
+	# pausa la quita el menú principal al abrirse.
 	if get_tree().current_scene == self:
 		get_tree().change_scene_to_file(TITLE_SCENE)
+	else:
+		# En las pruebas el mundo no es la escena principal: no se cambia de escena.
+		get_tree().paused = false
 
 
 ## Al cerrar la ventana (o al elegir "Salir del juego", que avisa igual) se
