@@ -69,7 +69,8 @@ func _run() -> void:
 	await _test_save_slot()
 	await _test_autosave_triggers()
 	await _test_loading_restores_progress()
-	await _test_new_game_from_pause()
+	await _test_title_screen()
+	await _test_pause_returns_to_title()
 	SaveSlot.new(TEST_SAVE).erase()
 
 
@@ -1408,8 +1409,10 @@ func _test_loading_restores_progress() -> void:
 	await _load_world()
 	_player.unlock_ability(&"dash")
 	_player.weapon.set_level(2)
-	_level.map_data.reveal(&"TerrazasSecas")
-	_level.map_data.reveal(&"Cisterna")
+	_level.map_data.visit(&"TerrazasSecas")
+	_level.map_data.visit(&"Cisterna")
+	# Un trozo explorado lejos de donde se va a reaparecer (en la Torre).
+	_level.map_data.reveal_around(Vector2(174, -10), 3.0)
 	var anchor_at: Vector2 = _anchor_in("Cisterna").global_position
 	_player.rest_at(anchor_at)
 	await _wait(2)
@@ -1431,7 +1434,8 @@ func _test_loading_restores_progress() -> void:
 	_check(_player.active_echo.global_position.distance_to(echo_at) < 1.0, "en el mismo sitio")
 	_check(_player.health.health == _player.health.max_health, "con la vida completa")
 	var data: MapData = _level.map_data
-	_check(data.is_revealed(&"TerrazasSecas") and data.is_revealed(&"Cisterna") and not data.is_revealed(&"TorreDeRiego"), "el mapa recuerda las salas descubiertas")
+	_check(data.is_visited(&"TerrazasSecas") and data.is_visited(&"Cisterna") and not data.is_visited(&"TorreDeRiego"), "se recuerdan las salas visitadas (no se vuelven a anunciar)")
+	_check(data.is_seen(Vector2(174, -10)) and not data.is_seen(Vector2(185, -10)), "el mapa recuerda lo explorado, y solo eso")
 	var dash_pickups := 0
 	for child in _level.get_node("Rooms/Cisterna").get_children():
 		if child is AbilityPickup and not child.is_queued_for_deletion():
@@ -1464,27 +1468,91 @@ func _test_loading_restores_progress() -> void:
 	_check(_level.current_room == _room, "aunque lo equivocado sea la partida entera")
 
 
-func _test_new_game_from_pause() -> void:
-	print("\n[Nueva partida desde la pausa, con confirmación]")
-	await _load_world()
-	_level.save_game()
-	_check(FileAccess.file_exists(TEST_SAVE), "hay una partida guardada")
-	var pause = _player.pause_menu
+func _test_title_screen() -> void:
+	print("\n[Menú principal: continuar, nuevo juego, opciones]")
+	paused = false
+	if is_instance_valid(_level):
+		_level.queue_free()
+		await process_frame
+	var options_file := "user://opciones_pruebas.cfg"
+	DirAccess.remove_absolute(options_file)
+	SaveSlot.new(TEST_SAVE).erase()
+	_check(ProjectSettings.get_setting("application/run/main_scene") == "res://game/ui/title_screen.tscn", "el juego arranca en el menú principal")
+
+	var title: Control = load("res://game/ui/title_screen.tscn").instantiate()
+	title.save_path = TEST_SAVE
+	title.options_path = options_file
+	_level = title
+	root.add_child(title)
+	await _wait(2)
+	var menu: MenuList = title.menu
+	var started := []
+	title.game_started.connect(func(new_game: bool) -> void: started.append(new_game))
+	_check(not title.has_save() and menu.selected == title.MAIN_NEW_GAME, "sin partida, Continuar está desactivado y el cursor empieza en Nuevo juego")
+	await _press_action("ui_up")
+	await _press_action("ui_accept")
+	_check(started.is_empty(), "Continuar no hace nada sin partida")
+	await _press_action("ui_down")
+	await _press_action("ui_accept")
+	_check(started == [true], "Nuevo juego sin partida empieza directamente")
+
+	# Con partida: el cursor empieza en Continuar.
+	SaveSlot.new(TEST_SAVE).write({ player = {} })
+	title.queue_free()
+	await process_frame
+	title = load("res://game/ui/title_screen.tscn").instantiate()
+	title.save_path = TEST_SAVE
+	title.options_path = options_file
+	_level = title
+	root.add_child(title)
+	await _wait(2)
+	menu = title.menu
+	started = []
+	title.game_started.connect(func(new_game: bool) -> void: started.append(new_game))
+	_check(title.has_save() and menu.selected == title.MAIN_CONTINUE, "con partida, el cursor empieza en Continuar")
+	await _press_action("ui_accept")
+	_check(started == [false] and FileAccess.file_exists(TEST_SAVE), "Continuar carga la partida sin borrarla")
+
+	# Nuevo juego con partida: confirmación, con el no por defecto.
+	await _press_action("ui_down")
+	await _press_action("ui_accept")
+	_check(title.info_label.visible and menu.selected == 0, "Nuevo juego con partida pide confirmación, con el no seleccionado")
+	await _press_action("ui_accept")
+	_check(not title.info_label.visible and menu.selected == title.MAIN_NEW_GAME and FileAccess.file_exists(TEST_SAVE), "decir que no vuelve al menú sin borrar")
+	await _press_action("ui_accept")
 	await _press_action("ui_cancel")
-	for i in 4:
-		await _press_action("ui_down")
-	await _press_action("ui_accept")
-	_check(pause.title_label.text == "Nueva partida" and pause.menu.selected == 0, "Nueva partida pide confirmación, con el no por defecto")
-	await _press_action("ui_accept")
-	_check(pause.title_label.text == "Pausa" and pause.menu.selected == pause.OPTION_NEW_GAME, "decir que no vuelve al menú sin borrar")
-	_check(FileAccess.file_exists(TEST_SAVE), "y la partida sigue ahí")
-	await _press_action("ui_accept")
-	await _press_action("ui_cancel")
-	_check(pause.is_open() and pause.title_label.text == "Pausa" and FileAccess.file_exists(TEST_SAVE), "Esc en la confirmación tampoco borra")
+	_check(not title.info_label.visible and FileAccess.file_exists(TEST_SAVE), "Esc en la confirmación tampoco borra")
 	await _press_action("ui_accept")
 	await _press_action("ui_down")
 	await _press_action("ui_accept")
-	_check(not FileAccess.file_exists(TEST_SAVE), "confirmar borra la partida")
-	_level.save_game()
-	_check(not FileAccess.file_exists(TEST_SAVE), "y ya no se vuelve a guardar hasta empezar de nuevo")
-	paused = false
+	_check(started.back() == true and not FileAccess.file_exists(TEST_SAVE), "confirmar borra la partida y empieza de cero")
+
+	# Opciones: pantalla completa, que se recuerda. (En el juego, empezar cambia
+	# de escena; aquí el menú sigue en la confirmación, así que se vuelve a mano.)
+	title._show_page(0, title.MAIN_OPTIONS)
+	await _press_action("ui_accept")
+	_check("Pantalla completa: no" in menu.get_child(0).get_child(1).text, "Opciones muestra la pantalla completa, desactivada por defecto")
+	await _press_action("ui_accept")
+	_check(title.fullscreen and "Pantalla completa: sí" in menu.get_child(0).get_child(1).text, "Intro la activa")
+	var config := ConfigFile.new()
+	_check(config.load(options_file) == OK and config.get_value("pantalla", "completa") == true, "y se guarda en el archivo de opciones")
+	await _press_action("ui_accept")
+	await _press_action("ui_cancel")
+	_check(menu.selected == title.MAIN_OPTIONS and not title.fullscreen, "Esc vuelve al menú, con el cursor en Opciones")
+	title.queue_free()
+	_level = null
+	await process_frame
+	DirAccess.remove_absolute(options_file)
+
+
+func _test_pause_returns_to_title() -> void:
+	print("\n[Pausa: volver al menú principal guarda la partida]")
+	await _load_world()
+	_player.add_ecos(5)
+	var pause = _player.pause_menu
+	await _press_action("ui_cancel")
+	for i in pause.OPTION_TITLE:
+		await _press_action("ui_down")
+	await _press_action("ui_accept")
+	_check(_saved().get("player", {}).get("ecos", 0) == 5, "Menú principal guarda antes de salir")
+	_check(not paused, "y quita la pausa")
