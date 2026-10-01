@@ -1,22 +1,32 @@
 extends ModalLayer
 ## Menú de pausa: continuar, ver el mapa del mundo, ver al personaje (vida,
-## Ecos, Filo y habilidades recordadas), ver los controles y salir del juego. No
+## Ecos, Filo y habilidades recordadas), ver los controles, empezar una partida
+## nueva (tras confirmar; avisa con `new_game_requested`) y salir del juego. No
 ## conoce al jugador: recibe los datos con `show_character()` y `set_map()` (los
 ## datos bajan; ver docs/arquitectura.md).
 ##
 ## Quien lo abre (el jugador, al pulsar Esc) llama a `open()`: una capa que solo
 ## funciona en pausa no puede escuchar la tecla mientras se juega.
 
-enum Page { MAIN, MAP, CHARACTER, CONTROLS }
+enum Page { MAIN, MAP, CHARACTER, CONTROLS, CONFIRM_NEW_GAME }
+
+## El jugador ha confirmado que quiere borrar la partida y empezar de cero.
+signal new_game_requested
 
 const OPTION_CONTINUE := 0
 const OPTION_MAP := 1
 const OPTION_CHARACTER := 2
 const OPTION_CONTROLS := 3
-const OPTION_QUIT := 4
+const OPTION_NEW_GAME := 4
+const OPTION_QUIT := 5
+const MAIN_ENTRIES := ["Continuar", "Mapa", "Personaje", "Controles", "Nueva partida", "Salir del juego"]
+## En la pantalla de confirmar una partida nueva, la opción por defecto es no.
+const CONFIRM_ENTRIES := ["No, seguir jugando", "Sí, borrar la partida y empezar de cero"]
+const CONFIRM_YES := 1
 
 const HINT_MAIN := "↑ ↓ elegir · Intro confirmar · Esc continuar"
 const HINT_SUBPAGE := "Esc o Intro para volver"
+const HINT_CONFIRM := "↑ ↓ elegir · Intro confirmar · Esc volver"
 const HINT_MAP := "Dorado: tú · Azul: Ancla · Violeta: tu Eco · Esc o Intro para volver"
 ## Tecla y qué hace, una fila por control.
 const CONTROLS := [
@@ -46,14 +56,13 @@ var _character_text: String = ""
 
 func _ready() -> void:
 	super()
-	menu.set_entries(PackedStringArray(["Continuar", "Mapa", "Personaje", "Controles", "Salir del juego"]))
 	menu.chosen.connect(_on_chosen)
-	menu.cancelled.connect(close)
+	menu.cancelled.connect(_on_cancelled)
 
 
 func open() -> void:
-	_show_page(Page.MAIN)
 	menu.selected = 0
+	_show_page(Page.MAIN)
 	super()
 
 
@@ -81,6 +90,12 @@ func _input(event: InputEvent) -> void:
 
 
 func _on_chosen(index: int) -> void:
+	if _page == Page.CONFIRM_NEW_GAME:
+		if index == CONFIRM_YES:
+			new_game_requested.emit()
+		else:
+			_show_page(Page.MAIN)
+		return
 	match index:
 		OPTION_CONTINUE:
 			close()
@@ -90,23 +105,38 @@ func _on_chosen(index: int) -> void:
 			_show_page(Page.CHARACTER)
 		OPTION_CONTROLS:
 			_show_page(Page.CONTROLS)
+		OPTION_NEW_GAME:
+			_show_page(Page.CONFIRM_NEW_GAME)
 		OPTION_QUIT:
+			# Aviso de cierre antes de salir, para que el mundo guarde (ver world.gd).
+			get_tree().root.propagate_notification(NOTIFICATION_WM_CLOSE_REQUEST)
 			get_tree().quit()
 
 
 func _show_page(page: Page) -> void:
+	var previous := _page
 	_page = page
-	menu.visible = page == Page.MAIN
-	info.visible = page == Page.CHARACTER or page == Page.CONTROLS
+	menu.visible = page == Page.MAIN or page == Page.CONFIRM_NEW_GAME
+	# La confirmación usa la misma lista con otras opciones: al entrar se empieza
+	# por "no", y al volver al menú el cursor sigue en "Nueva partida".
+	if page == Page.CONFIRM_NEW_GAME:
+		menu.selected = 0
+	elif previous == Page.CONFIRM_NEW_GAME:
+		menu.selected = OPTION_NEW_GAME
+	menu.set_entries(PackedStringArray(CONFIRM_ENTRIES if page == Page.CONFIRM_NEW_GAME else MAIN_ENTRIES))
+	info.visible = page == Page.CHARACTER or page == Page.CONTROLS or page == Page.CONFIRM_NEW_GAME
 	map_view.visible = page == Page.MAP
 	actions_label.text = ""
 	info_label.custom_minimum_size.x = 0.0
-	hint_label.text = HINT_MAIN if page == Page.MAIN else (HINT_MAP if page == Page.MAP else HINT_SUBPAGE)
+	hint_label.text = {Page.MAIN: HINT_MAIN, Page.MAP: HINT_MAP, Page.CONFIRM_NEW_GAME: HINT_CONFIRM}.get(page, HINT_SUBPAGE)
 	match page:
 		Page.MAIN:
 			title_label.text = "Pausa"
 		Page.MAP:
 			title_label.text = _map_title()
+		Page.CONFIRM_NEW_GAME:
+			title_label.text = "Nueva partida"
+			info_label.text = "Se borrará todo el progreso guardado: habilidades,\nEcos, mejoras del Filo y mapa. No se puede deshacer."
 		Page.CHARACTER:
 			title_label.text = "Personaje"
 			info_label.text = _character_text
@@ -135,3 +165,11 @@ func _map_title() -> String:
 		return "Mapa"
 	var area := map_view.data.area_at(map_view.data.focus_cell)
 	return "Mapa · %s" % area.title if not area.is_empty() else "Mapa"
+
+
+## Esc en la confirmación vuelve al menú sin borrar nada; en el menú, continúa.
+func _on_cancelled() -> void:
+	if _page == Page.CONFIRM_NEW_GAME:
+		_show_page(Page.MAIN)
+	else:
+		close()
