@@ -35,11 +35,13 @@ de una a otra caminando, cayendo o saltando, sin pantallas de carga ni cortes.
 - **Caída mortal:** se muere al caer por debajo de la sala actual. Por eso un
   foso puede matar (El Último Umbral) o ser la entrada a otra sala de abajo
   (Las Terrazas Secas → La Cisterna): depende de si debajo hay sala.
-- **Mapa:** cada sala se descubre al entrar en ella por primera vez, y entonces
-  se anuncia su nombre. El minimapa (arriba a la izquierda) y el mapa completo
-  (Esc → Mapa) solo dibujan salas descubiertas, con el jugador (dorado), las
-  Anclas (azul) y el Eco de la última muerte (violeta). Sin comprar mapas ni
-  cartógrafos: se descubre explorando.
+- **Mapa:** se descubre explorando, baldosa a baldosa: solo se dibuja lo que
+  ha quedado a menos de 12 baldosas del jugador (`REVEAL_RADIUS` en `world.gd`),
+  no la sala entera al entrar. La primera vez que se entra en una sala se
+  anuncia su nombre. El minimapa (arriba a la izquierda) y el mapa completo
+  (Esc → Mapa) muestran al jugador (dorado), las Anclas (azul) y el Eco de la
+  última muerte (violeta), estos dos solo si se ha pasado cerca. Sin comprar
+  mapas ni cartógrafos.
 
 **Para ampliar el mundo** con una sala nueva:
 1. Dibujar su `.map` (mínimo 54 columnas, el ancho de la pantalla; si es más

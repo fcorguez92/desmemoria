@@ -11,14 +11,14 @@
 5. Diseño del núcleo jugable — hecho (ver `nucleo-jugable.md`).
 6. Prototipo jugable mínimo — hecho.
 7. Validación del núcleo — hecho: movimiento, combate con enemigos y feedback, vida/muerte/Ecos, mejora del arma, puntos de control con curación y las tres habilidades de movimiento (dash, doble salto, salto de pared) que se consiguen en el mundo y abren caminos.
-8. Vertical slice — **en marcha.**  Estilo de arte decidido (pixel art oscuro, ver `arte.md`) y Godot configurado para pixel art (864×486, escalado entero). Primer arte hecho (caminante con espada y cascarón con cuchillo, con animaciones básicas de movimiento y ataque, ver `arte.md`). El terreno de El Último Umbral ya existe (mapa de texto + baldosas, ver `vertical-slice.md`) y es la sala de inicio del mundo. Ya tiene fondo con parallax, objetos rompibles y narrativa ambiental (una inscripción legible, restos en la cabaña, marcas de arrastre; ver `docs/vertical-slice.md`), geometría de colores sin arte final todavía. El mundo ya crece por salas conectadas sin pantallas de carga (ver `mundo.md`): a El Último Umbral le siguen Las Terrazas Secas, La Cisterna y La Torre de Riego, donde se consiguen el dash y el doble salto. Minimapa en el HUD y mapa completo en la pausa, que se descubren al explorar. Falta jugarlo para ajustar el recorrido.
+8. Vertical slice — **en marcha.**  Estilo de arte decidido (pixel art oscuro, ver `arte.md`) y Godot configurado para pixel art (864×486, escalado entero). Primer arte hecho (caminante con espada y cascarón con cuchillo, con animaciones básicas de movimiento y ataque, ver `arte.md`). El terreno de El Último Umbral ya existe (mapa de texto + baldosas, ver `vertical-slice.md`) y es la sala de inicio del mundo. Ya tiene fondo con parallax, objetos rompibles y narrativa ambiental (una inscripción legible, restos en la cabaña, marcas de arrastre; ver `docs/vertical-slice.md`), geometría de colores sin arte final todavía. El mundo ya crece por salas conectadas sin pantallas de carga (ver `mundo.md`): a El Último Umbral le siguen Las Terrazas Secas, La Cisterna y La Torre de Riego, donde se consiguen el dash y el doble salto. Minimapa en el HUD y mapa completo en la pausa, que solo muestran lo explorado (baldosa a baldosa alrededor del jugador). Falta jugarlo para ajustar el recorrido.
 
 ## Qué existe ahora mismo
 
 ```
 core/         Base reutilizable: 14 componentes + 6 objetos + 2 efectos + 5 piezas de interfaz (ver core/README.md)
 game/         player, enemy (de prueba), echo, memory_anchor, ability_pickup, levels (el mundo y sus 4 salas + banco de pruebas)
-tests/        smoke_test.gd — 247 comprobaciones, todas en verde
+tests/        smoke_test.gd — 256 comprobaciones, todas en verde
 docs/         Diseño, decisiones, arquitectura y estado
 ```
 
