@@ -1,20 +1,23 @@
 extends ModalLayer
-## Menú de pausa: continuar, ver al personaje (vida, Ecos, Filo y habilidades
-## recordadas), ver los controles y salir del juego. No conoce al jugador: recibe
-## los datos con `show_character()` (los datos bajan; ver docs/arquitectura.md).
+## Menú de pausa: continuar, ver el mapa del mundo, ver al personaje (vida,
+## Ecos, Filo y habilidades recordadas), ver los controles y salir del juego. No
+## conoce al jugador: recibe los datos con `show_character()` y `set_map()` (los
+## datos bajan; ver docs/arquitectura.md).
 ##
 ## Quien lo abre (el jugador, al pulsar Esc) llama a `open()`: una capa que solo
 ## funciona en pausa no puede escuchar la tecla mientras se juega.
 
-enum Page { MAIN, CHARACTER, CONTROLS }
+enum Page { MAIN, MAP, CHARACTER, CONTROLS }
 
 const OPTION_CONTINUE := 0
-const OPTION_CHARACTER := 1
-const OPTION_CONTROLS := 2
-const OPTION_QUIT := 3
+const OPTION_MAP := 1
+const OPTION_CHARACTER := 2
+const OPTION_CONTROLS := 3
+const OPTION_QUIT := 4
 
 const HINT_MAIN := "↑ ↓ elegir · Intro confirmar · Esc continuar"
 const HINT_SUBPAGE := "Esc o Intro para volver"
+const HINT_MAP := "Dorado: tú · Azul: Ancla · Violeta: tu Eco · Esc o Intro para volver"
 ## Tecla y qué hace, una fila por control.
 const CONTROLS := [
 	["← →", "Moverse"],
@@ -38,11 +41,12 @@ var _character_text: String = ""
 @onready var actions_label: Label = $Root/Panel/Content/Info/Right
 @onready var menu: MenuList = $Root/Panel/Content/Options
 @onready var hint_label: Label = $Root/Panel/Content/Hint
+@onready var map_view: MapView = $Root/Panel/Content/Map
 
 
 func _ready() -> void:
 	super()
-	menu.set_entries(PackedStringArray(["Continuar", "Personaje", "Controles", "Salir del juego"]))
+	menu.set_entries(PackedStringArray(["Continuar", "Mapa", "Personaje", "Controles", "Salir del juego"]))
 	menu.chosen.connect(_on_chosen)
 	menu.cancelled.connect(close)
 
@@ -80,6 +84,8 @@ func _on_chosen(index: int) -> void:
 	match index:
 		OPTION_CONTINUE:
 			close()
+		OPTION_MAP:
+			_show_page(Page.MAP)
 		OPTION_CHARACTER:
 			_show_page(Page.CHARACTER)
 		OPTION_CONTROLS:
@@ -91,13 +97,16 @@ func _on_chosen(index: int) -> void:
 func _show_page(page: Page) -> void:
 	_page = page
 	menu.visible = page == Page.MAIN
-	info.visible = page != Page.MAIN
+	info.visible = page == Page.CHARACTER or page == Page.CONTROLS
+	map_view.visible = page == Page.MAP
 	actions_label.text = ""
 	info_label.custom_minimum_size.x = 0.0
-	hint_label.text = HINT_MAIN if page == Page.MAIN else HINT_SUBPAGE
+	hint_label.text = HINT_MAIN if page == Page.MAIN else (HINT_MAP if page == Page.MAP else HINT_SUBPAGE)
 	match page:
 		Page.MAIN:
 			title_label.text = "Pausa"
+		Page.MAP:
+			title_label.text = _map_title()
 		Page.CHARACTER:
 			title_label.text = "Personaje"
 			info_label.text = _character_text
@@ -114,3 +123,15 @@ func _show_page(page: Page) -> void:
 			actions_label.text = "
 ".join(actions)
 			info_label.custom_minimum_size.x = 150.0
+
+
+func set_map(data: MapData) -> void:
+	map_view.data = data
+
+
+## "Mapa", y el nombre de la sala donde está el jugador si se sabe.
+func _map_title() -> String:
+	if map_view.data == null:
+		return "Mapa"
+	var area := map_view.data.area_at(map_view.data.focus_cell)
+	return "Mapa · %s" % area.title if not area.is_empty() else "Mapa"

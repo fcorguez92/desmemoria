@@ -1,7 +1,8 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://game/ui/pause_menu.gd" id="1_menu"]
 [ext_resource type="Script" path="res://core/ui/menu_list.gd" id="2_list"]
+[ext_resource type="Script" path="res://core/ui/map_view.gd" id="3_map"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
 content_margin_left = 24.0
@@ -85,6 +86,15 @@ theme_override_colors/font_color = Color(0.663, 0.89, 0.949, 1)
 layout_mode = 2
 size_flags_vertical = 0
 theme_override_colors/font_color = Color(0.639, 0.624, 0.659, 1)
+
+[node name="Map" type="Control" parent="Root/Panel/Content"]
+visible = false
+layout_mode = 2
+size_flags_vertical = 3
+script = ExtResource("3_map")
+cell_pixels = 4
+follow_focus = false
+back_color = Color(0.07, 0.07, 0.1, 1)
 
 [node name="Hint" type="Label" parent="Root/Panel/Content"]
 layout_mode = 2

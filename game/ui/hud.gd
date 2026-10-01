@@ -1,8 +1,10 @@
 extends CanvasLayer
-## Indicadores en pantalla: vida (barra), curaciones (frascos), Ecos (icono y
-## cifra), mensajes temporales y recordatorio de controles. No conoce al jugador:
-## el jugador le pasa los números (los datos bajan, ver docs/arquitectura.md).
+## Indicadores en pantalla: minimapa, vida (barra), curaciones (frascos), Ecos
+## (icono y cifra), mensajes temporales y recordatorio de controles. No conoce al
+## jugador: el jugador le pasa los números (los datos bajan, ver
+## docs/arquitectura.md).
 
+@onready var minimap: MapView = $Minimap
 @onready var health_bar: SegmentedBar = $HealthBar
 @onready var heal_flasks: IconRow = $HealFlasks
 @onready var ecos_label: Label = $Ecos/Amount
@@ -16,6 +18,12 @@ func set_health(value: int, max_value: int) -> void:
 
 func set_heal_charges(charges: int, max_charges: int) -> void:
 	heal_flasks.set_values(charges, max_charges)
+
+
+## Sin mapa (p. ej. en el banco de pruebas) el minimapa no se muestra.
+func set_map(data: MapData) -> void:
+	minimap.data = data
+	minimap.visible = data != null
 
 
 func set_ecos(amount: int) -> void:

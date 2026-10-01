@@ -1,0 +1,41 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://game/levels/world.gd" id="1_world"]
+[ext_resource type="PackedScene" path="res://game/levels/ultimo_umbral.tscn" id="2_umbral"]
+[ext_resource type="PackedScene" path="res://game/levels/terrazas_secas.tscn" id="3_terrazas"]
+[ext_resource type="PackedScene" path="res://game/levels/cisterna.tscn" id="4_cisterna"]
+[ext_resource type="PackedScene" path="res://game/levels/torre_de_riego.tscn" id="5_torre"]
+
+[node name="World" type="Node2D"]
+script = ExtResource("1_world")
+
+[node name="Background" type="ParallaxBackground" parent="."]
+
+[node name="FarHills" type="ParallaxLayer" parent="Background"]
+motion_scale = Vector2(0.15, 0.1)
+motion_mirroring = Vector2(2100, 0)
+
+[node name="Silhouette" type="Polygon2D" parent="Background/FarHills"]
+color = Color(0.161, 0.157, 0.184, 1)
+polygon = PackedVector2Array(-400, 360, -400, 300, -180, 240, 60, 270, 300, 210, 560, 260, 820, 200, 1080, 255, 1340, 215, 1600, 270, 1700, 300, 1700, 360)
+
+[node name="MidRuins" type="ParallaxLayer" parent="Background"]
+motion_scale = Vector2(0.4, 0.15)
+motion_mirroring = Vector2(2100, 0)
+
+[node name="Silhouette" type="Polygon2D" parent="Background/MidRuins"]
+color = Color(0.227, 0.216, 0.259, 1)
+polygon = PackedVector2Array(-400, 360, -400, 320, -300, 320, -300, 260, -260, 260, -260, 320, -150, 320, -150, 280, -120, 280, -120, 230, -90, 230, -90, 320, 120, 320, 120, 300, 160, 300, 160, 340, 400, 340, 400, 280, 440, 280, 440, 240, 470, 240, 470, 320, 700, 320, 700, 300, 900, 300, 900, 250, 940, 250, 940, 300, 1150, 300, 1150, 330, 1400, 330, 1400, 300, 1450, 300, 1450, 320, 1700, 320, 1700, 360)
+
+[node name="Rooms" type="Node2D" parent="."]
+
+[node name="UltimoUmbral" parent="Rooms" instance=ExtResource("2_umbral")]
+
+[node name="TerrazasSecas" parent="Rooms" instance=ExtResource("3_terrazas")]
+position = Vector2(1280, 0)
+
+[node name="Cisterna" parent="Rooms" instance=ExtResource("4_cisterna")]
+position = Vector2(1280, 384)
+
+[node name="TorreDeRiego" parent="Rooms" instance=ExtResource("5_torre")]
+position = Vector2(2304, -320)

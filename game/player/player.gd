@@ -99,6 +99,18 @@ func rest_at(anchor_position: Vector2) -> void:
 	anchor_menu.open()
 
 
+## El mapa del mundo (lo crea el mundo, ver game/levels/world.gd): lo dibujan el
+## minimapa del HUD y el mapa del menú de pausa.
+func set_map(data: MapData) -> void:
+	hud.set_map(data)
+	pause_menu.set_map(data)
+
+
+## Al entrar por primera vez en una sala, su nombre aparece un momento.
+func announce_area(title: String) -> void:
+	_show_message(title)
+
+
 func add_ecos(amount: int) -> void:
 	ecos += amount
 	_update_hud()

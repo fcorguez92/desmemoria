@@ -1,9 +1,10 @@
-[gd_scene load_steps=9 format=3]
+[gd_scene load_steps=10 format=3]
 
 [ext_resource type="Script" path="res://game/ui/hud.gd" id="1_hud"]
 [ext_resource type="Script" path="res://core/ui/segmented_bar.gd" id="2_bar"]
 [ext_resource type="Script" path="res://core/ui/icon_row.gd" id="3_row"]
 [ext_resource type="Texture2D" path="res://game/ui/hud_icons.png" id="4_icons"]
+[ext_resource type="Script" path="res://core/ui/map_view.gd" id="5_map"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_echo"]
 atlas = ExtResource("4_icons")
@@ -24,21 +25,31 @@ border_color = Color(0.416, 0.4, 0.44, 0.5)
 [node name="HUD" type="CanvasLayer"]
 script = ExtResource("1_hud")
 
-[node name="HealthBar" type="Control" parent="."]
+[node name="Minimap" type="Control" parent="."]
+visible = false
 layout_mode = 3
 anchors_preset = 0
 offset_left = 16.0
 offset_top = 16.0
-offset_right = 118.0
+offset_right = 176.0
+offset_bottom = 112.0
+script = ExtResource("5_map")
+
+[node name="HealthBar" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 0
+offset_left = 188.0
+offset_top = 16.0
+offset_right = 290.0
 offset_bottom = 28.0
 script = ExtResource("2_bar")
 
 [node name="HealFlasks" type="Control" parent="."]
 layout_mode = 3
 anchors_preset = 0
-offset_left = 15.0
+offset_left = 187.0
 offset_top = 34.0
-offset_right = 63.0
+offset_right = 235.0
 offset_bottom = 50.0
 script = ExtResource("3_row")
 sheet = ExtResource("4_icons")
@@ -69,9 +80,9 @@ visible = false
 anchors_preset = 10
 anchor_right = 1.0
 offset_left = 180.0
-offset_top = 16.0
+offset_top = 56.0
 offset_right = -180.0
-offset_bottom = 96.0
+offset_bottom = 136.0
 grow_horizontal = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_message")
 
