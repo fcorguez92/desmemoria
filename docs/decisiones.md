@@ -2,6 +2,18 @@
 
 Cada entrada: qué se decidió, por qué, qué alternativas se descartaron y por qué. Se añade una entrada nueva por decisión importante, no se reescribe el historial.
 
+## 2026-10-01 — Guardado automático, como en Hollow Knight
+
+**Petición del usuario**: guardado automático "como en Hollow Knight": al cruzar una sala, al revivir y al descansar en un Ancla.
+
+**Decisión**: se guarda en esos tres momentos, más al mejorar el Filo en un Ancla y al salir del juego (Hollow Knight también guarda al salir; sin ello, lo conseguido desde la última sala se perdería). Al cargar, como en Hollow Knight, se aparece en la **última Ancla** y no donde se dejó la partida: lo que se guarda al cambiar de sala es el progreso (habilidades, Ecos, mapa, el Eco de la muerte), no la posición. Hay una sola partida y "Nueva partida" en la pausa, con confirmación, para empezar de cero.
+
+**Alternativas**: guardar también la posición exacta (descartado: Hollow Knight no lo hace y le quitaría sentido a las Anclas); varias ranuras de partida y un menú de inicio (descartado por ahora: no hay pantalla de título; se añade cuando la haya); el formato de texto de Godot (`var_to_str`), que entiende `Vector2` sin convertir, frente a JSON (elegido: es estándar, legible y no puede crear objetos al leerse, así que una partida editada a mano no puede ejecutar nada).
+
+**Técnico**: `SaveSlot` (`core/save/`) no sabe qué se guarda; el jugador da y restaura lo suyo (`get_save_data()` / `load_save_data()`) y el mundo, que sabe las salas descubiertas, decide cuándo guardar: el jugador avisa con la señal `save_requested` (los eventos suben). Se escribe en un archivo temporal y se renombra, para que un cierre a mitad de escritura no estropee la partida. "Salir del juego" envía el mismo aviso de cierre que la ventana (`NOTIFICATION_WM_CLOSE_REQUEST`), así hay un solo sitio que guarda al salir. Las pruebas usan su propio archivo (`save_path` del mundo) para no tocar nunca la partida de quien juega.
+
+**Tras la revisión independiente**: la partida guarda posiciones del mundo, y si luego se edita un mapa o se mueve un Ancla, el punto guardado puede quedar en una pared o en el vacío: el jugador moriría en bucle y cada muerte volvería a guardar ese punto. Al cargar, el mundo solo acepta como reaparición un Ancla que exista o el inicio (si no, lleva al inicio) y descarta un Eco que no esté dentro de ninguna sala. Además, cada campo se comprueba antes de usarlo, para que una partida editada a mano con tipos equivocados no dé errores.
+
 ## 2026-10-01 — Un mundo de salas conectadas, minimapa y mapa en la pausa
 
 **Petición del usuario**: que el juego sea un metroidvania de verdad: que el mundo vaya creciendo, con un minimapa arriba a la izquierda y el mapa completo en el menú de pausa.

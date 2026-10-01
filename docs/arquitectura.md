@@ -45,6 +45,7 @@ game/  ──usa──▶  core/  ──usa──▶  Godot
 │   ├── components/            Nodos con una responsabilidad cada uno
 │   ├── objects/               Checkpoint, objeto de habilidad, generador de entidades, objeto rompible, objeto legible, mapa de baldosas desde texto
 │   ├── ui/                    Controles de interfaz genéricos (barra segmentada, fila de iconos, lista de opciones, capa modal, mapa)
+│   ├── save/                  Partida guardada en disco (SaveSlot)
 │   └── effects/               Efectos visuales autodestructivos (chispazo de impacto)
 ├── game/                      ESPECÍFICO DE ESTE JUEGO
 │   ├── player/                Orquesta los componentes + Ecos + HUD

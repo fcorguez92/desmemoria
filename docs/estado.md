@@ -1,6 +1,6 @@
 # Estado del proyecto (documento vivo)
 
-Última actualización: el mundo pasa a ser varias salas conectadas, con minimapa y mapa en la pausa.
+Última actualización: guardado automático como en Hollow Knight.
 
 ## Dónde estamos en la metodología
 
@@ -11,12 +11,12 @@
 5. Diseño del núcleo jugable — hecho (ver `nucleo-jugable.md`).
 6. Prototipo jugable mínimo — hecho.
 7. Validación del núcleo — hecho: movimiento, combate con enemigos y feedback, vida/muerte/Ecos, mejora del arma, puntos de control con curación y las tres habilidades de movimiento (dash, doble salto, salto de pared) que se consiguen en el mundo y abren caminos.
-8. Vertical slice — **en marcha.**  Estilo de arte decidido (pixel art oscuro, ver `arte.md`) y Godot configurado para pixel art (864×486, escalado entero). Primer arte hecho (caminante con espada y cascarón con cuchillo, con animaciones básicas de movimiento y ataque, ver `arte.md`). El terreno de El Último Umbral ya existe (mapa de texto + baldosas, ver `vertical-slice.md`) y es la sala de inicio del mundo. Ya tiene fondo con parallax, objetos rompibles y narrativa ambiental (una inscripción legible, restos en la cabaña, marcas de arrastre; ver `docs/vertical-slice.md`), geometría de colores sin arte final todavía. El mundo ya crece por salas conectadas sin pantallas de carga (ver `mundo.md`): a El Último Umbral le siguen Las Terrazas Secas, La Cisterna y La Torre de Riego, donde se consiguen el dash y el doble salto. Minimapa en el HUD y mapa completo en la pausa, que solo muestran lo explorado (baldosa a baldosa alrededor del jugador). Falta jugarlo para ajustar el recorrido.
+8. Vertical slice — **en marcha.**  Estilo de arte decidido (pixel art oscuro, ver `arte.md`) y Godot configurado para pixel art (864×486, escalado entero). Primer arte hecho (caminante con espada y cascarón con cuchillo, con animaciones básicas de movimiento y ataque, ver `arte.md`). El terreno de El Último Umbral ya existe (mapa de texto + baldosas, ver `vertical-slice.md`) y es la sala de inicio del mundo. Ya tiene fondo con parallax, objetos rompibles y narrativa ambiental (una inscripción legible, restos en la cabaña, marcas de arrastre; ver `docs/vertical-slice.md`), geometría de colores sin arte final todavía. El mundo ya crece por salas conectadas sin pantallas de carga (ver `mundo.md`): a El Último Umbral le siguen Las Terrazas Secas, La Cisterna y La Torre de Riego, donde se consiguen el dash y el doble salto. Minimapa en el HUD y mapa completo en la pausa, que solo muestran lo explorado (baldosa a baldosa alrededor del jugador). La partida se guarda sola (al cambiar de sala, descansar, reaparecer y salir) y al abrir el juego se aparece en la última Ancla. Falta jugarlo para ajustar el recorrido.
 
 ## Qué existe ahora mismo
 
 ```
-core/         Base reutilizable: 14 componentes + 6 objetos + 2 efectos + 5 piezas de interfaz (ver core/README.md)
+core/         Base reutilizable: 14 componentes + 6 objetos + 2 efectos + 5 piezas de interfaz + guardado (ver core/README.md)
 game/         player, enemy (de prueba), echo, memory_anchor, ability_pickup, levels (el mundo y sus 4 salas + banco de pruebas)
 tests/        smoke_test.gd — 256 comprobaciones, todas en verde
 docs/         Diseño, decisiones, arquitectura y estado
@@ -29,7 +29,7 @@ de esta fase era validar cómo se siente, no cómo se ve.
 
 - Flecha izq/dcha: moverse · Espacio: saltar · Flecha arriba/abajo: mirar · Abajo + Espacio sobre un tablón: bajar atravesándolo
 - En el aire, Espacio otra vez: doble salto (tras conseguirlo) · Junto a una pared, mantén la dirección hacia ella para agarrarte y pulsa Espacio para saltar de ella (tras conseguirlo)
-- Esc: pausa (continuar, mapa, personaje, controles, salir) · X: atacar · V: parry · Shift izquierdo: dash · H: curarse (si quedan cargas y no estás a vida completa) · Z: descansar en un Ancla y abrir su menú (Intro elige, Esc o Z cierra)
+- Esc: pausa (continuar, mapa, personaje, controles, nueva partida, salir) · X: atacar · V: parry · Shift izquierdo: dash · H: curarse (si quedan cargas y no estás a vida completa) · Z: descansar en un Ancla y abrir su menú (Intro elige, Esc o Z cierra)
 
 ## Qué falta del núcleo jugable
 
