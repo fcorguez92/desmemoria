@@ -26,7 +26,7 @@ Esto da al mundo un eje claro: periferia (poblada, medievalmente reconocible, de
 
 El mundo se hace de **salas**: cada una es un mapa de texto (`game/levels/*.map`,
 ver `vertical-slice.md` para la leyenda) con su escena (`*.tscn`, script
-`game/levels/room.gd`). `game/levels/world.tscn` (la escena principal) las coloca
+`game/levels/room.gd`). `game/levels/world.tscn` (se llega desde el menú principal) las coloca
 una junto a otra en su sitio del mundo, todas cargadas a la vez: el jugador pasa
 de una a otra caminando, cayendo o saltando, sin pantallas de carga ni cortes.
 

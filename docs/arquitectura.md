@@ -53,8 +53,8 @@ game/  ──usa──▶  core/  ──usa──▶  Godot
 │   ├── echo/                  Marcador de la última muerte
 │   ├── memory_anchor/         Punto de control (usa core/objects/checkpoint.gd)
 │   ├── environment/           Objetos de ambientación (urna rompible, inscripción)
-│   ├── ui/                    HUD (con minimapa), menú del Ancla y menú de pausa (con mapa)
-│   └── levels/                El mundo (world.tscn, escena principal) y sus salas (mapa de texto + baldosas), y el banco de pruebas
+│   ├── ui/                    Menú principal (escena de inicio), HUD (con minimapa), menú del Ancla y menú de pausa (con mapa)
+│   └── levels/                El mundo (world.tscn) y sus salas (mapa de texto + baldosas), y el banco de pruebas
 ├── art/                       Fuentes del arte (no se cargan en el juego)
 │   ├── palette.txt            La paleta: un carácter por color
 │   └── source/                Sprites escritos como texto (*.sprite)

@@ -105,19 +105,32 @@ al **cambiar de sala**, al **descansar en un Ancla** (y al mejorar el Filo en
 ella), al **reaparecer tras morir** y al **salir del juego** (cerrando la
 ventana o con "Salir del juego").
 
-Al abrir el juego se carga sola y se aparece en la **última Ancla en la que se
+Al elegir **Continuar** en el menú principal se carga y se aparece en la **última Ancla en la que se
 descansó** (o al principio, si aún no se ha descansado en ninguna), con la vida
 y las curaciones completas, no en el sitio exacto donde se dejó: así cada
 sesión empieza en un lugar seguro y conocido, y descansar sigue importando.
 
-Se guarda: habilidades, Ecos, nivel del Filo, salas descubiertas del mapa,
+Se guarda: habilidades, Ecos, nivel del Filo, lo explorado del mapa (baldosa a
+baldosa) y las salas ya visitadas,
 última Ancla y el Eco de la última muerte (dónde está y cuántos Ecos guarda).
 No se guarda: los enemigos (reaparecen, como al descansar) ni las urnas rotas
 (son decoración). Los recuerdos de habilidades ya conseguidas no vuelven a
 aparecer.
 
-Para empezar de cero: Esc → **Nueva partida**, que pide confirmación (con el
-"no" seleccionado por defecto) antes de borrar nada.
+## Menú principal (implementado)
+
+El juego arranca en un menú principal (`game/ui/title_screen.tscn`):
+
+- **Continuar** — carga la partida. Desactivado si no hay ninguna; si la hay, el
+  cursor empieza ahí.
+- **Nuevo juego** — empieza de cero. Si ya hay partida, pide confirmación (con
+  el "no" seleccionado por defecto) antes de borrarla.
+- **Opciones** — por ahora solo pantalla completa, que se recuerda entre sesiones
+  (`user://opciones.cfg`). Volumen, controles, etc. se añadirán cuando existan:
+  no se ponen opciones que no hacen nada.
+- **Salir**.
+
+Desde la pausa, **Menú principal** guarda y vuelve a esta pantalla.
 
 Técnico: un archivo JSON en la carpeta de datos del juego (`user://partida.json`;
 en Windows, `%APPDATA%\Godot\app_userdata\Proyecto Souls2D\`). Una partida

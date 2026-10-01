@@ -2,11 +2,21 @@
 
 Cada entrada: qué se decidió, por qué, qué alternativas se descartaron y por qué. Se añade una entrada nueva por decisión importante, no se reescribe el historial.
 
+## 2026-10-01 — Menú principal
+
+**Petición del usuario**: un menú de inicio con "Continuar", "Nuevo juego", "Opciones"... para poder probar cambios sin empezar siempre de cero y elegir cuándo hacerlo.
+
+**Decisión**: `game/ui/title_screen.tscn` es la nueva escena principal, con Continuar (desactivado sin partida), Nuevo juego (con confirmación si ya hay partida), Opciones y Salir. "Nueva partida" sale de la pausa, que a cambio gana "Menú principal" (guarda y vuelve), como en Hollow Knight. **Opciones** solo tiene pantalla completa: es lo único configurable hoy; volumen y controles se añadirán cuando existan, para no llenar el menú de opciones que no hacen nada. Se guardan en `user://opciones.cfg` (un `ConfigFile` de Godot, el formato pensado para esto), aparte de la partida: borrar la partida no debe tocar las opciones.
+
+**Alternativas**: varias ranuras de partida (descartado por ahora: con una sola partida basta para un proyecto de este tamaño; el menú admite añadirlas luego) y un componente de opciones en `core/` (descartado: es una sola opción; se extraerá si crece).
+
+**Título**: el menú muestra "Desmemoria", el nombre del repositorio; el nombre del juego sigue siendo provisional.
+
 ## 2026-10-01 — Guardado automático, como en Hollow Knight
 
 **Petición del usuario**: guardado automático "como en Hollow Knight": al cruzar una sala, al revivir y al descansar en un Ancla.
 
-**Decisión**: se guarda en esos tres momentos, más al mejorar el Filo en un Ancla y al salir del juego (Hollow Knight también guarda al salir; sin ello, lo conseguido desde la última sala se perdería). Al cargar, como en Hollow Knight, se aparece en la **última Ancla** y no donde se dejó la partida: lo que se guarda al cambiar de sala es el progreso (habilidades, Ecos, mapa, el Eco de la muerte), no la posición. Hay una sola partida y "Nueva partida" en la pausa, con confirmación, para empezar de cero.
+**Decisión**: se guarda en esos tres momentos, más al mejorar el Filo en un Ancla y al salir del juego (Hollow Knight también guarda al salir; sin ello, lo conseguido desde la última sala se perdería). Al cargar, como en Hollow Knight, se aparece en la **última Ancla** y no donde se dejó la partida: lo que se guarda al cambiar de sala es el progreso (habilidades, Ecos, mapa, el Eco de la muerte), no la posición. Hay una sola partida.
 
 **Alternativas**: guardar también la posición exacta (descartado: Hollow Knight no lo hace y le quitaría sentido a las Anclas); varias ranuras de partida y un menú de inicio (descartado por ahora: no hay pantalla de título; se añade cuando la haya); el formato de texto de Godot (`var_to_str`), que entiende `Vector2` sin convertir, frente a JSON (elegido: es estándar, legible y no puede crear objetos al leerse, así que una partida editada a mano no puede ejecutar nada).
 
