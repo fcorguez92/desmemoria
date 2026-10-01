@@ -19,6 +19,12 @@ extends Node2D
 ## abrir el juego se carga y se aparece en la última Ancla (ver docs/nucleo-jugable.md).
 
 const PlayerScene := preload("res://game/player/player.tscn")
+## Pantalla de inicio, a la que se vuelve desde la pausa. Por ruta y no con
+## preload: ella también apunta a este mundo, y dos escenas no pueden
+## precargarse la una a la otra.
+const TITLE_SCENE := "res://game/ui/title_screen.tscn"
+## La partida de quien juega (el menú principal mira si existe).
+const SAVE_PATH := "user://partida.json"
 
 const CELL := 16.0
 const PLAYER_HALF_HEIGHT := 24.0
@@ -42,7 +48,7 @@ const MAP_ECHO_COLOR := Color(0.75, 0.55, 0.95)
 
 ## Dónde se guarda la partida. Las pruebas usan otro archivo para no tocar la
 ## partida de quien juega.
-@export var save_path: String = "user://partida.json"
+@export var save_path: String = SAVE_PATH
 
 var map_data := MapData.new()
 var player: Node2D
@@ -59,8 +65,6 @@ var _camera: Camera2D
 var _last_reveal_cell := Vector2i(-99999, -99999)
 var _sky_tween: Tween
 var _save_slot: SaveSlot
-## Tras pedir una partida nueva ya no se guarda nada (el mundo se va a recargar).
-var _discarded: bool = false
 ## Donde aparece el jugador en una partida nueva (el marcador P).
 var _start_position: Vector2
 
@@ -91,7 +95,7 @@ func _ready() -> void:
 	_camera.reset_smoothing()
 	_show_sky(current_room.has_sky, true)
 	player.save_requested.connect(save_game)
-	player.new_game_requested.connect(start_new_game)
+	player.title_requested.connect(return_to_title)
 
 
 func _physics_process(_delta: float) -> void:
@@ -178,25 +182,24 @@ func _show_sky(show: bool, instant: bool = false) -> void:
 		_sky_tween.tween_property(layer, "modulate:a", alpha, SKY_FADE_SECONDS)
 
 
-## Guarda la partida: lo del jugador y las salas descubiertas.
+## Guarda la partida: lo del jugador, las salas visitadas y lo explorado del mapa.
 func save_game() -> void:
-	if player == null or _discarded:
+	if player == null:
 		return
 	var rooms: Array[String] = []
 	for area in map_data.areas:
-		if area.revealed:
+		if area.visited:
 			rooms.append(String(area.id))
-	_save_slot.write({ player = player.get_save_data(), rooms = rooms })
+	_save_slot.write({ player = player.get_save_data(), rooms = rooms, seen = map_data.get_seen_data() })
 
 
-## Borra la partida y vuelve a empezar desde el principio.
-func start_new_game() -> void:
-	_save_slot.erase()
-	_discarded = true
+## Guarda y vuelve al menú principal.
+func return_to_title() -> void:
+	save_game()
 	get_tree().paused = false
-	# En las pruebas el mundo no es la escena principal: basta con borrar.
+	# En las pruebas el mundo no es la escena principal: basta con guardar.
 	if get_tree().current_scene == self:
-		get_tree().reload_current_scene()
+		get_tree().change_scene_to_file(TITLE_SCENE)
 
 
 ## Al cerrar la ventana (o al elegir "Salir del juego", que avisa igual) se
@@ -222,7 +225,10 @@ func _apply_save(saved: Dictionary) -> void:
 	if rooms is Array:
 		for id in rooms:
 			if id is String:
-				map_data.reveal(StringName(id))
+				map_data.visit(StringName(id))
+	var seen: Variant = saved.get("seen")
+	if seen is Dictionary:
+		map_data.set_seen_data(seen)
 	# Los recuerdos de habilidades ya conseguidas no vuelven a aparecer.
 	for room in _rooms:
 		for child in room.get_children():
