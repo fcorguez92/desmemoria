@@ -8,8 +8,8 @@ extends CharacterBody2D
 ## en ella) y al reaparecer tras morir. Quien guarda es el mundo
 ## (game/levels/world.gd), que también guarda al cambiar de sala.
 signal save_requested
-## Se ha confirmado en la pausa empezar una partida nueva (lo atiende el mundo).
-signal new_game_requested
+## Se ha elegido en la pausa volver al menú principal (lo atiende el mundo).
+signal title_requested
 
 const EchoScene := preload("res://game/echo/echo.tscn")
 const Hud := preload("res://game/ui/hud.gd")
@@ -61,7 +61,7 @@ func _ready() -> void:
 	parry.parried.connect(_on_parried)
 	weapon.changed.connect(_on_weapon_changed)
 	anchor_menu.upgrade_requested.connect(_on_upgrade_requested)
-	pause_menu.new_game_requested.connect(new_game_requested.emit)
+	pause_menu.title_requested.connect(title_requested.emit)
 	_on_weapon_changed()
 
 
