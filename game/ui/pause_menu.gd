@@ -20,9 +20,9 @@ const OPTION_CONTROLS := 3
 const OPTION_TITLE := 4
 const OPTION_QUIT := 5
 
-const HINT_MAIN := "↑ ↓ elegir · Intro confirmar · Esc continuar"
-const HINT_SUBPAGE := "Esc o Intro para volver"
-const HINT_MAP := "Dorado: tú · Azul: Ancla · Violeta: tu Eco · Esc o Intro para volver"
+const HINT_MAIN := "↑ ↓ elegir · Intro o Z confirmar · Esc continuar"
+const HINT_SUBPAGE := "Esc, Intro o Z para volver"
+const HINT_MAP := "Dorado: tú · Azul: Ancla · Violeta: tu Eco · Esc, Intro o Z para volver"
 ## Tecla y qué hace, una fila por control.
 const CONTROLS := [
 	["← →", "Moverse"],
@@ -82,9 +82,9 @@ func set_map(data: MapData) -> void:
 
 
 func _input(event: InputEvent) -> void:
-	# En las subpantallas no hay lista de opciones: Esc o Intro vuelven al menú.
-	if is_open() and _page != Page.MAIN \
-			and (event.is_action_pressed(&"ui_cancel") or event.is_action_pressed(&"ui_accept")):
+	# En las subpantallas no hay lista de opciones: Esc, Intro o Z vuelven al menú.
+	if is_open() and _page != Page.MAIN and (event.is_action_pressed(&"ui_cancel") \
+			or event.is_action_pressed(&"ui_accept") or event.is_action_pressed(&"interact")):
 		_show_page(Page.MAIN)
 		get_viewport().set_input_as_handled()
 

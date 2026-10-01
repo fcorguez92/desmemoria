@@ -478,9 +478,16 @@ func _test_anchor_menu_keyboard_and_pause() -> void:
 	await _press_action("ui_cancel")
 	_check(not menu.is_open() and not paused, "Esc cierra el menú y reanuda el juego")
 
+	# Z también es aceptar: compra la mejora seleccionada sin cerrar el menú...
 	_player.rest_at(_player.global_position)
+	var level_before: int = _player.weapon.level
 	await _press_action("interact")
-	_check(not menu.is_open() and not paused, "volver a pulsar Z cierra el menú")
+	_check(menu.is_open() and paused and _player.weapon.level == level_before + 1, "Z sobre Mejorar el Filo lo compra sin cerrar el menú")
+	# ...y sobre Salir, cierra.
+	await _press_action("ui_down")
+	await _press_action("interact")
+	_check(not menu.is_open() and not paused, "Z sobre Salir cierra el menú")
+	_player.ecos = 20
 
 	_player.rest_at(_player.global_position)
 	await _wait(30)
@@ -494,7 +501,9 @@ func _test_anchor_menu_keyboard_and_pause() -> void:
 		highest_y = minf(highest_y, _player.global_position.y)
 	_check(highest_y > standing_y - 5.0, "aceptar Salir no hace saltar al personaje")
 
-	# Lo mismo con Z estando junto al Ancla: abrir y cerrar con Z no debe reabrir el menú.
+	# Lo mismo con Z estando junto al Ancla: abrir y cerrar con Z no debe reabrir el
+	# menú. Sin Ecos, el cursor empieza en Salir y Z lo elige.
+	_player.ecos = 0
 	var anchor: Node2D = _level.get_node("MemoryAnchor2")
 	_player.global_position = anchor.global_position
 	_player.velocity = Vector2.ZERO

@@ -70,6 +70,7 @@ layout_mode = 2
 layout_mode = 2
 size_flags_vertical = 3
 script = ExtResource("2_list")
+accept_actions = Array[StringName]([&"ui_accept", &"interact"])
 
 [node name="Info" type="HBoxContainer" parent="Root/Panel/Content"]
 visible = false

@@ -73,10 +73,11 @@ layout_mode = 2
 [node name="Options" type="VBoxContainer" parent="Root/Panel/Content"]
 layout_mode = 2
 script = ExtResource("2_list")
+accept_actions = Array[StringName]([&"ui_accept", &"interact"])
 
 [node name="Hint" type="Label" parent="Root/Panel/Content"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.416, 0.4, 0.44, 1)
 theme_override_font_sizes/font_size = 12
-text = "↑ ↓ elegir · Intro confirmar · Esc o Z cerrar"
+text = "↑ ↓ elegir · Intro o Z confirmar · Esc cerrar"
 horizontal_alignment = 1

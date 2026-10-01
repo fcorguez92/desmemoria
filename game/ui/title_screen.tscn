@@ -67,6 +67,7 @@ horizontal_alignment = 1
 layout_mode = 2
 size_flags_horizontal = 4
 script = ExtResource("2_list")
+accept_actions = Array[StringName]([&"ui_accept", &"interact"])
 
 [node name="Hint" type="Label" parent="."]
 layout_mode = 1

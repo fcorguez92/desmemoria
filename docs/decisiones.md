@@ -2,6 +2,14 @@
 
 Cada entrada: qué se decidió, por qué, qué alternativas se descartaron y por qué. Se añade una entrada nueva por decisión importante, no se reescribe el historial.
 
+## 2026-10-01 — Z también acepta en los menús
+
+**Petición del usuario**: que Z sirva para aceptar en los menús (comprar mejoras, elegir Salir...) en vez de cerrar el menú del Ancla directamente.
+
+**Decisión**: `MenuList` (core) admite teclas de aceptar adicionales (`accept_actions`); los menús del juego (Ancla, pausa, menú principal) añaden `interact` (Z). En las subpantallas de la pausa, Z también vuelve. El menú del Ancla deja de cerrarse con Z; se cierra con Esc o eligiendo Salir.
+
+**Alternativa descartada**: añadir Z a la acción `ui_accept` del Mapa de entrada. Es lo más corto, pero `ui_accept` es también el salto: Z haría saltar al personaje. Que la Z que cierra un menú no vuelva a abrir el Ancla ya lo resuelve `ModalLayer`, que reanuda el juego dos fotogramas después de cerrar.
+
 ## 2026-10-01 — Menú principal
 
 **Petición del usuario**: un menú de inicio con "Continuar", "Nuevo juego", "Opciones"... para poder probar cambios sin empezar siempre de cero y elegir cuándo hacerlo.

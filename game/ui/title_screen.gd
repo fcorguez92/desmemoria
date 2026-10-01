@@ -27,8 +27,8 @@ const CONFIRM_YES := 1
 const OPTION_FULLSCREEN := 0
 const OPTION_BACK := 1
 
-const HINT_MAIN := "↑ ↓ elegir · Intro confirmar"
-const HINT_SUBPAGE := "↑ ↓ elegir · Intro confirmar · Esc volver"
+const HINT_MAIN := "↑ ↓ elegir · Intro o Z confirmar"
+const HINT_SUBPAGE := "↑ ↓ elegir · Intro o Z confirmar · Esc volver"
 
 ## Las pruebas cambian estas rutas para no tocar la partida ni las opciones reales.
 @export var save_path: String = World.SAVE_PATH
