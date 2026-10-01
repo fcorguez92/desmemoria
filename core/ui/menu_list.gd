@@ -72,17 +72,23 @@ func cancel() -> void:
 func _input(event: InputEvent) -> void:
 	if not is_visible_in_tree():
 		return
+	var step := 0
 	if event.is_action_pressed(&"ui_down"):
-		move_selection(1)
+		step = 1
 	elif event.is_action_pressed(&"ui_up"):
-		move_selection(-1)
+		step = -1
+	elif not event.is_action_pressed(&"ui_accept") and not event.is_action_pressed(&"ui_cancel"):
+		return
+	# La tecla se da por usada ANTES de actuar: elegir una opción puede sacar
+	# esta lista del árbol (p. ej. cambiar de escena) y después ya no habría
+	# viewport al que avisar.
+	get_viewport().set_input_as_handled()
+	if step != 0:
+		move_selection(step)
 	elif event.is_action_pressed(&"ui_accept"):
 		activate()
-	elif event.is_action_pressed(&"ui_cancel"):
-		cancel()
 	else:
-		return
-	get_viewport().set_input_as_handled()
+		cancel()
 
 
 ## Las filas se crean una sola vez y después solo se actualizan (texto y color).

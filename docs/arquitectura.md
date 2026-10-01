@@ -204,3 +204,8 @@ que las reglas se cumplen, no que se sienta bien.
 - Un `RayCast2D` hijo de un cuerpo ignora a su propio padre, pero sí detecta a
   cualquier otro cuerpo; el sondeo de bordes de `PatrolChaseAI` cuenta cualquier
   cosa sólida como suelo.
+- Si al reaccionar a una tecla un nodo puede salir del árbol (elegir una
+  opción que cambia de escena), hay que llamar a
+  `get_viewport().set_input_as_handled()` **antes** de actuar: después,
+  `get_viewport()` es null y el error de script, jugando desde el editor,
+  congela el juego en el depurador (pantalla en negro). `MenuList` ya lo hace.

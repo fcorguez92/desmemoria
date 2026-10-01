@@ -71,6 +71,7 @@ func _run() -> void:
 	await _test_loading_restores_progress()
 	await _test_title_screen()
 	await _test_pause_returns_to_title()
+	await _test_menu_list_survives_leaving_the_tree()
 	SaveSlot.new(TEST_SAVE).erase()
 
 
@@ -1556,3 +1557,25 @@ func _test_pause_returns_to_title() -> void:
 	await _press_action("ui_accept")
 	_check(_saved().get("player", {}).get("ecos", 0) == 5, "Menú principal guarda antes de salir")
 	_check(not paused, "y quita la pausa")
+
+
+func _test_menu_list_survives_leaving_the_tree() -> void:
+	print("\n[MenuList: elegir una opción que saca la lista de la escena no da errores]")
+	paused = false
+	var menu := MenuList.new()
+	menu.set_entries(PackedStringArray(["Salir de aquí"]))
+	root.add_child(menu)
+	# Lo que haría "Menú principal": la lista deja de estar en el árbol al elegir.
+	menu.chosen.connect(func(_index: int) -> void: root.remove_child(menu))
+	# Un espía que solo recibe teclas que nadie ha usado.
+	var spy_script := GDScript.new()
+	spy_script.source_code = "extends Node\nvar got := 0\nfunc _unhandled_input(event: InputEvent) -> void:\n\tif event.is_action_pressed(&\"ui_accept\"):\n\t\tgot += 1\n"
+	spy_script.reload()
+	var spy: Node = spy_script.new()
+	root.add_child(spy)
+	await _wait(2)
+	await _press_action("ui_accept")
+	_check(not menu.is_inside_tree(), "la opción elegida sacó la lista del árbol")
+	_check(spy.got == 0, "y la tecla quedó marcada como usada (antes, el error lo impedía)")
+	spy.queue_free()
+	menu.queue_free()
