@@ -145,15 +145,20 @@ func get_seen_data() -> Dictionary:
 	return data
 
 
-## Restaura lo que dio `get_seen_data()`. Ignora zonas que ya no existen o cuyo
-## tamaño ha cambiado (un mapa editado desde que se guardó).
+## Restaura lo que dio `get_seen_data()`, sumándolo a lo ya visto: está pensado
+## para un MapData recién creado (al cargar una partida). Ignora zonas que ya no
+## existen o cuyo tamaño ha cambiado (un mapa editado desde que se guardó); un
+## texto estropeado se ignora igual, aunque Godot puede avisar en la consola.
 func set_seen_data(data: Dictionary) -> void:
 	for area in areas:
 		var encoded: Variant = data.get(String(area.id))
 		if not encoded is String:
 			continue
 		var cells: int = area.rect.size.x * area.rect.size.y
-		var seen := Marshalls.base64_to_raw(encoded).decompress(cells, FileAccess.COMPRESSION_DEFLATE)
+		var raw := Marshalls.base64_to_raw(encoded)
+		if raw.is_empty():
+			continue
+		var seen := raw.decompress(cells, FileAccess.COMPRESSION_DEFLATE)
 		if seen.size() != cells:
 			continue
 		for i in cells:

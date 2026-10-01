@@ -47,6 +47,8 @@ var sky_shown: bool = true
 var _rooms: Array[Node2D] = []
 var _room_rects: Array[Rect2] = []
 var _camera: Camera2D
+## Última baldosa desde la que se descubrió el mapa: quieto, no hay nada nuevo.
+var _last_reveal_cell := Vector2i(-99999, -99999)
 var _sky_tween: Tween
 
 @onready var background: CanvasLayer = $Background
@@ -76,7 +78,10 @@ func _physics_process(_delta: float) -> void:
 		if room != null and room != current_room:
 			_enter_room(room)
 	map_data.set_focus(player.global_position / CELL)
-	map_data.reveal_around(map_data.focus_cell, REVEAL_RADIUS)
+	var cell := Vector2i(map_data.focus_cell.floor())
+	if cell != _last_reveal_cell:
+		_last_reveal_cell = cell
+		map_data.reveal_around(map_data.focus_cell, REVEAL_RADIUS)
 	if is_instance_valid(player.active_echo):
 		map_data.set_marker(&"echo", player.active_echo.global_position / CELL, MAP_ECHO_COLOR)
 	else:
