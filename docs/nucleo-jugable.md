@@ -83,7 +83,7 @@ El Eco aparece siempre al morir, aunque no se llevaran Ecos encima (en ese caso,
 ## Curación: Anclas de Memoria
 
 Un objeto curativo de usos limitados, que se recarga solo en los puntos de descanso, llamados **Anclas de Memoria**. Las Anclas también:
-- Sirven de punto de guardado.
+- Sirven de punto de guardado: al cargar la partida se aparece en la última en la que se descansó (ver "Guardado").
 - Se activan **a propósito** con el botón Z (no al pasar por encima), y muestran un aviso "Z: Recordar" al estar al alcance. Descansar es una parada, no un accidente.
 - Al usarlas, reinician (respawnean) a los enemigos normales — como en los juegos souls, para mantener el riesgo al volver a explorar. Los enemigos también reaparecen cuando el jugador muere. Hoy se reinician **todos** los enemigos del mundo, no solo los "del área"; con cuatro salas pequeñas no se nota, y limitarlo a la región del Ancla queda para cuando el mundo crezca.
 
@@ -97,3 +97,43 @@ El Ancla es un **hito de piedras apiladas**, cada una con grabado el nombre de a
 - Qué se compra con Ecos aparte del Filo, y a través de qué NPC.
 - En qué más se gastan los Ecos aparte del Filo, y si las mejoras piden algo además de Ecos (p. ej. un material raro).
 - Diseño de enemigos y jefes concretos.
+
+## Guardado (implementado)
+
+Automático, como en Hollow Knight: no hay botón de guardar. La partida se guarda
+al **cambiar de sala**, al **descansar en un Ancla** (y al mejorar el Filo en
+ella), al **reaparecer tras morir** y al **salir del juego** (cerrando la
+ventana o con "Salir del juego").
+
+Al elegir **Continuar** en el menú principal se carga y se aparece en la **última Ancla en la que se
+descansó** (o al principio, si aún no se ha descansado en ninguna), con la vida
+y las curaciones completas, no en el sitio exacto donde se dejó: así cada
+sesión empieza en un lugar seguro y conocido, y descansar sigue importando.
+
+Se guarda: habilidades, Ecos, nivel del Filo, lo explorado del mapa (baldosa a
+baldosa) y las salas ya visitadas,
+última Ancla y el Eco de la última muerte (dónde está y cuántos Ecos guarda).
+No se guarda: los enemigos (reaparecen, como al descansar) ni las urnas rotas
+(son decoración). Los recuerdos de habilidades ya conseguidas no vuelven a
+aparecer.
+
+## Menú principal (implementado)
+
+El juego arranca en un menú principal (`game/ui/title_screen.tscn`):
+
+- **Continuar** — carga la partida. Desactivado si no hay ninguna; si la hay, el
+  cursor empieza ahí.
+- **Nuevo juego** — empieza de cero. Si ya hay partida, pide confirmación (con
+  el "no" seleccionado por defecto) antes de borrarla.
+- **Opciones** — por ahora solo pantalla completa, que se recuerda entre sesiones
+  (`user://opciones.cfg`). Volumen, controles, etc. se añadirán cuando existan:
+  no se ponen opciones que no hacen nada.
+- **Salir**.
+
+Desde la pausa, **Menú principal** guarda y vuelve a esta pantalla.
+
+Técnico: un archivo JSON en la carpeta de datos del juego (`user://partida.json`;
+en Windows, `%APPDATA%\Godot\app_userdata\Proyecto Souls2D\`). Una partida
+ilegible o de una versión incompatible se ignora y se empieza de cero, en vez de
+romper el juego; si el Ancla guardada ya no existe (porque se editó un mapa), se
+aparece al principio, conservando el resto del progreso. Las pruebas usan otro archivo para no tocar la partida real.

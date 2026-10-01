@@ -1,23 +1,28 @@
 extends ModalLayer
 ## Menú de pausa: continuar, ver el mapa del mundo, ver al personaje (vida,
-## Ecos, Filo y habilidades recordadas), ver los controles y salir del juego. No
-## conoce al jugador: recibe los datos con `show_character()` y `set_map()` (los
-## datos bajan; ver docs/arquitectura.md).
+## Ecos, Filo y habilidades recordadas), ver los controles, volver al menú
+## principal (avisa con `title_requested`) y salir del juego. No conoce al
+## jugador: recibe los datos con `show_character()` y `set_map()` (los datos
+## bajan; ver docs/arquitectura.md).
 ##
 ## Quien lo abre (el jugador, al pulsar Esc) llama a `open()`: una capa que solo
 ## funciona en pausa no puede escuchar la tecla mientras se juega.
 
 enum Page { MAIN, MAP, CHARACTER, CONTROLS }
 
+## Se ha elegido volver al menú principal (lo atiende el mundo, que guarda antes).
+signal title_requested
+
 const OPTION_CONTINUE := 0
 const OPTION_MAP := 1
 const OPTION_CHARACTER := 2
 const OPTION_CONTROLS := 3
-const OPTION_QUIT := 4
+const OPTION_TITLE := 4
+const OPTION_QUIT := 5
 
-const HINT_MAIN := "↑ ↓ elegir · Intro confirmar · Esc continuar"
-const HINT_SUBPAGE := "Esc o Intro para volver"
-const HINT_MAP := "Dorado: tú · Azul: Ancla · Violeta: tu Eco · Esc o Intro para volver"
+const HINT_MAIN := "↑ ↓ elegir · Intro o Z confirmar · Esc continuar"
+const HINT_SUBPAGE := "Esc, Intro o Z para volver"
+const HINT_MAP := "Dorado: tú · Azul: Ancla · Violeta: tu Eco · Esc, Intro o Z para volver"
 ## Tecla y qué hace, una fila por control.
 const CONTROLS := [
 	["← →", "Moverse"],
@@ -46,7 +51,7 @@ var _character_text: String = ""
 
 func _ready() -> void:
 	super()
-	menu.set_entries(PackedStringArray(["Continuar", "Mapa", "Personaje", "Controles", "Salir del juego"]))
+	menu.set_entries(PackedStringArray(["Continuar", "Mapa", "Personaje", "Controles", "Menú principal", "Salir del juego"]))
 	menu.chosen.connect(_on_chosen)
 	menu.cancelled.connect(close)
 
@@ -72,10 +77,14 @@ func show_character(health: int, max_health: int, ecos: int, weapon_level: int, 
 	_character_text = "\n".join(lines)
 
 
+func set_map(data: MapData) -> void:
+	map_view.data = data
+
+
 func _input(event: InputEvent) -> void:
-	# En las subpantallas no hay lista de opciones: Esc o Intro vuelven al menú.
-	if is_open() and _page != Page.MAIN \
-			and (event.is_action_pressed(&"ui_cancel") or event.is_action_pressed(&"ui_accept")):
+	# En las subpantallas no hay lista de opciones: Esc, Intro o Z vuelven al menú.
+	if is_open() and _page != Page.MAIN and (event.is_action_pressed(&"ui_cancel") \
+			or event.is_action_pressed(&"ui_accept") or event.is_action_pressed(&"interact")):
 		_show_page(Page.MAIN)
 		get_viewport().set_input_as_handled()
 
@@ -90,7 +99,11 @@ func _on_chosen(index: int) -> void:
 			_show_page(Page.CHARACTER)
 		OPTION_CONTROLS:
 			_show_page(Page.CONTROLS)
+		OPTION_TITLE:
+			title_requested.emit()
 		OPTION_QUIT:
+			# Aviso de cierre antes de salir, para que el mundo guarde (ver world.gd).
+			get_tree().root.propagate_notification(NOTIFICATION_WM_CLOSE_REQUEST)
 			get_tree().quit()
 
 
@@ -118,15 +131,9 @@ func _show_page(page: Page) -> void:
 			for line in CONTROLS:
 				keys.append(line[0])
 				actions.append(line[1])
-			info_label.text = "
-".join(keys)
-			actions_label.text = "
-".join(actions)
+			info_label.text = "\n".join(keys)
+			actions_label.text = "\n".join(actions)
 			info_label.custom_minimum_size.x = 150.0
-
-
-func set_map(data: MapData) -> void:
-	map_view.data = data
 
 
 ## "Mapa", y el nombre de la sala donde está el jugador si se sabe.

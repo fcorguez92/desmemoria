@@ -22,6 +22,11 @@ signal cancelled
 @export var disabled_color: Color = Color("#6a6670")
 ## Texto que se muestra junto a la opción seleccionada.
 @export var cursor: String = "›"
+## Acciones que eligen la opción seleccionada. Por defecto solo `ui_accept`; un
+## juego puede añadir otras (p. ej. su tecla de interactuar). Ojo: no conviene
+## añadir la tecla de interactuar a `ui_accept` en el Mapa de entrada si
+## `ui_accept` es también saltar.
+@export var accept_actions: Array[StringName] = [&"ui_accept"]
 ## Ancho fijo (en píxeles) de la columna del cursor.
 @export var cursor_width: int = 18
 
@@ -72,17 +77,30 @@ func cancel() -> void:
 func _input(event: InputEvent) -> void:
 	if not is_visible_in_tree():
 		return
+	var step := 0
 	if event.is_action_pressed(&"ui_down"):
-		move_selection(1)
+		step = 1
 	elif event.is_action_pressed(&"ui_up"):
-		move_selection(-1)
-	elif event.is_action_pressed(&"ui_accept"):
-		activate()
-	elif event.is_action_pressed(&"ui_cancel"):
-		cancel()
-	else:
+		step = -1
+	elif not _is_accept(event) and not event.is_action_pressed(&"ui_cancel"):
 		return
+	# La tecla se da por usada ANTES de actuar: elegir una opción puede sacar
+	# esta lista del árbol (p. ej. cambiar de escena) y después ya no habría
+	# viewport al que avisar.
 	get_viewport().set_input_as_handled()
+	if step != 0:
+		move_selection(step)
+	elif _is_accept(event):
+		activate()
+	else:
+		cancel()
+
+
+func _is_accept(event: InputEvent) -> bool:
+	for action in accept_actions:
+		if event.is_action_pressed(action):
+			return true
+	return false
 
 
 ## Las filas se crean una sola vez y después solo se actualizan (texto y color).

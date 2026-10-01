@@ -4,6 +4,13 @@ extends CharacterBody2D
 ##
 ## El orden de _physics_process es deliberado (ver docs/arquitectura.md).
 
+## Hay algo que conviene guardar: al descansar en un Ancla (y al mejorar el Filo
+## en ella) y al reaparecer tras morir. Quien guarda es el mundo
+## (game/levels/world.gd), que también guarda al cambiar de sala.
+signal save_requested
+## Se ha elegido en la pausa volver al menú principal (lo atiende el mundo).
+signal title_requested
+
 const EchoScene := preload("res://game/echo/echo.tscn")
 const Hud := preload("res://game/ui/hud.gd")
 const AnchorMenu := preload("res://game/ui/anchor_menu.gd")
@@ -54,6 +61,7 @@ func _ready() -> void:
 	parry.parried.connect(_on_parried)
 	weapon.changed.connect(_on_weapon_changed)
 	anchor_menu.upgrade_requested.connect(_on_upgrade_requested)
+	pause_menu.title_requested.connect(title_requested.emit)
 	_on_weapon_changed()
 
 
@@ -95,6 +103,7 @@ func rest_at(anchor_position: Vector2) -> void:
 	respawn.set_checkpoint(anchor_position)
 	health.restore()
 	_reset_world()
+	save_requested.emit()
 	_refresh_anchor_menu()
 	anchor_menu.open()
 
@@ -109,6 +118,65 @@ func set_map(data: MapData) -> void:
 ## Al entrar por primera vez en una sala, su nombre aparece un momento.
 func announce_area(title: String) -> void:
 	_show_message(title)
+
+
+## Lo que el jugador guarda en la partida (ver game/levels/world.gd). No se
+## guarda dónde está ni su vida: al cargar se reaparece en la última Ancla, con
+## la vida y las curaciones completas, como al descansar.
+func get_save_data() -> Dictionary:
+	var abilities: Array[String] = []
+	for id in ABILITY_NAMES:
+		if has_ability(id):
+			abilities.append(String(id))
+	var data := {
+		spawn = [respawn.spawn_position.x, respawn.spawn_position.y],
+		ecos = ecos,
+		weapon_level = weapon.level,
+		abilities = abilities,
+	}
+	if is_instance_valid(active_echo):
+		data.echo = {
+			position = [active_echo.global_position.x, active_echo.global_position.y],
+			ecos = active_echo.ecos_held,
+		}
+	return data
+
+
+## Restaura lo guardado por `get_save_data()`. Hay que llamarlo con el jugador
+## ya dentro del mundo (el Eco se crea junto a él). Desconfía de los tipos: una
+## partida editada a mano o estropeada se carga hasta donde tiene sentido, sin
+## errores. Que las posiciones sigan siendo válidas en el mundo actual lo
+## comprueba el mundo.
+func load_save_data(data: Dictionary) -> void:
+	var spawn: Variant = _vector_from(data.get("spawn"))
+	if spawn != null:
+		respawn.set_checkpoint(spawn)
+		global_position = spawn
+		velocity = Vector2.ZERO
+	ecos = maxi(0, _int_from(data.get("ecos")))
+	weapon.set_level(_int_from(data.get("weapon_level")))
+	var abilities: Variant = data.get("abilities")
+	if abilities is Array:
+		for id in abilities:
+			if id is String and ABILITY_NAMES.has(StringName(id)):
+				_grant_ability(StringName(id))
+	var echo: Variant = data.get("echo")
+	if echo is Dictionary:
+		var echo_position: Variant = _vector_from(echo.get("position"))
+		if echo_position != null:
+			_spawn_echo(echo_position, maxi(0, _int_from(echo.get("ecos"))))
+	_update_hud()
+
+
+## [x, y] guardado como JSON -> Vector2, o null si no tiene esa forma.
+static func _vector_from(value: Variant) -> Variant:
+	if value is Array and value.size() == 2 and (value[0] is float or value[0] is int) and (value[1] is float or value[1] is int):
+		return Vector2(value[0], value[1])
+	return null
+
+
+static func _int_from(value: Variant) -> int:
+	return int(value) if value is float or value is int else 0
 
 
 func add_ecos(amount: int) -> void:
@@ -140,6 +208,11 @@ func has_ability(id: StringName) -> bool:
 ## Contrato de habilidades: lo llama core/objects/ability_pickup.gd. Las
 ## habilidades son permanentes: morir no las pierde.
 func unlock_ability(id: StringName) -> void:
+	if _grant_ability(id):
+		_show_message("Has recordado: %s" % ABILITY_NAMES[id])
+
+
+func _grant_ability(id: StringName) -> bool:
 	match id:
 		&"dash":
 			dash.unlocked = true
@@ -149,8 +222,8 @@ func unlock_ability(id: StringName) -> void:
 			motor.can_wall_jump = true
 		_:
 			push_warning("Habilidad desconocida: %s" % id)
-			return
-	_show_message("Has recordado: %s" % ABILITY_NAMES[id])
+			return false
+	return true
 
 
 ## Gasta Ecos en subir un nivel el Filo. Devuelve false si no se pudo
@@ -165,7 +238,8 @@ func try_upgrade_weapon() -> bool:
 
 
 func _on_upgrade_requested() -> void:
-	try_upgrade_weapon()
+	if try_upgrade_weapon():
+		save_requested.emit()
 	_refresh_anchor_menu()
 
 
@@ -180,19 +254,24 @@ func die() -> void:
 		active_echo.queue_free()
 
 	# Siempre se marca el punto de muerte, aunque no llevaras Ecos: sirve de
-	# señal de "aquí moriste" (útil para un futuro mapa). Se coloca en el
-	# último suelo pisado, no donde acaba la caída, para que sea alcanzable.
-	var echo := EchoScene.instantiate()
-	echo.ecos_held = ecos
-	echo.global_position = respawn.last_grounded_position
-	get_parent().add_child(echo)
-	active_echo = echo
+	# señal de "aquí moriste" (el mapa lo marca). Se coloca en el último suelo
+	# pisado, no donde acaba la caída, para que sea alcanzable.
+	_spawn_echo(respawn.last_grounded_position, ecos)
 
 	ecos = 0
 	health.reset_health()
 	respawn.respawn(self)
 	_update_hud()
 	_reset_world()
+	save_requested.emit()
+
+
+func _spawn_echo(at: Vector2, ecos_held: int) -> void:
+	var echo := EchoScene.instantiate()
+	echo.ecos_held = ecos_held
+	echo.global_position = at
+	get_parent().add_child(echo)
+	active_echo = echo
 
 
 ## Al morir o descansar, todo lo "reiniciable" (enemigos) vuelve a su estado

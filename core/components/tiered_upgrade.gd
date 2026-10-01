@@ -32,6 +32,12 @@ func next_cost() -> int:
 	return -1 if is_max() else costs[level]
 
 
+## Pone el nivel directamente, sin coste (p. ej. al cargar una partida).
+func set_level(new_level: int) -> void:
+	level = clampi(new_level, 0, costs.size())
+	changed.emit()
+
+
 ## Sube un nivel. Devuelve false si ya estaba al máximo.
 func advance() -> bool:
 	if is_max():

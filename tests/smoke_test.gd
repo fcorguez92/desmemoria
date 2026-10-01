@@ -14,6 +14,8 @@ extends SceneTree
 
 const LEVEL := "res://game/levels/test_level.tscn"
 const WORLD := "res://game/levels/world.tscn"
+## Partida de las pruebas: nunca la de quien juega.
+const TEST_SAVE := "user://partida_pruebas.json"
 
 var _failures: int = 0
 var _level: Node
@@ -64,6 +66,13 @@ func _run() -> void:
 	await _test_climbing_back_out_of_the_cistern()
 	await _test_tower_needs_double_jump()
 	await _test_minimap_and_pause_map()
+	await _test_save_slot()
+	await _test_autosave_triggers()
+	await _test_loading_restores_progress()
+	await _test_title_screen()
+	await _test_pause_returns_to_title()
+	await _test_menu_list_survives_leaving_the_tree()
+	SaveSlot.new(TEST_SAVE).erase()
 
 
 # --- Tests -------------------------------------------------------------------
@@ -469,9 +478,16 @@ func _test_anchor_menu_keyboard_and_pause() -> void:
 	await _press_action("ui_cancel")
 	_check(not menu.is_open() and not paused, "Esc cierra el menú y reanuda el juego")
 
+	# Z también es aceptar: compra la mejora seleccionada sin cerrar el menú...
 	_player.rest_at(_player.global_position)
+	var level_before: int = _player.weapon.level
 	await _press_action("interact")
-	_check(not menu.is_open() and not paused, "volver a pulsar Z cierra el menú")
+	_check(menu.is_open() and paused and _player.weapon.level == level_before + 1, "Z sobre Mejorar el Filo lo compra sin cerrar el menú")
+	# ...y sobre Salir, cierra.
+	await _press_action("ui_down")
+	await _press_action("interact")
+	_check(not menu.is_open() and not paused, "Z sobre Salir cierra el menú")
+	_player.ecos = 20
 
 	_player.rest_at(_player.global_position)
 	await _wait(30)
@@ -485,7 +501,9 @@ func _test_anchor_menu_keyboard_and_pause() -> void:
 		highest_y = minf(highest_y, _player.global_position.y)
 	_check(highest_y > standing_y - 5.0, "aceptar Salir no hace saltar al personaje")
 
-	# Lo mismo con Z estando junto al Ancla: abrir y cerrar con Z no debe reabrir el menú.
+	# Lo mismo con Z estando junto al Ancla: abrir y cerrar con Z no debe reabrir el
+	# menú. Sin Ecos, el cursor empieza en Salir y Z lo elige.
+	_player.ecos = 0
 	var anchor: Node2D = _level.get_node("MemoryAnchor2")
 	_player.global_position = anchor.global_position
 	_player.velocity = Vector2.ZERO
@@ -1006,16 +1024,20 @@ func _check(condition: bool, description: String) -> void:
 
 # --- Mundo de salas y mapa -----------------------------------------------------
 
-## Carga el mundo entero (todas las salas) desde cero. `_room` es El Último
+## Carga el mundo entero (todas las salas) desde cero, sin partida guardada
+## salvo que `keep_save` pida cargar la que dejó la prueba anterior. `_room` es El Último
 ## Umbral, que está en el origen: sus coordenadas son las mismas que antes de
 ## que hubiera más salas.
-func _load_world() -> void:
+func _load_world(keep_save: bool = false) -> void:
 	paused = false
 	Engine.time_scale = 1.0
 	if is_instance_valid(_level):
 		_level.queue_free()
 		await process_frame
+	if not keep_save:
+		SaveSlot.new(TEST_SAVE).erase()
 	_level = load(WORLD).instantiate()
+	_level.save_path = TEST_SAVE
 	root.add_child(_level)
 	await process_frame
 	await process_frame
@@ -1324,3 +1346,245 @@ func _test_minimap_and_pause_map() -> void:
 	await _press_action("ui_cancel")
 	_check(pause.is_open() and pause.title_label.text == "Pausa", "Esc vuelve al menú de pausa")
 	await _press_action("ui_cancel")
+
+
+# --- Guardado automático -------------------------------------------------------
+
+func _saved() -> Dictionary:
+	return SaveSlot.new(TEST_SAVE).read()
+
+
+func _anchor_in(room_name: String) -> Checkpoint:
+	for child in _level.get_node("Rooms/" + room_name).get_children():
+		if child is Checkpoint:
+			return child
+	return null
+
+
+func _test_save_slot() -> void:
+	print("\n[SaveSlot: escribir, leer, ignorar archivos rotos y borrar]")
+	var slot := SaveSlot.new(TEST_SAVE)
+	slot.erase()
+	_check(not slot.exists() and slot.read().is_empty(), "sin archivo no hay partida")
+	_check(slot.write({ a = 1, b = [2.5, 3], c = { d = "texto" } }), "se puede escribir")
+	var data := slot.read()
+	_check(data.a == 1 and data.b == [2.5, 3.0] and data.c.d == "texto", "se lee lo mismo que se escribió")
+	_check(not FileAccess.file_exists(TEST_SAVE + ".tmp"), "no queda el archivo temporal")
+	var file := FileAccess.open(TEST_SAVE, FileAccess.WRITE)
+	file.store_string("{ esto no es json")
+	file.close()
+	_check(slot.read().is_empty(), "un archivo roto se ignora en vez de romper el juego")
+	file = FileAccess.open(TEST_SAVE, FileAccess.WRITE)
+	file.store_string(JSON.stringify({ version = SaveSlot.FORMAT_VERSION + 1, data = {} }))
+	file.close()
+	_check(slot.read().is_empty(), "una partida de otra versión se ignora")
+	slot.erase()
+	_check(not slot.exists(), "erase borra la partida")
+
+
+func _test_autosave_triggers() -> void:
+	print("\n[Guardado automático: al cambiar de sala, al descansar y al reaparecer]")
+	await _load_world()
+	await _wait(10)
+	_check(not FileAccess.file_exists(TEST_SAVE), "empezar a jugar no guarda nada todavía")
+
+	_player.global_position = Vector2(1240.0, 296.0)
+	_player.velocity = Vector2.ZERO
+	await _wait(5)
+	Input.action_press(&"ui_right")
+	await _wait(30)
+	Input.action_release(&"ui_right")
+	_check("TerrazasSecas" in _saved().get("rooms", []), "al pasar a otra sala se guarda, con la sala descubierta")
+
+	SaveSlot.new(TEST_SAVE).erase()
+	var anchor := _anchor_in("TerrazasSecas") if _anchor_in("TerrazasSecas") else _anchor_in("UltimoUmbral")
+	_player.rest_at(anchor.global_position)
+	await _wait(2)
+	var spawn: Array = _saved().get("player", {}).get("spawn", [])
+	_check(spawn.size() == 2 and Vector2(spawn[0], spawn[1]) == anchor.global_position, "al descansar en un Ancla se guarda, y ella es el punto de reaparición")
+	_player.anchor_menu.close()
+	await _wait(4)
+
+	SaveSlot.new(TEST_SAVE).erase()
+	_player.add_ecos(6)
+	await _stand_at(300.0)
+	_player.die()
+	await _wait(2)
+	var echo: Dictionary = _saved().get("player", {}).get("echo", {})
+	_check(echo.get("ecos", 0) == 6, "al reaparecer tras morir se guarda, con el Eco y sus Ecos")
+
+
+func _test_loading_restores_progress() -> void:
+	print("\n[Al abrir el juego se carga la partida y se aparece en la última Ancla]")
+	await _load_world()
+	_player.unlock_ability(&"dash")
+	_player.weapon.set_level(2)
+	_level.map_data.visit(&"TerrazasSecas")
+	_level.map_data.visit(&"Cisterna")
+	# Un trozo explorado lejos de donde se va a reaparecer (en la Torre).
+	_level.map_data.reveal_around(Vector2(174, -10), 3.0)
+	var anchor_at: Vector2 = _anchor_in("Cisterna").global_position
+	_player.rest_at(anchor_at)
+	await _wait(2)
+	_player.anchor_menu.close()
+	await _wait(4)
+	_player.add_ecos(7)
+	await _stand_at(300.0)
+	var echo_at: Vector2 = _player.respawn.last_grounded_position
+	_player.die()
+	await _wait(4)
+
+	await _load_world(true)
+	await _wait(4)
+	_check(_player.global_position.distance_to(anchor_at) < 8.0, "se aparece en la última Ancla en la que se descansó")
+	_check(_level.current_room.name == "Cisterna", "y la cámara y la sala son las de esa Ancla")
+	_check(_player.has_ability(&"dash") and not _player.has_ability(&"double_jump"), "se conservan las habilidades conseguidas, y solo esas")
+	_check(_player.weapon.level == 2 and _player.melee.damage == _player.weapon.current_value(), "se conserva el nivel del Filo, y su daño")
+	_check(_player.ecos == 0 and is_instance_valid(_player.active_echo) and _player.active_echo.ecos_held == 7, "el Eco de la última muerte sigue esperando con sus Ecos")
+	_check(_player.active_echo.global_position.distance_to(echo_at) < 1.0, "en el mismo sitio")
+	_check(_player.health.health == _player.health.max_health, "con la vida completa")
+	var data: MapData = _level.map_data
+	_check(data.is_visited(&"TerrazasSecas") and data.is_visited(&"Cisterna") and not data.is_visited(&"TorreDeRiego"), "se recuerdan las salas visitadas (no se vuelven a anunciar)")
+	_check(data.is_seen(Vector2(174, -10)) and not data.is_seen(Vector2(185, -10)), "el mapa recuerda lo explorado, y solo eso")
+	var dash_pickups := 0
+	for child in _level.get_node("Rooms/Cisterna").get_children():
+		if child is AbilityPickup and not child.is_queued_for_deletion():
+			dash_pickups += 1
+	_check(dash_pickups == 0, "el recuerdo del dash ya recogido no vuelve a aparecer")
+
+	# Sin partida (o con una ilegible) se empieza desde el principio.
+	var file := FileAccess.open(TEST_SAVE, FileAccess.WRITE)
+	file.store_string("roto")
+	file.close()
+	await _load_world(true)
+	_check(_level.current_room == _room and not _player.has_ability(&"dash"), "una partida ilegible no rompe nada: se empieza de cero")
+
+	# Posiciones que ya no valen (p. ej. se movió un Ancla al editar un mapa).
+	SaveSlot.new(TEST_SAVE).write({ player = {
+		spawn = [-5000.0, -5000.0], ecos = 3.0, abilities = ["dash"],
+		echo = { position = [-5000.0, -5000.0], ecos = 3.0 },
+	}, rooms = [] })
+	await _load_world(true)
+	await _wait(60)
+	_check(_level.current_room == _room and _player.active_echo == null and _player.ecos == 3, "un punto de reaparición que ya no es un Ancla lleva al inicio, sin morir")
+	_check(_player.has_ability(&"dash"), "y el resto de la partida se conserva")
+
+	# Tipos equivocados (partida editada a mano): se ignoran sin errores.
+	SaveSlot.new(TEST_SAVE).write({ player = { spawn = "x", ecos = "mucho", abilities = 3, echo = [1] }, rooms = 5 })
+	await _load_world(true)
+	_check(_level.current_room == _room and _player.ecos == 0 and not _player.has_ability(&"dash"), "campos con tipos equivocados se ignoran")
+	SaveSlot.new(TEST_SAVE).write({ player = [1, 2] })
+	await _load_world(true)
+	_check(_level.current_room == _room, "aunque lo equivocado sea la partida entera")
+
+
+func _test_title_screen() -> void:
+	print("\n[Menú principal: continuar, nuevo juego, opciones]")
+	paused = false
+	if is_instance_valid(_level):
+		_level.queue_free()
+		await process_frame
+	var options_file := "user://opciones_pruebas.cfg"
+	DirAccess.remove_absolute(options_file)
+	SaveSlot.new(TEST_SAVE).erase()
+	_check(ProjectSettings.get_setting("application/run/main_scene") == "res://game/ui/title_screen.tscn", "el juego arranca en el menú principal")
+
+	var title: Control = load("res://game/ui/title_screen.tscn").instantiate()
+	title.save_path = TEST_SAVE
+	title.options_path = options_file
+	_level = title
+	root.add_child(title)
+	await _wait(2)
+	var menu: MenuList = title.menu
+	var started := []
+	title.game_started.connect(func(new_game: bool) -> void: started.append(new_game))
+	_check(not title.has_save() and menu.selected == title.MAIN_NEW_GAME, "sin partida, Continuar está desactivado y el cursor empieza en Nuevo juego")
+	await _press_action("ui_up")
+	await _press_action("ui_accept")
+	_check(started.is_empty(), "Continuar no hace nada sin partida")
+	await _press_action("ui_down")
+	await _press_action("ui_accept")
+	_check(started == [true], "Nuevo juego sin partida empieza directamente")
+
+	# Con partida: el cursor empieza en Continuar.
+	SaveSlot.new(TEST_SAVE).write({ player = {} })
+	title.queue_free()
+	await process_frame
+	title = load("res://game/ui/title_screen.tscn").instantiate()
+	title.save_path = TEST_SAVE
+	title.options_path = options_file
+	_level = title
+	root.add_child(title)
+	await _wait(2)
+	menu = title.menu
+	started = []
+	title.game_started.connect(func(new_game: bool) -> void: started.append(new_game))
+	_check(title.has_save() and menu.selected == title.MAIN_CONTINUE, "con partida, el cursor empieza en Continuar")
+	await _press_action("ui_accept")
+	_check(started == [false] and FileAccess.file_exists(TEST_SAVE), "Continuar carga la partida sin borrarla")
+
+	# Nuevo juego con partida: confirmación, con el no por defecto.
+	await _press_action("ui_down")
+	await _press_action("ui_accept")
+	_check(title.info_label.visible and menu.selected == 0, "Nuevo juego con partida pide confirmación, con el no seleccionado")
+	await _press_action("ui_accept")
+	_check(not title.info_label.visible and menu.selected == title.MAIN_NEW_GAME and FileAccess.file_exists(TEST_SAVE), "decir que no vuelve al menú sin borrar")
+	await _press_action("ui_accept")
+	await _press_action("ui_cancel")
+	_check(not title.info_label.visible and FileAccess.file_exists(TEST_SAVE), "Esc en la confirmación tampoco borra")
+	await _press_action("ui_accept")
+	await _press_action("ui_down")
+	await _press_action("ui_accept")
+	_check(started.back() == true and not FileAccess.file_exists(TEST_SAVE), "confirmar borra la partida y empieza de cero")
+
+	# Opciones: pantalla completa, que se recuerda. (En el juego, empezar cambia
+	# de escena; aquí el menú sigue en la confirmación, así que se vuelve a mano.)
+	title._show_page(0, title.MAIN_OPTIONS)
+	await _press_action("ui_accept")
+	_check("Pantalla completa: no" in menu.get_child(0).get_child(1).text, "Opciones muestra la pantalla completa, desactivada por defecto")
+	await _press_action("ui_accept")
+	_check(title.fullscreen and "Pantalla completa: sí" in menu.get_child(0).get_child(1).text, "Intro la activa")
+	var config := ConfigFile.new()
+	_check(config.load(options_file) == OK and config.get_value("pantalla", "completa") == true, "y se guarda en el archivo de opciones")
+	await _press_action("ui_accept")
+	await _press_action("ui_cancel")
+	_check(menu.selected == title.MAIN_OPTIONS and not title.fullscreen, "Esc vuelve al menú, con el cursor en Opciones")
+	title.queue_free()
+	_level = null
+	await process_frame
+	DirAccess.remove_absolute(options_file)
+
+
+func _test_pause_returns_to_title() -> void:
+	print("\n[Pausa: volver al menú principal guarda la partida]")
+	await _load_world()
+	_player.add_ecos(5)
+	var pause = _player.pause_menu
+	await _press_action("ui_cancel")
+	for i in pause.OPTION_TITLE:
+		await _press_action("ui_down")
+	await _press_action("ui_accept")
+	_check(_saved().get("player", {}).get("ecos", 0) == 5, "Menú principal guarda antes de salir")
+	_check(not paused, "y quita la pausa")
+
+
+func _test_menu_list_survives_leaving_the_tree() -> void:
+	print("\n[MenuList: elegir una opción que saca la lista de la escena no da errores]")
+	paused = false
+	var menu := MenuList.new()
+	menu.set_entries(PackedStringArray(["Salir de aquí"]))
+	root.add_child(menu)
+	# Lo que haría "Menú principal": la lista deja de estar en el árbol al elegir.
+	menu.chosen.connect(func(_index: int) -> void: root.remove_child(menu))
+	# Un espía que solo recibe teclas que nadie ha usado.
+	var spy_script := GDScript.new()
+	spy_script.source_code = "extends Node\nvar got := 0\nfunc _unhandled_input(event: InputEvent) -> void:\n\tif event.is_action_pressed(&\"ui_accept\"):\n\t\tgot += 1\n"
+	spy_script.reload()
+	var spy: Node = spy_script.new()
+	root.add_child(spy)
+	await _wait(2)
+	await _press_action("ui_accept")
+	_check(not menu.is_inside_tree(), "la opción elegida sacó la lista del árbol")
+	_check(spy.got == 0, "y la tecla quedó marcada como usada (antes, el error lo impedía)")
+	spy.queue_free()
+	menu.queue_free()

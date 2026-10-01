@@ -37,13 +37,6 @@ func show_state(ecos: int, weapon_level: int, weapon_damage: int, next_cost: int
 	menu.set_entries(PackedStringArray([upgrade_text, "Salir"]), [can_upgrade, true])
 
 
-func _input(event: InputEvent) -> void:
-	# Volver a pulsar la tecla del Ancla también cierra el menú.
-	if is_open() and event.is_action_pressed(&"interact"):
-		close()
-		get_viewport().set_input_as_handled()
-
-
 func _on_chosen(index: int) -> void:
 	if index == OPTION_UPGRADE:
 		upgrade_requested.emit()

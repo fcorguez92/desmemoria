@@ -45,6 +45,7 @@ game/  ──usa──▶  core/  ──usa──▶  Godot
 │   ├── components/            Nodos con una responsabilidad cada uno
 │   ├── objects/               Checkpoint, objeto de habilidad, generador de entidades, objeto rompible, objeto legible, mapa de baldosas desde texto
 │   ├── ui/                    Controles de interfaz genéricos (barra segmentada, fila de iconos, lista de opciones, capa modal, mapa)
+│   ├── save/                  Partida guardada en disco (SaveSlot)
 │   └── effects/               Efectos visuales autodestructivos (chispazo de impacto)
 ├── game/                      ESPECÍFICO DE ESTE JUEGO
 │   ├── player/                Orquesta los componentes + Ecos + HUD
@@ -52,8 +53,8 @@ game/  ──usa──▶  core/  ──usa──▶  Godot
 │   ├── echo/                  Marcador de la última muerte
 │   ├── memory_anchor/         Punto de control (usa core/objects/checkpoint.gd)
 │   ├── environment/           Objetos de ambientación (urna rompible, inscripción)
-│   ├── ui/                    HUD (con minimapa), menú del Ancla y menú de pausa (con mapa)
-│   └── levels/                El mundo (world.tscn, escena principal) y sus salas (mapa de texto + baldosas), y el banco de pruebas
+│   ├── ui/                    Menú principal (escena de inicio), HUD (con minimapa), menú del Ancla y menú de pausa (con mapa)
+│   └── levels/                El mundo (world.tscn) y sus salas (mapa de texto + baldosas), y el banco de pruebas
 ├── art/                       Fuentes del arte (no se cargan en el juego)
 │   ├── palette.txt            La paleta: un carácter por color
 │   └── source/                Sprites escritos como texto (*.sprite)
@@ -203,3 +204,8 @@ que las reglas se cumplen, no que se sienta bien.
 - Un `RayCast2D` hijo de un cuerpo ignora a su propio padre, pero sí detecta a
   cualquier otro cuerpo; el sondeo de bordes de `PatrolChaseAI` cuenta cualquier
   cosa sólida como suelo.
+- Si al reaccionar a una tecla un nodo puede salir del árbol (elegir una
+  opción que cambia de escena), hay que llamar a
+  `get_viewport().set_input_as_handled()` **antes** de actuar: después,
+  `get_viewport()` es null y el error de script, jugando desde el editor,
+  congela el juego en el depurador (pantalla en negro). `MenuList` ya lo hace.
