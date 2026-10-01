@@ -29,6 +29,8 @@ De izquierda a derecha:
    devolver con parry (V) o simplemente atacar.
 5. **Escalera de tablones** (columnas 62–77): sube hasta un segundo Ancla en lo
    alto (columna 74), una recompensa visible desde abajo.
+6. **Salida al Cinturón Yermo** (columna 79): el camino sigue hacia Las Terrazas
+   Secas, la siguiente sala del mundo (ver `mundo.md`).
 
 ## Ambiente
 
@@ -53,7 +55,7 @@ inscripción (que el jugador elige leer, no se le impone):
 ## Fuera del alcance de esta pasada (decidido a propósito)
 
 - Personajes no jugadores y diálogo, jefe final, tienda o mejoras nuevas.
-- Reinicio de enemigos limitado a la zona (con una sola zona no hace falta).
+- Reinicio de enemigos limitado a la zona (con cuatro salas pequeñas aún no hace falta).
 - Que los objetos rompibles reaparezcan al reiniciar el mundo: no afectan a la
   partida, así que quedan rotos hasta recargar el nivel.
 
@@ -62,7 +64,8 @@ inscripción (que el jugador elige leer, no se le impone):
 - `game/levels/ultimo_umbral.map` — el terreno como texto. Leyenda: `T` suelo con
   musgo, `G` relleno de piedra, `B` ladrillo, `C` remate de muro, `S` tablón de
   madera; `P` inicio del jugador, `A` Ancla de Memoria, `E` enemigo, `R` urna
-  rompible, `I` inscripción legible; `.` vacío.
+  rompible, `I` inscripción legible, `d` / `j` / `w` recuerdo de dash / doble
+  salto / salto de pared; `.` vacío. La misma leyenda vale para todas las salas.
   Los tablones (`S`) son **plataformas de un solo sentido**: se atraviesan desde
   abajo y por los lados, y solo se pisan desde arriba (colisionan solo en una franja
   fina de 4 px en su borde superior; el resto es puro decorado). Por ejemplo, se
@@ -70,23 +73,25 @@ inscripción (que el jugador elige leer, no se le impone):
   Con abajo + salto sobre un tablón se baja atravesándolo (`can_drop_through` del motor).
 - `game/levels/ultimo_umbral.tscn` — un `TextTileMap` (core) con el `TileSet`
   `tiles_umbral.tres` y su leyenda.
-- `game/levels/ultimo_umbral.gd` — coloca jugador, Anclas, enemigos, urnas
-  rompibles e inscripciones en los marcadores y limita la cámara al mapa.
+- `game/levels/room.gd` — el script de toda sala: coloca Anclas, enemigos, urnas,
+  inscripciones y recuerdos en los marcadores. El jugador (`P`), la cámara y el
+  mapa los lleva el mundo (`game/levels/world.gd`, ver `mundo.md`).
 - `game/environment/breakable_urn.tscn` — una urna rompible (`core/objects/breakable_prop.gd`
   con un dibujo de polígonos). Bloquea el paso hasta que se rompe de un golpe;
   no suelta nada ni afecta a la partida.
 - `game/environment/inscription.tscn` — una piedra con un texto (`core/objects/readable.gd`).
   Con Z al alcance, el jugador lo lee en el HUD el tiempo que tarde en leerse
   (según su longitud); no afecta a la partida. Hoy solo hay una, con el texto
-  fijado en la propia escena (ver la nota en `ultimo_umbral.gd` sobre qué
+  fijado en la propia escena (ver la nota en `room.gd` sobre qué
   cambiaría si una zona necesitara varias con textos distintos).
 - El carro volcado y el saco reventado de la cabaña, y las marcas de arrastre
   junto al foso, son polígonos fijos dentro de `ultimo_umbral.tscn` (nodo
   `SetDressing`): decorado propio de esta zona, sin colisión, no un objeto
   reutilizable como la urna o la inscripción.
-- El fondo (`Background` en `ultimo_umbral.tscn`) es un `ParallaxBackground` con
-  dos siluetas de polígonos anchas (más que el nivel, para cubrir todo el
-  recorrido de la cámara sin repetirse).
+- El fondo (`Background` en `world.tscn`, común a todo el mundo) es un
+  `ParallaxBackground` con dos siluetas de polígonos que se repiten en
+  horizontal (`motion_mirroring`), para cubrir salas a cualquier distancia. Se
+  oculta en las salas sin cielo (`has_sky = false`).
 - `art/source/tiles_umbral.sprite` — las 5 baldosas (16×16), en el mismo formato
   de texto que los demás sprites.
 

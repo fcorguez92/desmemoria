@@ -13,10 +13,13 @@ extends SceneTree
 ##   nace bajo sus pies y lo recoge al instante; por eso `_stand_at()`.
 
 const LEVEL := "res://game/levels/test_level.tscn"
+const WORLD := "res://game/levels/world.tscn"
 
 var _failures: int = 0
 var _level: Node
 var _player: Node
+## El Último Umbral dentro del mundo (ver `_load_world()`).
+var _room: Node
 
 
 func _init() -> void:
@@ -53,6 +56,14 @@ func _run() -> void:
 	await _test_breakable_props()
 	await _test_inscription_is_readable()
 	await _test_enemy_does_not_jitter_against_a_wall()
+	await _test_map_data()
+	await _test_world_is_made_of_connected_rooms()
+	await _test_walking_into_the_next_room()
+	await _test_the_gap_drops_into_the_cistern()
+	await _test_dash_crosses_the_terraces_gap()
+	await _test_climbing_back_out_of_the_cistern()
+	await _test_tower_needs_double_jump()
+	await _test_minimap_and_pause_map()
 
 
 # --- Tests -------------------------------------------------------------------
@@ -676,15 +687,8 @@ func _jump_across_gap(press_dash: bool, dash_unlocked: bool) -> bool:
 
 func _test_planks_are_one_way_platforms() -> void:
 	print("\n[Los tablones se atraviesan desde abajo y se pisan desde arriba]")
-	if is_instance_valid(_level):
-		_level.queue_free()
-		await process_frame
-	_level = load("res://game/levels/ultimo_umbral.tscn").instantiate()
-	root.add_child(_level)
-	await process_frame
-	await process_frame
-	_player = get_first_node_in_group("player")
-	var tiles: TextTileMap = _level.get_node("Tiles")
+	await _load_world()
+	var tiles: TextTileMap = _room.tiles
 	# Tejado de la cabaña: fila de tablones en las columnas 15..22.
 	var roof_cell := Vector2i(18, 15)
 	_check(tiles.get_cell_atlas_coords(roof_cell) == Vector2i(4, 0), "hay un tablón donde se espera (tejado de la cabaña)")
@@ -744,18 +748,9 @@ func _test_planks_are_one_way_platforms() -> void:
 
 func _test_breakable_props() -> void:
 	print("\n[Los objetos rompibles bloquean, se rompen y no afectan a la partida]")
-	if is_instance_valid(_level):
-		_level.queue_free()
-		await process_frame
-	paused = false
-	Engine.time_scale = 1.0
-	_level = load("res://game/levels/ultimo_umbral.tscn").instantiate()
-	root.add_child(_level)
-	await process_frame
-	await process_frame
-	_player = get_first_node_in_group("player")
+	await _load_world()
 	var urn: BreakableProp = null
-	for child in _level.get_children():
+	for child in _room.get_children():
 		if child is BreakableProp:
 			urn = child
 			break
@@ -775,7 +770,7 @@ func _test_breakable_props() -> void:
 	urn.take_hit(1, 1)
 	await _wait(2)
 	_check(not is_instance_valid(urn), "un golpe lo destruye")
-	_check(_count_sparks() >= 1, "al romperse deja un chispazo")
+	_check(_count_sparks(_room) >= 1, "al romperse deja un chispazo")
 	_check(_player.ecos == ecos_before and _player.health.health == health_before, "romperlo no da Ecos ni cambia la vida: es solo decoración")
 
 	# Después de roto, ya no bloquea: se puede caminar por donde estaba.
@@ -791,18 +786,9 @@ func _test_breakable_props() -> void:
 
 func _test_inscription_is_readable() -> void:
 	print("\n[La inscripción se lee con Z, sin afectar a la partida]")
-	if is_instance_valid(_level):
-		_level.queue_free()
-		await process_frame
-	paused = false
-	Engine.time_scale = 1.0
-	_level = load("res://game/levels/ultimo_umbral.tscn").instantiate()
-	root.add_child(_level)
-	await process_frame
-	await process_frame
-	_player = get_first_node_in_group("player")
+	await _load_world()
 	var inscription: Readable = null
-	for child in _level.get_children():
+	for child in _room.get_children():
 		if child is Readable:
 			inscription = child
 			break
@@ -832,17 +818,9 @@ func _test_inscription_is_readable() -> void:
 
 func _test_enemy_does_not_jitter_against_a_wall() -> void:
 	print("\n[Un enemigo pegado a una pared se aparta en vez de vibrar]")
-	if is_instance_valid(_level):
-		_level.queue_free()
-		await process_frame
-	paused = false
-	Engine.time_scale = 1.0
-	_level = load("res://game/levels/ultimo_umbral.tscn").instantiate()
-	root.add_child(_level)
-	await process_frame
-	await process_frame
+	await _load_world()
 	var enemy: Node2D = null
-	for child in _level.get_children():
+	for child in _room.get_children():
 		if child is EntitySpawner:
 			enemy = child.instance
 			break
@@ -880,6 +858,7 @@ func _test_pause_menu() -> void:
 	_player.add_ecos(7)
 	await _press_action("ui_cancel")
 	await _press_action("ui_down")
+	await _press_action("ui_down")
 	await _press_action("ui_accept")
 	_check(pause.title_label.text == "Personaje" and pause.info.visible, "Personaje abre su pantalla")
 	_check("Vida: 5 / 5" in pause.info_label.text and "Ecos: 7" in pause.info_label.text, "muestra vida y Ecos")
@@ -902,11 +881,13 @@ func _test_pause_menu() -> void:
 	_player.unlock_ability(&"dash")
 	await _press_action("ui_cancel")
 	await _press_action("ui_down")
+	await _press_action("ui_down")
 	await _press_action("ui_accept")
 	_check("Dash" in pause.info_label.text, "la habilidad recordada aparece por su nombre")
 	await _press_action("ui_cancel")
 
 	# Continuar con Intro: no debe hacer saltar al personaje.
+	await _press_action("ui_up")
 	await _press_action("ui_up")
 	await _press_action("ui_accept")
 	_check(not pause.is_open() and not paused, "Continuar cierra la pausa")
@@ -932,24 +913,17 @@ func _test_pause_menu() -> void:
 
 func _test_ultimo_umbral_builds_from_text_map() -> void:
 	print("\n[El Último Umbral se construye desde su mapa de texto]")
-	if is_instance_valid(_level):
-		_level.queue_free()
-		await process_frame
-	_level = load("res://game/levels/ultimo_umbral.tscn").instantiate()
-	root.add_child(_level)
-	await process_frame
-	await process_frame
-	_player = get_first_node_in_group("player")
-	var tiles: TextTileMap = _level.get_node("Tiles")
+	await _load_world()
+	var tiles: TextTileMap = _room.tiles
 	_check(tiles.get_used_rect().end == Vector2i(80, 28), "el mapa llega hasta la columna 80 y la fila 28")
 	_check(_player != null, "hay un jugador colocado por el marcador P")
 	var spawners := 0
-	for child in _level.get_children():
+	for child in _room.get_children():
 		if child is EntitySpawner:
 			spawners += 1
 	_check(spawners == 2, "dos enemigos colocados por los marcadores E")
 	var anchors := 0
-	for child in _level.get_children():
+	for child in _room.get_children():
 		if child is Checkpoint:
 			anchors += 1
 	_check(anchors == 2, "dos Anclas de Memoria colocadas por los marcadores A")
@@ -1008,9 +982,10 @@ func _stand_at(x: float) -> void:
 	await _wait(15)
 
 
-func _count_sparks() -> int:
+## Chispazos que hay ahora mismo en `parent` (por defecto, el nivel).
+func _count_sparks(parent: Node = null) -> int:
 	var count := 0
-	for child in _level.get_children():
+	for child in (parent if parent else _level).get_children():
 		if child is HitSpark:
 			count += 1
 	return count
@@ -1027,3 +1002,325 @@ func _check(condition: bool, description: String) -> void:
 	else:
 		print("  FALLA %s" % description)
 		_failures += 1
+
+
+# --- Mundo de salas y mapa -----------------------------------------------------
+
+## Carga el mundo entero (todas las salas) desde cero. `_room` es El Último
+## Umbral, que está en el origen: sus coordenadas son las mismas que antes de
+## que hubiera más salas.
+func _load_world() -> void:
+	paused = false
+	Engine.time_scale = 1.0
+	if is_instance_valid(_level):
+		_level.queue_free()
+		await process_frame
+	_level = load(WORLD).instantiate()
+	root.add_child(_level)
+	await process_frame
+	await process_frame
+	_player = get_first_node_in_group("player")
+	_room = _level.get_node("Rooms/UltimoUmbral")
+
+
+## Centro en el mundo de la celda (col, fila) de una sala, en píxeles.
+func _cell(room_name: String, col: float, row: float) -> Vector2:
+	var room: Node2D = _level.get_node("Rooms/" + room_name)
+	return room.global_position + Vector2(col * 16.0 + 8.0, row * 16.0 + 8.0)
+
+
+## Posición del jugador de pie sobre la baldosa (col, fila) de una sala.
+func _standing_on(room_name: String, col: float, row: float) -> Vector2:
+	return _cell(room_name, col, row) - Vector2(0.0, 8.0 + 24.0)
+
+
+## Salto completo desde `from` hacia `direction` (-1, 0 o 1), dejando de avanzar
+## al pasar `release_x`. Con `air_jump`, vuelve a saltar en lo alto del primero.
+## Devuelve si acabó de pie sobre algo.
+func _hop(from: Vector2, direction: int, release_x: float, air_jump: bool = false) -> bool:
+	_player.global_position = from
+	_player.velocity = Vector2.ZERO
+	await _wait(6)
+	var move := &"ui_right" if direction > 0 else &"ui_left"
+	Input.action_press(&"ui_accept")
+	if direction != 0:
+		Input.action_press(move)
+	var air_jumped := not air_jump
+	var rising := false
+	for i in 150:
+		await physics_frame
+		rising = rising or _player.velocity.y < -100.0
+		if direction != 0 and (_player.global_position.x - release_x) * direction >= 0.0:
+			Input.action_release(move)
+		if not air_jumped and rising and _player.velocity.y > -50.0:
+			Input.action_release(&"ui_accept")
+			await physics_frame
+			Input.action_press(&"ui_accept")
+			air_jumped = true
+		if i > 10 and _player.is_on_floor():
+			break
+	Input.action_release(&"ui_accept")
+	Input.action_release(&"ui_left")
+	Input.action_release(&"ui_right")
+	await _wait(4)
+	return _player.is_on_floor()
+
+
+func _test_map_data() -> void:
+	print("\n[MapData: zonas, descubrimiento, marcadores y dibujo de baldosas]")
+	var data := MapData.new()
+	var blank := Image.create_empty(4, 2, false, Image.FORMAT_RGBA8)
+	data.add_area(&"a", "Zona A", Rect2i(0, 0, 4, 2), blank)
+	data.add_area(&"b", "Zona B", Rect2i(4, 0, 4, 2), blank)
+	_check(data.area_at(Vector2(5.5, 1.0)).id == &"b" and data.area_at(Vector2(20, 20)).is_empty(), "area_at encuentra la zona que contiene una celda")
+	_check(not data.is_visited(&"a") and data.seen_bounds().size == Vector2i.ZERO, "las zonas empiezan sin visitar y sin nada visto")
+	_check(data.visit(&"a") and not data.visit(&"a"), "visit avisa solo la primera vez")
+	_check(data.seen_bounds().size == Vector2i.ZERO, "visitar una zona no descubre nada de ella")
+	_check(data.reveal_around(Vector2(1.5, 0.5), 1.0), "reveal_around descubre lo que está cerca")
+	_check(data.is_seen(Vector2(1.5, 0.5)) and data.is_seen(Vector2(2.5, 0.5)) and not data.is_seen(Vector2(3.5, 1.5)), "solo dentro del radio")
+	_check(data.seen_bounds() == Rect2i(0, 0, 3, 2), "los límites de lo visto crecen con lo descubierto")
+	_check(not data.reveal_around(Vector2(1.5, 0.5), 1.0), "volver a mirar lo ya visto no descubre nada nuevo")
+	data.reveal_around(Vector2(4.0, 1.0), 1.0)
+	_check(data.is_seen(Vector2(3.5, 0.5)) and data.is_seen(Vector2(4.5, 0.5)), "un mismo círculo descubre en dos zonas vecinas")
+	var copy := MapData.new()
+	copy.add_area(&"a", "Zona A", Rect2i(0, 0, 4, 2), blank)
+	copy.add_area(&"b", "Zona B", Rect2i(4, 0, 4, 2), blank)
+	copy.set_seen_data(data.get_seen_data())
+	_check(copy.seen_bounds() == data.seen_bounds() and copy.is_seen(Vector2(4.5, 0.5)) and not copy.is_seen(Vector2(7.5, 1.5)), "lo visto se puede exportar e importar (para guardarlo)")
+	var emitted := [0]
+	data.changed.connect(func() -> void: emitted[0] += 1)
+	data.set_focus(Vector2(1, 1))
+	data.set_focus(Vector2(1, 1))
+	data.set_marker(&"m", Vector2(2, 1), Color.RED)
+	data.set_marker(&"m", Vector2(2, 1), Color.RED)
+	_check(emitted[0] == 2, "repetir el mismo foco o marcador no pide redibujar")
+	data.remove_marker(&"m")
+	_check(not data.markers.has(&"m") and emitted[0] == 3, "remove_marker quita el marcador")
+
+	await _load_world()
+	var tiles: TextTileMap = _room.tiles
+	_check(tiles.map_size == Vector2i(80, 28), "map_size mide el mapa de texto entero (80×28), cielo incluido")
+	var image := MapData.image_from_layer(tiles, tiles.map_size, Color.WHITE, { Vector2i(4, 0): Color.RED })
+	var solid := 0
+	for y in image.get_height():
+		for x in image.get_width():
+			if image.get_pixel(x, y).a > 0.0:
+				solid += 1
+	_check(image.get_size() == tiles.map_size and solid == tiles.get_used_cells().size(), "el dibujo del mapa tiene un píxel por baldosa")
+	_check(image.get_pixel(18, 15) == Color.RED and image.get_pixel(5, 21) == Color.WHITE, "los tablones se pintan de su propio color")
+
+
+func _test_world_is_made_of_connected_rooms() -> void:
+	print("\n[El mundo: varias salas conectadas, un solo jugador]")
+	await _load_world()
+	var rooms: Array = _level.get_node("Rooms").get_children()
+	_check(rooms.size() == 4, "hay cuatro salas")
+	var overlaps := false
+	for i in rooms.size():
+		_check(not rooms[i].title.is_empty(), "%s tiene nombre" % rooms[i].name)
+		for j in range(i + 1, rooms.size()):
+			if rooms[i].world_rect().intersects(rooms[j].world_rect()):
+				overlaps = true
+	_check(not overlaps, "ninguna sala se solapa con otra")
+	_check(get_nodes_in_group("player").size() == 1, "un solo jugador en todo el mundo")
+	_check(_level.current_room == _room, "se empieza en El Último Umbral")
+	var data: MapData = _level.map_data
+	await _wait(2)
+	_check(data.is_visited(&"UltimoUmbral") and not data.is_visited(&"TerrazasSecas"), "solo se ha visitado la sala de inicio")
+	_check(data.is_seen(data.focus_cell) and not data.is_seen(Vector2(74, 10)), "en el mapa solo se ve lo que rodea al jugador, no la sala entera")
+	var anchors := 0
+	for id in data.markers:
+		if String(id).begins_with("anchor_"):
+			anchors += 1
+	_check(anchors == 4, "las cuatro Anclas están marcadas en el mapa (se ven al pasar cerca)")
+	_check(_player.hud.message_label.text.is_empty(), "la sala de inicio no se anuncia")
+	var dash_pickup := 0
+	var jump_pickup := 0
+	for room in rooms:
+		for child in room.get_children():
+			if child is AbilityPickup:
+				dash_pickup += 1 if child.ability_id == &"dash" and room.name == "Cisterna" else 0
+				jump_pickup += 1 if child.ability_id == &"double_jump" and room.name == "TorreDeRiego" else 0
+	_check(dash_pickup == 1 and jump_pickup == 1, "el dash está en la Cisterna y el doble salto en la Torre de Riego")
+
+
+func _test_walking_into_the_next_room() -> void:
+	print("\n[Caminando se pasa a la sala de al lado]")
+	await _load_world()
+	var camera: Camera2D = _player.get_node("Camera2D")
+	_check(camera.limit_left == 0 and camera.limit_right == 1280, "la cámara está limitada al Último Umbral")
+	_player.global_position = Vector2(1240.0, 296.0)
+	_player.velocity = Vector2.ZERO
+	await _wait(5)
+	Input.action_press(&"ui_right")
+	await _wait(30)
+	Input.action_release(&"ui_right")
+	_check(_level.current_room.name == "TerrazasSecas", "al cruzar el borde se está en Las Terrazas Secas")
+	_check(_player.is_on_floor() and _player.active_echo == null, "el suelo continúa sin huecos entre las dos salas")
+	_check(camera.limit_left == 1280 and camera.limit_right == 1280 + 64 * 16, "la cámara pasa a limitarse a la sala nueva")
+	_check(_level.map_data.is_visited(&"TerrazasSecas") and _level.map_data.is_seen(_level.map_data.focus_cell), "la sala nueva cuenta como visitada y se ve en el mapa lo que la rodea")
+	_check(not _level.map_data.is_seen(Vector2(80 + 60, 10)), "pero no el resto de la sala")
+	_check(_player.hud.message_label.text == "Las Terrazas Secas", "la primera vez se anuncia su nombre")
+	_check(_level.sky_shown, "en las Terrazas se ve el cielo")
+
+
+func _test_the_gap_drops_into_the_cistern() -> void:
+	print("\n[El foso de las Terrazas no mata: se cae a la Cisterna]")
+	await _load_world()
+	_player.global_position = _cell("TerrazasSecas", 44, 16)
+	_player.velocity = Vector2.ZERO
+	await _wait(120)
+	_check(_player.active_echo == null, "caer por el foso no mata")
+	_check(_level.current_room.name == "Cisterna" and _player.is_on_floor(), "se aterriza en la Cisterna")
+	_check(not _level.sky_shown, "bajo tierra no se ve el cielo")
+	_check(_player.respawn.fall_limit_y > _player.global_position.y, "el límite de caída mortal baja con la sala")
+
+	# En cambio, el foso del Último Umbral sigue matando.
+	_player.global_position = Vector2(36.0 * 16.0, 250.0)
+	_player.velocity = Vector2.ZERO
+	await _wait(120)
+	_check(_player.active_echo != null, "caer al foso del Último Umbral sí mata (queda un Eco)")
+
+
+## Intenta saltar el foso de las Terrazas desde su borde oeste. Devuelve si se
+## acaba de pie en el lado este, a la altura del suelo.
+func _cross_terraces_gap(use_dash: bool) -> bool:
+	await _load_world()
+	if use_dash:
+		_player.unlock_ability(&"dash")
+	_player.global_position = _standing_on("TerrazasSecas", 28.6, 20)
+	_player.velocity = Vector2.ZERO
+	await _wait(6)
+	Input.action_press(&"ui_right")
+	Input.action_press(&"ui_accept")
+	var dashed := not use_dash
+	var rising := false
+	for i in 120:
+		await physics_frame
+		# Dash en lo alto del salto, no antes de despegar.
+		rising = rising or _player.velocity.y < -100.0
+		if not dashed and rising and _player.velocity.y > -50.0:
+			Input.action_press(&"dash")
+			await physics_frame
+			Input.action_release(&"dash")
+			dashed = true
+	Input.action_release(&"ui_accept")
+	Input.action_release(&"ui_right")
+	var east_lip: float = _cell("TerrazasSecas", 50, 20).x - 8.0
+	return _player.is_on_floor() and _player.global_position.x > east_lip and _player.global_position.y < 320.0
+
+
+## El mejor salto posible sin dash: con carrerilla y saltando en el último
+## instante, ya fuera del borde (el margen de "coyote time").
+func _best_jump_without_dash() -> bool:
+	await _load_world()
+	_player.global_position = _standing_on("TerrazasSecas", 24, 20)
+	_player.velocity = Vector2.ZERO
+	await _wait(6)
+	Input.action_press(&"ui_right")
+	var jumped := false
+	for i in 150:
+		await physics_frame
+		if not jumped and not _player.is_on_floor():
+			Input.action_press(&"ui_accept")
+			jumped = true
+	Input.action_release(&"ui_accept")
+	Input.action_release(&"ui_right")
+	var east_lip: float = _cell("TerrazasSecas", 50, 20).x - 8.0
+	return jumped and _player.is_on_floor() and _player.global_position.x > east_lip and _player.global_position.y < 320.0
+
+
+func _test_dash_crosses_the_terraces_gap() -> void:
+	print("\n[El foso de las Terrazas solo se cruza con el dash]")
+	_check(not await _cross_terraces_gap(false), "sin dash no se llega al otro lado")
+	_check(not await _best_jump_without_dash(), "ni con carrerilla saltando en el último instante")
+	_check(await _cross_terraces_gap(true), "con dash sí")
+	_player.global_position = _standing_on("TorreDeRiego", 6, 40)
+	await _wait(10)
+	_check(_level.current_room.name == "TorreDeRiego", "el otro lado lleva a la Torre de Riego")
+
+
+func _test_climbing_back_out_of_the_cistern() -> void:
+	print("\n[De la Cisterna se sale subiendo por los tablones, y allí está el dash]")
+	await _load_world()
+	_player.global_position = _standing_on("Cisterna", 58, 22)
+	_player.velocity = Vector2.ZERO
+	await _wait(10)
+	_check(_player.has_ability(&"dash"), "tocar el objeto del fondo de la Cisterna recuerda el dash")
+	# Cada salto empieza encima del escalón anterior:
+	# [col de inicio, fila de inicio, dirección, col de destino, fila de destino].
+	var steps := [
+		[21, 22, 1, 27, 18],
+		[28, 18, 1, 34, 14],
+		[36, 14, 1, 42, 10],
+		[41, 10, -1, 36, 6],
+		[35, 6, -1, 32, 2],
+	]
+	for step in steps:
+		var landed: bool = await _hop(_standing_on("Cisterna", step[0], step[1]), step[2], _cell("Cisterna", step[3], 0).x)
+		var target_y: float = _standing_on("Cisterna", step[3], step[4]).y
+		_check(landed and absf(_player.global_position.y - target_y) < 4.0, "de la fila %d se sube al tablón de la fila %d" % [step[1], step[4]])
+	var out: bool = await _hop(_standing_on("Cisterna", 31, 2), -1, _cell("TerrazasSecas", 27, 0).x)
+	_check(out and _level.current_room.name == "TerrazasSecas" and _player.global_position.y < 320.0, "del último tablón se sale al suelo de las Terrazas")
+
+
+func _test_tower_needs_double_jump() -> void:
+	print("\n[La Torre de Riego: se sube por tablones y la cornisa del Ancla pide doble salto]")
+	await _load_world()
+	var steps := [
+		[6, 40, 1, 10, 36],
+		[12, 36, 1, 18, 32],
+		[17, 32, -1, 11, 28],
+		[12, 28, 1, 18, 24],
+		[20, 24, 1, 26, 20],
+	]
+	for step in steps:
+		var landed: bool = await _hop(_standing_on("TorreDeRiego", step[0], step[1]), step[2], _cell("TorreDeRiego", step[3], 0).x)
+		var target_y: float = _standing_on("TorreDeRiego", step[3], step[4]).y
+		_check(landed and absf(_player.global_position.y - target_y) < 4.0, "de la fila %d se sube al tablón de la fila %d" % [step[1], step[4]])
+	var ledge_y: float = _standing_on("TorreDeRiego", 46, 7).y
+	_check(not _player.has_ability(&"double_jump"), "subiendo la escalera aún no se ha tocado el doble salto")
+	await _hop(_standing_on("TorreDeRiego", 32, 20), 1, _cell("TorreDeRiego", 46, 0).x)
+	_check(_player.global_position.y > ledge_y + 20.0, "sin doble salto no se llega a la cornisa")
+	_player.global_position = _standing_on("TorreDeRiego", 29, 20)
+	await _wait(10)
+	_check(_player.has_ability(&"double_jump"), "el doble salto está sobre el tablón más alto")
+	var landed: bool = await _hop(_standing_on("TorreDeRiego", 32, 20), 1, _cell("TorreDeRiego", 46, 0).x, true)
+	_check(landed and absf(_player.global_position.y - ledge_y) < 4.0, "con doble salto se llega a la cornisa del Ancla")
+
+
+func _test_minimap_and_pause_map() -> void:
+	print("\n[Minimapa en el HUD y mapa completo en la pausa]")
+	await _fresh_level("", false)
+	_check(not _player.hud.minimap.visible, "sin mundo (banco de pruebas) no hay minimapa")
+
+	await _load_world()
+	var minimap: MapView = _player.hud.minimap
+	var data: MapData = _level.map_data
+	_check(minimap.visible and minimap.data == data, "en el mundo, el minimapa muestra el mapa del mundo")
+	_check(minimap.get_global_rect().position == Vector2(16, 16), "el minimapa está en la esquina superior izquierda")
+	_check(not minimap.get_global_rect().intersects(_player.hud.health_bar.get_global_rect()), "la barra de vida no lo tapa")
+	_check(minimap.cell_to_view(data.focus_cell).distance_to(minimap.size / 2.0) < 1.0, "el minimapa está centrado en el jugador")
+
+	# Morir deja el Eco marcado en el mapa.
+	await _stand_at(300.0)
+	_player.die()
+	await _wait(3)
+	_check(data.markers.has(&"echo"), "el Eco de la última muerte sale en el mapa")
+
+	var pause = _player.pause_menu
+	var pause_panel: Control = pause.get_node("Root/Panel")
+	await _press_action("ui_cancel")
+	var pause_size := pause_panel.size
+	await _press_action("ui_down")
+	await _press_action("ui_accept")
+	_check(pause.title_label.text == "Mapa · El Último Umbral", "Mapa abre su pantalla con el nombre de la sala actual")
+	_check(pause.map_view.visible and not pause.info.visible and not pause.menu.visible, "se ve el mapa y no la lista ni el texto")
+	_check(pause_panel.size == pause_size, "el panel mide lo mismo en Mapa que en el menú principal")
+	var map_view: MapView = pause.map_view
+	var bounds := data.seen_bounds()
+	var drawn := Vector2(bounds.size) * map_view.current_scale()
+	_check(drawn.x <= map_view.size.x and drawn.y <= map_view.size.y, "el mapa completo cabe en su recuadro")
+	await _press_action("ui_cancel")
+	_check(pause.is_open() and pause.title_label.text == "Pausa", "Esc vuelve al menú de pausa")
+	await _press_action("ui_cancel")

@@ -10,7 +10,8 @@ El repositorio contiene dos cosas:
   ataque, dash, puntos de control...) que puede llevarse a otros proyectos.
 - **`game/`** — el juego concreto construido encima.
 
-Estado actual: prototipo de bloques sin arte con el núcleo jugable validado.
+Estado actual: núcleo jugable validado y un primer mundo de cuatro salas conectadas,
+con minimapa y mapa en la pausa.
 Ver [`docs/estado.md`](docs/estado.md).
 
 ## Ejecutar
@@ -19,7 +20,7 @@ Ver [`docs/estado.md`](docs/estado.md).
 2. Abrir esta carpeta como proyecto y pulsar **F5**.
 
 Controles: flechas izq/dcha mover · Espacio saltar · flechas arriba/abajo mirar · abajo + Espacio sobre un tablón: bajar de él ·
-Espacio en el aire: doble salto · junto a una pared, dirección hacia ella + Espacio: salto de pared · X atacar · V parry · Shift dash · H curarse · Z descansar en un Ancla y abrir su menú · Esc pausa (personaje y controles).
+Espacio en el aire: doble salto · junto a una pared, dirección hacia ella + Espacio: salto de pared · X atacar · V parry · Shift dash · H curarse · Z descansar en un Ancla y abrir su menú · Esc pausa (mapa, personaje y controles).
 
 ## Probar
 

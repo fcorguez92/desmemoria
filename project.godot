@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="Proyecto Souls2D"
-run/main_scene="res://game/levels/ultimo_umbral.tscn"
+run/main_scene="res://game/levels/world.tscn"
 config/features=PackedStringArray("4.7", "Forward Plus")
 
 [display]

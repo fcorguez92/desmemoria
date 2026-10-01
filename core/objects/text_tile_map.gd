@@ -21,6 +21,10 @@ extends TileMapLayer
 
 ## Carácter marcador -> lista de posiciones globales (centro de su celda).
 var markers: Dictionary = {}
+## Tamaño del mapa en baldosas: la fila más larga por el número de filas (sin
+## contar líneas vacías al final). A diferencia de `get_used_rect()`, incluye el
+## vacío dibujado con puntos (el cielo, un foso).
+var map_size: Vector2i = Vector2i.ZERO
 
 
 func _ready() -> void:
@@ -32,9 +36,12 @@ func _ready() -> void:
 func build(text: String) -> void:
 	clear()
 	markers.clear()
+	map_size = Vector2i.ZERO
 	var rows := text.split("\n")
 	for y in rows.size():
 		var row := rows[y].strip_edges(false, true)
+		if not row.is_empty():
+			map_size = Vector2i(maxi(map_size.x, row.length()), y + 1)
 		for x in row.length():
 			var symbol := row[x]
 			if symbol == "." or symbol == " ":

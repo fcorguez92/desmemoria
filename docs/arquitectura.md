@@ -44,7 +44,7 @@ game/  ──usa──▶  core/  ──usa──▶  Godot
 │   ├── README.md              Catálogo de componentes y contratos
 │   ├── components/            Nodos con una responsabilidad cada uno
 │   ├── objects/               Checkpoint, objeto de habilidad, generador de entidades, objeto rompible, objeto legible, mapa de baldosas desde texto
-│   ├── ui/                    Controles de interfaz genéricos (barra segmentada, fila de iconos, lista de opciones, capa modal)
+│   ├── ui/                    Controles de interfaz genéricos (barra segmentada, fila de iconos, lista de opciones, capa modal, mapa)
 │   └── effects/               Efectos visuales autodestructivos (chispazo de impacto)
 ├── game/                      ESPECÍFICO DE ESTE JUEGO
 │   ├── player/                Orquesta los componentes + Ecos + HUD
@@ -52,8 +52,8 @@ game/  ──usa──▶  core/  ──usa──▶  Godot
 │   ├── echo/                  Marcador de la última muerte
 │   ├── memory_anchor/         Punto de control (usa core/objects/checkpoint.gd)
 │   ├── environment/           Objetos de ambientación (urna rompible, inscripción)
-│   ├── ui/                    HUD, menú del Ancla y menú de pausa
-│   └── levels/                Niveles: El Último Umbral (mapa de texto + baldosas) y el banco de pruebas
+│   ├── ui/                    HUD (con minimapa), menú del Ancla y menú de pausa (con mapa)
+│   └── levels/                El mundo (world.tscn, escena principal) y sus salas (mapa de texto + baldosas), y el banco de pruebas
 ├── art/                       Fuentes del arte (no se cargan en el juego)
 │   ├── palette.txt            La paleta: un carácter por color
 │   └── source/                Sprites escritos como texto (*.sprite)
@@ -182,7 +182,7 @@ entonces, con datos de qué se reutiliza de verdad, no antes.
 godot --headless --path . --script res://tests/smoke_test.gd
 ```
 
-Carga el nivel real, simula muertes, checkpoints, combate y dash, y sale con
+Carga el banco de pruebas y el mundo real, simula muertes, checkpoints, combate y dash, y sale con
 código 0 (todo bien) o 1 (algo falla). **Debe pasar antes de dar por terminado
 cualquier cambio en `core/` o en el ciclo jugable.** No sustituye a jugar: mide
 que las reglas se cumplen, no que se sienta bien.

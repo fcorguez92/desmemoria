@@ -52,7 +52,15 @@ Cada habilidad es narrativamente una técnica recordada de otra persona (ver doc
 
 ### Cómo se consiguen (implementado)
 
-Ninguna habilidad se tiene al empezar: se consiguen recogiendo un **recuerdo** (objeto con forma de rombo azul claro) que aparece en el mundo, y el juego avisa con "Has recordado: ...". Son permanentes: morir no las pierde. Cada una está colocada justo antes del obstáculo que abre:
+Ninguna habilidad se tiene al empezar: se consiguen recogiendo un **recuerdo** (objeto con forma de rombo azul claro) que aparece en el mundo, y el juego avisa con "Has recordado: ...". Son permanentes: morir no las pierde.
+
+**En el mundo del juego** (ver `docs/mundo.md`, "El mundo construido hoy"):
+
+- El **dash** está al fondo de La Cisterna, a la que se cae por el foso de Las Terrazas Secas; con él se cruza ese mismo foso y se llega a La Torre de Riego.
+- El **doble salto** está en lo alto de la escalera de tablones de La Torre de Riego, y abre la cornisa del Ancla, que sin él queda demasiado alta.
+- El **salto de pared** todavía no está colocado en el mundo (solo en el banco de pruebas).
+
+**En el banco de pruebas** (`test_level.tscn`), cada una está colocada justo antes del obstáculo que abre:
 
 - El **dash** está en la plataforma elevada, y abre el hueco ancho que hay detrás.
 - El **doble salto** está en la última plataforma verde, y abre una plataforma alta a la derecha que sin él es inalcanzable.
@@ -70,14 +78,14 @@ Al morir, el jugador pierde todos sus Ecos, que quedan marcados como **un Eco de
 
 Se probó una versión hostil (había que derrotarlo en combate) durante el prototipo y se descartó: no aportaba la tensión buscada y complicaba la recuperación sin necesidad.
 
-El Eco aparece siempre al morir, aunque no se llevaran Ecos encima (en ese caso, tocarlo no da nada). Así sirve también como señal de "aquí moriste la última vez", pensando en un futuro sistema de mapa que podría marcarlo — todavía no decidido.
+El Eco aparece siempre al morir, aunque no se llevaran Ecos encima (en ese caso, tocarlo no da nada). Así sirve también como señal de "aquí moriste la última vez": el mapa (minimapa y mapa de la pausa) lo marca en violeta.
 
 ## Curación: Anclas de Memoria
 
 Un objeto curativo de usos limitados, que se recarga solo en los puntos de descanso, llamados **Anclas de Memoria**. Las Anclas también:
 - Sirven de punto de guardado.
 - Se activan **a propósito** con el botón Z (no al pasar por encima), y muestran un aviso "Z: Recordar" al estar al alcance. Descansar es una parada, no un accidente.
-- Al usarlas, reinician (respawnean) a los enemigos normales — como en los juegos souls, para mantener el riesgo al volver a explorar. Los enemigos también reaparecen cuando el jugador muere. Hoy se reinician **todos** los enemigos del nivel, no solo los "del área"; delimitar zonas queda para cuando haya un mundo con varias.
+- Al usarlas, reinician (respawnean) a los enemigos normales — como en los juegos souls, para mantener el riesgo al volver a explorar. Los enemigos también reaparecen cuando el jugador muere. Hoy se reinician **todos** los enemigos del mundo, no solo los "del área"; con cuatro salas pequeñas no se nota, y limitarlo a la región del Ancla queda para cuando el mundo crezca.
 
 ### Aspecto: el Hito de Nombres
 
