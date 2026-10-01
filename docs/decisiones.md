@@ -2,6 +2,24 @@
 
 Cada entrada: qué se decidió, por qué, qué alternativas se descartaron y por qué. Se añade una entrada nueva por decisión importante, no se reescribe el historial.
 
+## 2026-10-01 — Un mundo de salas conectadas, minimapa y mapa en la pausa
+
+**Petición del usuario**: que el juego sea un metroidvania de verdad: que el mundo vaya creciendo, con un minimapa arriba a la izquierda y el mapa completo en el menú de pausa.
+
+**Decisión**: el nivel único pasa a ser una **sala** de un mundo. Cada sala es un `.map` con su escena (script común `game/levels/room.gd`); `game/levels/world.tscn` las coloca una junto a otra, **todas cargadas a la vez**, y es la nueva escena principal. `world.gd` sabe en qué sala está el jugador y, al cambiar, limita la cámara a esa sala (con `limit_smoothed`, para que se deslice en vez de saltar), oculta o muestra el cielo, baja el límite de caída mortal al fondo de la sala y la descubre en el mapa. Se añaden tres salas (Terrazas Secas, Cisterna, Torre de Riego) con el primer bucle de habilidades del mundo real: dash y doble salto.
+
+**Alternativas**:
+- *Una escena por sala con transición al tocar el borde* (como Hollow Knight). Escala mejor a mundos enormes, pero obliga a guardar y restaurar el estado del jugador, los Ecos, las Anclas y los enemigos en cada cambio, y a programar puntos de entrada y fundidos. Descartado por ahora: con unas pocas salas no aporta nada y multiplica la complejidad. El paso de hoy no lo impide: si algún día hace falta, las salas ya son escenas independientes.
+- *Un único `.map` gigante*. Lo más simple, pero sin salas no hay unidad para descubrir el mapa ni para limitar la cámara, y el archivo se vuelve inmanejable.
+
+**Mapa**: `MapData` (datos) y `MapView` (dibujo) van en `core/ui/` porque no saben nada del juego: zonas, marcadores y un foco. El minimapa y el mapa de la pausa son dos `MapView` con los mismos datos. Cada sala se dibuja una vez al cargar en una imagen de un píxel por baldosa, que luego se escala; así redibujar el minimapa cada fotograma es barato. Las salas se descubren al entrar (sin comprar mapas, decisión de simplicidad que se puede revisar). Se marcan el jugador, las Anclas y el Eco de la última muerte, que el diseño ya preveía para un mapa.
+
+**HUD**: el minimapa ocupa la esquina superior izquierda, así que la barra de vida y los frascos se desplazan a su derecha y el recuadro de mensajes baja un poco para no taparlos.
+
+**Ajustes tras la revisión independiente** (un subagente revisó el cambio): el cielo se funde en 0,5 s en vez de desaparecer de golpe, porque el cambio de sala ocurre antes de que la cámara termine de deslizarse; para cambiar de sala hay que adentrarse 32 px en la nueva (si no, saltar justo en una frontera, como en el tablón más alto de la Cisterna, hacía ir y venir la cámara); el mundo procesa sus físicas antes que el jugador (`process_physics_priority`), para que al reaparecer en otra sala el límite de caída ya sea el nuevo; y la fachada de la Torre de Riego se dibuja en el borde de las Terrazas, que antes acababa en un muro invisible. Queda a propósito que desde las Terrazas no se vea la Cisterna bajo el foso: el foso parece peligroso y caer en él es una sorpresa; si al jugarlo resulta injusto, se puede dejar ver con una pista visual.
+
+**Pruebas**: las de El Último Umbral cargan ahora el mundo (la sala está en el origen, así que sus coordenadas no cambian). Las nuevas recorren el mundo con saltos simulados: que el foso no se cruza sin dash y sí con él, que caer en él lleva vivo a la Cisterna, que de la Cisterna se puede salir subiendo por los tablones (sin quedarse atrapado) y que la cornisa de la torre exige el doble salto. Un detalle al escribirlas: en el primer fotograma tras pulsar saltar la velocidad vertical aún es 0, así que "esperar a lo alto del salto" debe esperar antes a que el salto haya empezado.
+
 ## 2026-09-23 — Correr y andar de 4 a 6 fotogramas, sin dibujar piezas nuevas
 
 **Decisión**: las animaciones de correr (jugador) y andar (enemigo), pedidas explícitamente por el usuario ("más frames... que la animación de andar fuese un poco más dinámica"), pasan de 4 a 6 fotogramas. Se mantiene la duración del ciclo completo (se sube el fps en la misma proporción), así que se ven más fluidas sin caminar más deprisa.
