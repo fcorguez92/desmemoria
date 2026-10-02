@@ -1,6 +1,6 @@
 # Estado del proyecto (documento vivo)
 
-Última actualización: entorno recargado (decorado, cajas y barriles, fondo en capas).
+Última actualización: personaje rehecho (asesino con espada del revés, 54 fotogramas, dash propio).
 
 ## Dónde estamos en la metodología
 

@@ -283,6 +283,9 @@ func _reset_world() -> void:
 
 
 func _update_animation() -> void:
+	if dash.is_dashing:
+		animator.play("dash")
+		return
 	if not is_on_floor():
 		animator.play("jump" if velocity.y < 0.0 else "fall")
 	elif absf(velocity.x) > 10.0:

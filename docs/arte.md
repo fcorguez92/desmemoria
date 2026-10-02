@@ -35,7 +35,7 @@ zona.
 
 | Elemento | Colisión actual | Lienzo del sprite | Punto de anclaje |
 |---|---|---|---|
-| Jugador | 24×48 | 64×56 (cuerpo de 20×44) | Los pies, centrados |
+| Jugador | 24×48 | 96×64 (cuerpo de 20×44) | Los pies, centrados |
 | Enemigo básico | 32×48 | 64×56 (cuerpo de 24×44) | Los pies, centrados |
 | Ancla, objetos, Eco | según objeto | múltiplos de 8 | Base, centrada |
 
@@ -111,7 +111,7 @@ dos maneras: empezar con el texto y pasar a retocar a mano cuando compense.
 
 | Sprite | Dibujo | Lienzo | Animaciones |
 |---|---|---|---|
-| Caminante (jugador) | 20×44, figura con capucha, ojo y bufanda de luz azul; espada ("el Filo") de acero con canto azul | 64×56 | reposo (2), correr (6), salto (1), caída (1), ataque (6: tajo en arco con estela, alzada → horizontal → baja), guardia (2), golpe recibido (2) |
+| Caminante (jugador) | 20×44, asesino encapuchado con bufanda de luz azul y capa con inercia; empuña la espada ("el Filo") del revés, con la hoja colgando por debajo del puño | 96×64 | reposo (10 fotogramas), correr (14, cuerpo curvado hacia delante), salto (4), caída (4), ataque (12, tajo con giro de muñeca y estela), guardia (4), golpe recibido (4), dash (6, casi horizontal con imágenes residuales) |
 | Cascarón (enemigo) | 24×44, figura pálida sin rostro con trapos rojos; cuchillo pesado oxidado | 64×56 | reposo (2), andar (6), aviso (2), golpe (2), golpe recibido (2) |
 | Decorado del entorno | 13 piezas: árbol muerto, columna rota, hierba, zarza, huesos, estandarte, cadenas, estatua, mojón, poste, farol, arco ciego, enredaderas | 48×64 | una fila de 13 fotogramas (`game/environment/decor_sheet.png`); lo que se apoya toca la fila de abajo y lo que cuelga la de arriba |
 | Iconos del HUD | 16×16: frasco de curación (lleno y vacío, ámbar) y Eco (gota azul) | 16×16 | una fila de 3 fotogramas (`game/ui/hud_icons.png`) |
@@ -142,3 +142,15 @@ animación de muerte, dash ni agarre de pared.
 - Fondos con paralaje (capas) y su nivel de detalle.
 - Efectos de luz e iluminación de la Desmemoria.
 - Si el brillo de los "recuerdos" (objetos, Ecos) se hace con sprites o con luz.
+
+### El Caminante se genera con un esqueleto
+
+A diferencia del resto de sprites (piezas dibujadas a mano en texto), `art/source/player.sprite` lo genera `tools/rig_caminante.js` (Node.js, solo para quien retoque el arte; el juego no lo necesita): un esqueleto con columna curvada, piernas y brazos con cinemática inversa, capa y bufanda que arrastran por inercia y la espada empuñada del revés. Cada animación son poses clave interpoladas, y se rasteriza fotograma a fotograma con contorno y sombreado. Para cambiar el movimiento se edita el esqueleto (no los fotogramas) y se regenera:
+
+```
+node tools/rig_caminante.js
+godot --headless --path . --script res://tools/build_sprites.gd
+godot --headless --path . --import
+```
+
+Por qué: con 54 fotogramas a 40 fps (para aprovechar los 60 fps del juego) dibujar cada pose a mano en texto no es viable ni coherente. Si algún día se pasa a dibujar a mano o con Pixelorama, se borra este script y este `.sprite` y se sustituye la hoja (ver "una sola fuente de verdad").

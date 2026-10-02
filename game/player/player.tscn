@@ -34,14 +34,14 @@ shape = SubResource("CapsuleShape2D_1")
 
 [node name="Visual" type="Sprite2D" parent="."]
 texture = ExtResource("13_sheet")
-offset = Vector2(0, -4)
-hframes = 6
-vframes = 7
+offset = Vector2(0, -8)
+hframes = 14
+vframes = 8
 
 [node name="SheetAnimator" type="Node" parent="." node_paths=PackedStringArray("sprite")]
 script = ExtResource("14_animator")
 sprite = NodePath("../Visual")
-animations = {"attack": [4, 6, 24.0, false], "hit": [6, 2, 8.0, false], "parry": [5, 2, 10.0, false], "fall": [3, 1, 1.0, false], "idle": [0, 2, 4.0, true], "jump": [2, 1, 1.0, false], "run": [1, 6, 18.0, true]}
+animations = {"attack": [4, 12, 40.0, false], "dash": [7, 6, 40.0, false], "fall": [3, 4, 16.0, true], "hit": [6, 4, 16.0, false], "idle": [0, 10, 10.0, true], "jump": [2, 4, 24.0, false], "parry": [5, 4, 20.0, false], "run": [1, 14, 40.0, true]}
 
 [node name="Camera2D" type="Camera2D" parent="."]
 position_smoothing_enabled = true
@@ -70,6 +70,7 @@ max_heal_charges = 3
 [node name="MeleeAttackComponent" type="Node" parent="." node_paths=PackedStringArray("hitbox")]
 script = ExtResource("5_melee")
 hitbox = NodePath("../AttackHitbox")
+cooldown = 0.3
 
 [node name="CameraLookComponent" type="Node" parent="." node_paths=PackedStringArray("camera")]
 script = ExtResource("6_camera_look")

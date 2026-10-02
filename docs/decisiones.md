@@ -310,3 +310,9 @@ Cada entrada: qué se decidió, por qué, qué alternativas se descartaron y por
 **Decisión**: el decorado sin función (árboles, columnas, estandartes, cadenas...) son sprites de una hoja de píxeles (`decor.sprite`) que `room.gd` coloca en marcadores del `.map`, igual que las urnas, con una tabla `DECOR`. Se añaden cajas y barriles rompibles (barril de 2 golpes). El fondo gana cielo con estrellas y luna, niebla, ventanas, arcos y torres en las ruinas, y una capa más cercana de árboles muertos (`NearTrees`, dentro del fondo).
 
 **Por qué**: marcadores en el mapa de texto = se diseña y revisa el decorado como el terreno, sin editar escenas. Sprites en vez de polígonos: encajan con la dirección de arte (pixel art) y comparten textura, así que ~100 piezas no cuestan más draw calls. **Alternativa descartada**: una escena por prop con polígonos (como la urna): más nodos y menos coherente con el arte; se deja para objetos con lógica.
+
+## 2026-10-02 — El Caminante: esqueleto procedural, espada del revés y muchos fotogramas
+
+**Decisión**: el personaje se anima con un esqueleto (`tools/rig_caminante.js`) que genera los fotogramas: 54 fotogramas en 8 animaciones (reposo 10, correr 14, salto 4, caída 4, ataque 12, guardia 4, golpe 4, dash 6) a 16-40 fps, con lienzo de 96×64. Empuña la espada del revés (hoja por debajo del puño). Correr curva el cuerpo hacia delante; el dash tiene animación propia (`player.gd`, mientras `dash.is_dashing`); el ataque mueve todo el cuerpo y deja una estela.
+
+**Por qué**: el reposo y el correr de antes eran casi estáticos (2 y 6 fotogramas). A 60 fps hacen falta más cuadros para que se vea fluido, y a mano en texto no es viable. **Alternativas descartadas**: dibujar los 54 fotogramas como piezas de texto a mano (inviable y poco coherente entre poses); un esqueleto de Godot con `Skeleton2D` y piezas recortadas (más flexible, pero obliga a otro pipeline de arte y dependencias de escena que hoy no hacen falta).

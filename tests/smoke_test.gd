@@ -365,7 +365,7 @@ func _test_sprites_and_animations() -> void:
 	var enemy: Node2D = _level.get_node("EnemySpawn1").instance
 	var player_sprite: Sprite2D = _player.visual
 	var enemy_sprite: Sprite2D = enemy.visual
-	_check(player_sprite.texture.get_size() == Vector2(player_sprite.hframes * 64, player_sprite.vframes * 56), "la hoja del jugador cuadra con su cuadrícula de 64x56")
+	_check(player_sprite.texture.get_size() == Vector2(player_sprite.hframes * 96, player_sprite.vframes * 64), "la hoja del jugador cuadra con su cuadrícula de 96x64")
 	_check(enemy_sprite.texture.get_size() == Vector2(enemy_sprite.hframes * 64, enemy_sprite.vframes * 56), "la hoja del enemigo cuadra con su cuadrícula de 64x56")
 
 	await _wait(15)
@@ -582,6 +582,8 @@ func _test_gamepad_controls() -> void:
 	_player.unlock_ability(&"dash")
 	await _press_event(_pad_axis(JOY_AXIS_TRIGGER_RIGHT))
 	_check(_player.dash.is_dashing, "RT / R2 hace el dash")
+	await _wait(2)
+	_check(_player.animator.current == "dash", "el dash tiene su propia animación")
 	await _wait(30)
 
 	# Start abre y cierra la pausa, también desde una subpantalla.
