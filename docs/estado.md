@@ -1,6 +1,6 @@
 # Estado del proyecto (documento vivo)
 
-Última actualización: Ecos con forma, ataque en arco y primera pasada de optimización.
+Última actualización: entorno recargado (decorado, cajas y barriles, fondo en capas).
 
 ## Dónde estamos en la metodología
 
