@@ -1,0 +1,37 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://core/objects/breakable_prop.gd" id="1_prop"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_crate"]
+size = Vector2(14, 14)
+
+[node name="BreakableCrate" type="StaticBody2D"]
+collision_layer = 2
+collision_mask = 0
+script = ExtResource("1_prop")
+spark_color = Color(0.54, 0.33, 0.13, 1)
+
+[node name="Visual" type="Node2D" parent="."]
+
+[node name="Frame" type="Polygon2D" parent="Visual"]
+color = Color(0.29, 0.18, 0.09, 1)
+polygon = PackedVector2Array(-7, 7, 7, 7, 7, -7, -7, -7)
+
+[node name="Planks" type="Polygon2D" parent="Visual"]
+color = Color(0.42, 0.26, 0.11, 1)
+polygon = PackedVector2Array(-6, 6, 6, 6, 6, -6, -6, -6)
+
+[node name="PlankLine1" type="Polygon2D" parent="Visual"]
+color = Color(0.29, 0.18, 0.09, 1)
+polygon = PackedVector2Array(-6, -2, 6, -2, 6, -1, -6, -1)
+
+[node name="PlankLine2" type="Polygon2D" parent="Visual"]
+color = Color(0.29, 0.18, 0.09, 1)
+polygon = PackedVector2Array(-6, 3, 6, 3, 6, 4, -6, 4)
+
+[node name="Brace" type="Polygon2D" parent="Visual"]
+color = Color(0.54, 0.33, 0.13, 1)
+polygon = PackedVector2Array(-6, 6, -4, 6, 6, -4, 6, -6, 4, -6, -6, 4)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("RectangleShape2D_crate")

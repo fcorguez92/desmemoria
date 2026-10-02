@@ -304,3 +304,9 @@ Cada entrada: qué se decidió, por qué, qué alternativas se descartaron y por
 **Decisión**: las urnas rompibles ya no bloquean el paso. Viven en la capa de física 2 ("rompibles"), sin máscara, y el hitbox de ataque del jugador incluye esa capa (máscara 3) para seguir pudiendo romperlas. Se dibujan detrás del personaje (las salas se pintan antes que el jugador). Sustituye a lo dicho el 2026-09-27 de que fuesen un obstáculo físico.
 
 **Por qué**: un tarro que frena al jugador estorba más que decora, y al correr o hacer dash se queda atascado en ellos. **Alternativa descartada**: mantenerlas sólidas y dejar que el dash las atraviese: añade una regla especial para poco beneficio.
+
+## 2026-10-02 — Entorno recargado: decorado por marcadores y fondo en capas
+
+**Decisión**: el decorado sin función (árboles, columnas, estandartes, cadenas...) son sprites de una hoja de píxeles (`decor.sprite`) que `room.gd` coloca en marcadores del `.map`, igual que las urnas, con una tabla `DECOR`. Se añaden cajas y barriles rompibles (barril de 2 golpes). El fondo gana cielo con estrellas y luna, niebla, ventanas, arcos y torres en las ruinas, y una capa más cercana de árboles muertos (`NearTrees`, dentro del fondo).
+
+**Por qué**: marcadores en el mapa de texto = se diseña y revisa el decorado como el terreno, sin editar escenas. Sprites en vez de polígonos: encajan con la dirección de arte (pixel art) y comparten textura, así que ~100 piezas no cuestan más draw calls. **Alternativa descartada**: una escena por prop con polígonos (como la urna): más nodos y menos coherente con el arte; se deja para objetos con lógica.

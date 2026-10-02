@@ -65,7 +65,13 @@ inscripción (que el jugador elige leer, no se le impone):
   musgo, `G` relleno de piedra, `B` ladrillo, `C` remate de muro, `S` tablón de
   madera; `P` inicio del jugador, `A` Ancla de Memoria, `E` enemigo, `R` urna
   rompible, `I` inscripción legible, `d` / `j` / `w` recuerdo de dash / doble
-  salto / salto de pared; `.` vacío. La misma leyenda vale para todas las salas.
+  salto / salto de pared; `Q` caja rompible, `O` barril rompible (aguanta 2 golpes);
+  `.` vacío. Marcadores de **decorado** sin función (sprites de `decor.sprite`, sin
+  colisión): `Y` árbol muerto, `U` columna rota, `H` hierba (delante del jugador),
+  `Z` zarza, `K` huesos y escombros (delante), `F` estandarte y `N` cadenas y `q`
+  enredaderas (cuelgan del techo o de un tablón: el marcador va en la celda de
+  debajo), `X` estatua, `V` mojón, `L` poste, `M` farol, `D` arco ciego de muro.
+  La misma leyenda vale para todas las salas.
   Los tablones (`S`) son **plataformas de un solo sentido**: se atraviesan desde
   abajo y por los lados, y solo se pisan desde arriba (colisionan solo en una franja
   fina de 4 px en su borde superior; el resto es puro decorado). Por ejemplo, se
@@ -76,8 +82,13 @@ inscripción (que el jugador elige leer, no se le impone):
 - `game/levels/room.gd` — el script de toda sala: coloca Anclas, enemigos, urnas,
   inscripciones y recuerdos en los marcadores. El jugador (`P`), la cámara y el
   mapa los lleva el mundo (`game/levels/world.gd`, ver `mundo.md`).
+- `art/source/decor.sprite` — las 13 piezas de decorado (48×64). `room.gd` las coloca
+  en los marcadores con la tabla `DECOR` (fotograma, si cuelga, z_index): lo que va
+  detrás del jugador usa z -1/-2 y la hierba y los huesos z 1.
+- `game/environment/breakable_crate.tscn` y `breakable_barrel.tscn` — caja (1 golpe)
+  y barril (2 golpes), como la urna: se atraviesan y solo se rompen al golpearlos.
 - `game/environment/breakable_urn.tscn` — una urna rompible (`core/objects/breakable_prop.gd`
-  con un dibujo de polígonos). Bloquea el paso hasta que se rompe de un golpe;
+  con un dibujo de polígonos). Se atraviesa y se rompe de un golpe;
   no suelta nada ni afecta a la partida.
 - `game/environment/inscription.tscn` — una piedra con un texto (`core/objects/readable.gd`).
   Con Z al alcance, el jugador lo lee en el HUD el tiempo que tarde en leerse
@@ -89,7 +100,8 @@ inscripción (que el jugador elige leer, no se le impone):
   `SetDressing`): decorado propio de esta zona, sin colisión, no un objeto
   reutilizable como la urna o la inscripción.
 - El fondo (`Background` en `world.tscn`, común a todo el mundo) es un
-  `ParallaxBackground` con dos siluetas de polígonos que se repiten en
+  `ParallaxBackground` con cinco capas (cielo fijo con estrellas y luna, colinas
+  lejanas, niebla, ruinas con ventanas, arcos y torres, y árboles muertos cercanos) que se repiten en
   horizontal (`motion_mirroring`), para cubrir salas a cualquier distancia. Se
   oculta en las salas sin cielo (`has_sky = false`).
 - `art/source/tiles_umbral.sprite` — las 5 baldosas (16×16), en el mismo formato

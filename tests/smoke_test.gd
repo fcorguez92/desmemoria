@@ -57,6 +57,7 @@ func _run() -> void:
 	await _test_ultimo_umbral_builds_from_text_map()
 	await _test_planks_are_one_way_platforms()
 	await _test_breakable_props()
+	await _test_scenery_is_dense_and_harmless()
 	await _test_inscription_is_readable()
 	await _test_enemy_does_not_jitter_against_a_wall()
 	await _test_map_data()
@@ -893,6 +894,38 @@ func _test_breakable_props() -> void:
 	_check(_player.global_position.x > before_x + 25.0, "una vez roto ya no bloquea el paso")
 
 
+
+
+func _test_scenery_is_dense_and_harmless() -> void:
+	print("
+[El entorno está cargado de decorado y objetos rompibles que no estorban]")
+	await _load_world()
+	var decor := 0
+	var crates := 0
+	var barrels := 0
+	for room in _level.get_node("Rooms").get_children():
+		for child in room.get_children():
+			if child is Sprite2D:
+				decor += 1
+			elif child is BreakableProp:
+				if child.hits == 2:
+					barrels += 1
+				elif child.scene_file_path.ends_with("breakable_crate.tscn"):
+					crates += 1
+	_check(decor >= 100, "las salas tienen mucho decorado (%d piezas)" % decor)
+	_check(crates >= 8 and barrels >= 8, "hay cajas (%d) y barriles (%d) rompibles" % [crates, barrels])
+
+	var barrel: BreakableProp = null
+	for child in _room.get_children():
+		if child is BreakableProp and child.hits == 2:
+			barrel = child
+			break
+	_check(barrel != null, "El Último Umbral tiene barriles")
+	barrel.take_hit(1, 1)
+	_check(is_instance_valid(barrel), "un barril aguanta el primer golpe")
+	barrel.take_hit(1, 1)
+	await _wait(2)
+	_check(not is_instance_valid(barrel), "y se rompe con el segundo")
 
 
 func _test_inscription_is_readable() -> void:
