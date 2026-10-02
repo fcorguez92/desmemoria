@@ -91,15 +91,9 @@ script = ExtResource("9_upgrade")
 values = PackedInt32Array(1, 2, 3, 4, 5)
 costs = PackedInt32Array(4, 8, 14, 22)
 
-[node name="Slash" type="Polygon2D" parent="."]
-color = Color(1, 1, 1, 1)
-polygon = PackedVector2Array(10, -24, 30, -16, 40, 0, 30, 16, 10, 24, 24, 0)
-
-[node name="AttackVisualComponent" type="Node" parent="." node_paths=PackedStringArray("animator", "slash")]
+[node name="AttackVisualComponent" type="Node" parent="." node_paths=PackedStringArray("animator")]
 script = ExtResource("11_attack_visual")
 animator = NodePath("../SheetAnimator")
-slash = NodePath("../Slash")
-slash_alpha = 0.22
 
 [node name="ScreenShakeComponent" type="Node" parent="." node_paths=PackedStringArray("camera")]
 script = ExtResource("12_shake")

@@ -3,7 +3,7 @@
 // empunada del reves) que se rasteriza a pixel art por fotograma.
 const fs = require('fs');
 const NL = String.fromCharCode(10);
-const W = 96, H = 64, OX = 48, OY = 64; // lienzo y punto de los pies (suelo)
+const W = 112, H = 64, OX = 56, OY = 64; // lienzo y punto de los pies (suelo)
 
 // ---------- utilidades matematicas ----------
 const rad = d => d * Math.PI / 180;
@@ -124,9 +124,9 @@ function trailChain(root, n, seg, grav, trail, amt, wave, phase) {
 
 // ---------- pose y dibujo del personaje ----------
 const BASE = {
-  hipx: 0, hipy: -19, lean: 4, bend: 3, head: -2,
+  hipx: 0, hipy: -18, lean: 14, bend: 4, head: -8,
   nfx: 4, nfy: 0, nfa: 0, ffx: -4, ffy: 0, ffa: 0,
-  fx: 9, fy: 11, gx: -4, gy: 12, blade: 80,
+  fx: 9, fy: 9, gx: -5, gy: 9, blade: 95, curve: -48,
   capeTx: -1, capeTy: 0.15, capeAmt: 0.25, capeWave: 0.35,
   scTx: -1, scTy: 0.1, scAmt: 0.5, hoodTy: -0.35,
   phase: 0, ghost: 0, lines: 0, trailFrom: null,
@@ -207,6 +207,8 @@ function figure(p) {
   c.line(add(belt, [-4, 0]), add(belt, [4, 0]), 'b');
   c.line(add(belt, [-4, -1]), add(belt, [4, -1]), 'a');
   c.line(add(waist, mul(dirA(p.lean + p.bend - 90), 4)), add(belt, [3, 0]), 'a');
+  const pouch = add(belt, [3.4, 2.2]);
+  c.shape((px, py) => Math.abs(px - pouch[0]) <= 1.9 && Math.abs(py - pouch[1]) <= 1.7, (px, py) => (py < pouch[1] - 0.6 ? 'c' : 'b'), [pouch[0] - 3, pouch[1] - 3, pouch[0] + 3, pouch[1] + 3], true);
 
   // ---- pierna cercana
   legPart([p.nfx, p.nfy], p.nfa, '3', '2', '1', 3.0);
@@ -230,8 +232,13 @@ function figure(p) {
   const face = add(headC, [2.3, 0.6]);
   c.shape((px, py) => ((px - face[0]) / 3.2) ** 2 + ((py - face[1]) / 3.9) ** 2 <= 1 && Math.hypot(px - headC[0], py - headC[1]) <= 5.1,
     () => '1', [face[0] - 5, face[1] - 5, face[0] + 5, face[1] + 5], false);
+  c.shape((px, py) => ((px - face[0]) / 3.2) ** 2 + ((py - face[1]) / 3.9) ** 2 <= 1 && Math.hypot(px - headC[0], py - headC[1]) <= 5.1 && py > face[1] + 0.9,
+    (px, py) => (py < face[1] + 1.9 ? 'g' : 'f'), [face[0] - 5, face[1], face[0] + 5, face[1] + 5], false);
   c.set(Math.floor(face[0] + 1.2), Math.floor(face[1] - 0.3), 'h');
   c.set(Math.floor(face[0] + 0.2), Math.floor(face[1] - 0.3), 'g');
+  for (let a = -110, k = 0; a <= 40; a += 13, k++) {
+    c.set(Math.floor(headC[0] + Math.cos(rad(a)) * 5.1), Math.floor(headC[1] + Math.sin(rad(a)) * 5.1), k % 2 ? 'c' : 'b');
+  }
 
   // ---- brazo cercano + espada empunada del reves
   const T = add(shoulder, [p.fx, p.fy]);
@@ -243,25 +250,41 @@ function figure(p) {
   const fist = arm.end;
   const bd = [Math.cos(rad(p.blade)), Math.sin(rad(p.blade))];
   const bn = [-bd[1], bd[0]];
-  const guard = add(fist, mul(bd, 1.6));
-  const tipPt = add(fist, mul(bd, 19));
-  // hoja
-  const bladePoly = [add(guard, mul(bn, 1.5)), add(tipPt, mul(bn, 0.8)), add(tipPt, mul(bd, 2)), add(tipPt, mul(bn, -0.8)), add(guard, mul(bn, -1.5))];
+  // linea central de la hoja: nace del puño y se curva hacia delante (el filo)
+  const BL = 24, N = 18;
+  const cl = [add(fist, mul(bd, 1.2))], tg = [bd];
+  for (let i = 1; i <= N; i++) {
+    const ang = rad(p.blade + p.curve * Math.pow(i / N, 1.35));
+    const t = [Math.cos(ang), Math.sin(ang)];
+    cl.push(add(cl[i - 1], mul(t, BL / N))); tg.push(t);
+  }
+  const hw = i => 2.0 - 1.5 * Math.pow(i / N, 0.9);
+  const lft = [], rgt = [];
+  for (let i = 0; i <= N; i++) {
+    const n = [-tg[i][1], tg[i][0]];
+    lft.push(add(cl[i], mul(n, hw(i)))); rgt.push(add(cl[i], mul(n, -hw(i))));
+  }
+  const tipPt = cl[N];
+  const bladePoly = [...lft, add(tipPt, mul(tg[N], 1.8)), ...rgt.reverse()];
   c.shape(polyTest(bladePoly), (px, py) => {
-    const s = (px - guard[0]) * bn[0] + (py - guard[1]) * bn[1];
-    const along = ((px - guard[0]) * bd[0] + (py - guard[1]) * bd[1]);
-    if (along > 16.5) return 'h';
-    return s > 0.35 ? 'g' : (s < -0.35 ? '3' : '4');
+    let bi = 0, bdist = 1e9;
+    for (let i = 0; i <= N; i++) { const d = Math.hypot(px - cl[i][0], py - cl[i][1]); if (d < bdist) { bdist = d; bi = i; } }
+    const n = [-tg[bi][1], tg[bi][0]];
+    const sd = (px - cl[bi][0]) * n[0] + (py - cl[bi][1]) * n[1];
+    if (bi >= N - 2) return 'h';
+    return sd > 0.45 ? 'g' : (sd < -0.5 ? '3' : '4');
   }, bbox(bladePoly), true);
-  // guarda y empunadura
-  const gA = add(guard, mul(bn, 3)), gB = add(guard, mul(bn, -3));
-  c.line(gA, gB, 'c');
-  c.set(Math.floor(guard[0]), Math.floor(guard[1]), 'd');
-  const pommel = add(fist, mul(bd, -2.4));
-  c.shape((px, py) => Math.hypot(px - pommel[0], py - pommel[1]) <= 1.3, () => 'b', [pommel[0] - 3, pommel[1] - 3, pommel[0] + 3, pommel[1] + 3], true);
-  c.shape((px, py) => Math.hypot(px - fist[0], py - fist[1]) <= 2.3, (px, py) => ((px - fist[0]) * LIGHT[0] + (py - fist[1]) * LIGHT[1]) > 0 ? '3' : '2', [fist[0] - 4, fist[1] - 4, fist[0] + 4, fist[1] + 4], true);
+  // guarda ambar (cruceta) y empunadura
+  const gi = 2, gn = [-tg[gi][1], tg[gi][0]];
+  c.line(add(cl[gi], mul(gn, 3.6)), add(cl[gi], mul(gn, -3.6)), 'c');
+  c.line(add(cl[gi], mul(gn, 2.6)), add(cl[gi], mul(gn, -2.6)), 'd');
+  c.set(Math.floor(cl[gi][0] + gn[0] * 3.6), Math.floor(cl[gi][1] + gn[1] * 3.6), 'b');
+  c.set(Math.floor(cl[gi][0] - gn[0] * 3.6), Math.floor(cl[gi][1] - gn[1] * 3.6), 'b');
+  const pommel = add(fist, mul(bd, -2.6));
+  c.shape((px, py) => Math.hypot(px - pommel[0], py - pommel[1]) <= 1.4, () => 'b', [pommel[0] - 3, pommel[1] - 3, pommel[0] + 3, pommel[1] + 3], true);
+  c.shape((px, py) => Math.hypot(px - fist[0], py - fist[1]) <= 2.4, (px, py) => ((px - fist[0]) * LIGHT[0] + (py - fist[1]) * LIGHT[1]) > 0 ? '3' : '2', [fist[0] - 4, fist[1] - 4, fist[0] + 4, fist[1] + 4], true);
 
-  c.tip = tipPt; c.mid = add(fist, mul(bd, 11)); c.fist = fist;
+  c.tip = tipPt; c.mid = cl[9]; c.fist = fist;
   return c;
 }
 
@@ -291,6 +314,9 @@ function render(p) {
 }
 
 // ---------- animaciones ----------
+// Referencia: asesino agazapado, muy inclinado hacia delante, con el puño de la
+// espada junto al pecho y la hoja curva colgando por debajo y hacia delante; el
+// otro brazo echado atras para equilibrar.
 function footCycle(s, A, L) { // s en [0,1): devuelve [x, y] de la suela
   if (s < 0.38) { const k = s / 0.38; return [lerp(-A, A * 1.25, ease(k)), -L * Math.sin(Math.PI * k) * (k < 0.5 ? 1.15 : 1)]; }
   const k = (s - 0.38) / 0.62; return [lerp(A * 1.25, -A, k), 0];
@@ -298,44 +324,46 @@ function footCycle(s, A, L) { // s en [0,1): devuelve [x, y] de la suela
 
 const anims = {};
 
-// reposo: respiracion, peso que se desplaza, capa y bufanda que ondean
+// reposo: agazapado y alerta; respira, el peso se mece y la capa ondea
 anims.idle = { fps: 10, loop: true, frames: Array.from({ length: 10 }, (_, i) => {
   const t = i / 10, b = Math.sin(t * 2 * Math.PI), s = Math.sin(t * 2 * Math.PI + 1);
-  return pose({ hipx: 0.6 * s, hipy: -20.4 + 0.5 * b, lean: 5 + 1.2 * b, bend: 3 + 1.5 * b, head: -3 + 0.8 * s,
-    nfx: 6.5, ffx: -6.5, fx: 9 + 0.7 * b, fy: 11 - 0.9 * b, gx: -3 + 0.6 * s, gy: 12 + 0.5 * b, blade: 80 + 2 * b,
-    capeAmt: 0.22 + 0.06 * b, capeWave: 0.4, phase: t * 2 * Math.PI, scAmt: 0.45 + 0.1 * s, scTy: 0.15 + 0.1 * b });
+  return pose({ hipx: 2.5 + 0.6 * s, hipy: -17.4 + 0.5 * b, lean: 24 + 1.5 * b, bend: 8 + 1.5 * b, head: -16 + 1 * s,
+    nfx: 8, ffx: -7, fx: 9 + 0.7 * b, fy: 8 - 0.9 * b, gx: -8 + 0.6 * s, gy: 8 + 0.5 * b, blade: 95 + 3 * b,
+    capeTx: -1, capeTy: 0.25, capeAmt: 0.45 + 0.08 * b, capeWave: 0.4, phase: t * 2 * Math.PI,
+    scAmt: 0.6 + 0.1 * s, scTy: 0.1 + 0.1 * b, hoodTy: -0.5 });
 }) };
 
-// carrera: cuerpo inclinado y curvado, zancada larga, espada baja al frente
+// carrera: muy curvado, casi a ras de suelo, brazo libre atras y la daga al pecho
 anims.run = { fps: 40, loop: true, frames: Array.from({ length: 14 }, (_, i) => {
   const u = i / 14;
-  const nf = footCycle(u % 1, 12.5, 9.5), ff = footCycle((u + 0.5) % 1, 12.5, 9.5);
+  const nf = footCycle(u % 1, 11.5, 9), ff = footCycle((u + 0.5) % 1, 11.5, 9);
   const down = Math.cos(4 * Math.PI * (u - 0.17));
   const sw = Math.sin(2 * Math.PI * (u - 0.1));
-  return pose({ hipx: 2.5, hipy: -20 + 1.7 * down, lean: 26, bend: 15, head: -17 + 1.2 * down,
+  return pose({ hipx: 4, hipy: -16.6 + 1.5 * down, lean: 52, bend: 17, head: -38 + 1.5 * down,
     nfx: nf[0], nfy: nf[1], ffx: ff[0], ffy: ff[1], nfa: nf[1] < -3 ? 38 : 0, ffa: ff[1] < -3 ? 38 : 0,
-    fx: 8 + 1.8 * sw, fy: 10.5 - 1.6 * Math.abs(sw), gx: 3 + 9 * sw, gy: 11 - 3 * Math.abs(sw), blade: 78 + 5 * sw,
-    capeTx: -1, capeTy: -0.18 + 0.1 * down, capeAmt: 0.95, capeWave: 0.55, phase: 4 * Math.PI * u,
-    scTx: -1, scTy: -0.1, scAmt: 1, hoodTy: -0.55 });
+    fx: 8.5 + 1.2 * sw, fy: 8 - 1.2 * Math.abs(sw), gx: -11 + 2.5 * sw, gy: 3 - 1.5 * Math.abs(sw), blade: 100 + 5 * sw,
+    capeTx: -1, capeTy: -0.32 + 0.1 * down, capeAmt: 1, capeWave: 0.5, phase: 4 * Math.PI * u,
+    scTx: -1, scTy: -0.15, scAmt: 1, hoodTy: -0.7, lines: 3 });
 }) };
 
-// salto: impulso, subida y plegado de piernas; la capa se arrastra hacia abajo
+// salto: impulso y piernas recogidas, con la daga siempre junto al pecho
 anims.jump = { fps: 24, loop: false, frames: [
-  pose({ hipy: -17.5, lean: 6, bend: 3, head: -2, nfx: 4, nfy: 0, ffx: -4, ffy: 0, fx: 8, fy: 8, gx: -5, gy: 6, blade: 88, capeTy: 0.9, capeTx: -0.4, capeAmt: 0.5, scTy: 0.9, scTx: -0.5, scAmt: 0.6 }),
-  pose({ hipy: -20.5, lean: 8, bend: 3, head: -4, nfx: 5, nfy: -5, ffx: -6, ffy: -7, nfa: 20, ffa: 40, fx: 10, fy: 4, gx: -5, gy: -4, blade: 92, capeTy: 1, capeTx: -0.5, capeAmt: 0.75, scTy: 1, scTx: -0.45, scAmt: 0.8 }),
-  pose({ hipy: -21, lean: 7, bend: 3, head: -3, nfx: 6, nfy: -8, ffx: -7, ffy: -10, nfa: 25, ffa: 45, fx: 10, fy: 2, gx: -6, gy: -5, blade: 92, capeTy: 1, capeTx: -0.6, capeAmt: 0.85, scTy: 1, scTx: -0.55, scAmt: 0.85 }),
-  pose({ hipy: -21, lean: 5, bend: 2, head: -2, nfx: 6, nfy: -9, ffx: -6, ffy: -11, nfa: 30, ffa: 50, fx: 10, fy: 4, gx: -6, gy: -2, blade: 92, capeTy: 0.8, capeTx: -0.8, capeAmt: 0.8, scTy: 0.7, scTx: -0.9, scAmt: 0.8 }),
+  pose({ hipy: -16.5, lean: 28, bend: 10, head: -18, hipx: 2, nfx: 6, nfy: 0, ffx: -6, ffy: 0, fx: 8, fy: 8, gx: -9, gy: 8, blade: 100, capeTy: 0.9, capeTx: -0.4, capeAmt: 0.5, scTy: 0.9, scTx: -0.5, scAmt: 0.6 }),
+  pose({ hipy: -19.5, lean: 26, bend: 8, head: -16, hipx: 2, nfx: 7, nfy: -5, ffx: -6, ffy: -7, nfa: 20, ffa: 40, fx: 9, fy: 6, gx: -10, gy: 2, blade: 100, capeTy: 1, capeTx: -0.5, capeAmt: 0.75, scTy: 1, scTx: -0.45, scAmt: 0.8 }),
+  pose({ hipy: -20, lean: 22, bend: 8, head: -14, hipx: 2, nfx: 8, nfy: -8, ffx: -6, ffy: -10, nfa: 25, ffa: 45, fx: 9, fy: 5, gx: -10, gy: 1, blade: 100, capeTy: 1, capeTx: -0.6, capeAmt: 0.85, scTy: 1, scTx: -0.55, scAmt: 0.85 }),
+  pose({ hipy: -20, lean: 20, bend: 6, head: -12, hipx: 2, nfx: 8, nfy: -9, ffx: -5, ffy: -11, nfa: 30, ffa: 50, fx: 9, fy: 6, gx: -9, gy: 2, blade: 100, capeTy: 0.8, capeTx: -0.8, capeAmt: 0.8, scTy: 0.7, scTx: -0.9, scAmt: 0.8 }),
 ] };
 
-// caida: piernas estiradas hacia el suelo, brazos abiertos, capa hacia arriba
+// caida: cuerpo recogido, capa hacia arriba, daga lista al frente
 anims.fall = { fps: 16, loop: true, frames: Array.from({ length: 4 }, (_, i) => {
   const t = i / 4, s = Math.sin(t * 2 * Math.PI);
-  return pose({ hipy: -20, lean: 3, bend: 2, head: 0, nfx: 4, nfy: -2 + s, ffx: -4, ffy: -4 - s, nfa: 15, ffa: 25,
-    fx: 10, fy: -4 + s, gx: -8, gy: -8 - s, blade: 96 + 3 * s, capeTy: -1, capeTx: -0.35, capeAmt: 1, capeWave: 0.6, phase: t * 2 * Math.PI,
+  return pose({ hipy: -20, lean: 14, bend: 6, head: -8, hipx: 1, nfx: 6, nfy: -2 + s, ffx: -5, ffy: -4 - s, nfa: 15, ffa: 25,
+    fx: 10, fy: 2 + s, gx: -10, gy: -3 - s, blade: 98 + 3 * s, capeTy: -1, capeTx: -0.35, capeAmt: 1, capeWave: 0.6, phase: t * 2 * Math.PI,
     scTy: -1, scTx: -0.4, scAmt: 1, hoodTy: -1 });
 }) };
 
-// ataque: tajo con la espada del reves; la muñeca gira la hoja hacia delante en el golpe
+// ataque: tajo con la daga del reves. El puño sale del pecho, la muñeca hace girar
+// la hoja curva y el golpe sube en arco; todo el cuerpo se lanza y gira.
 function keyed(keys, t) {
   let a = keys[0], b = keys[keys.length - 1];
   for (let i = 0; i < keys.length - 1; i++) if (t >= keys[i].t && t <= keys[i + 1].t) { a = keys[i]; b = keys[i + 1]; break; }
@@ -345,54 +373,59 @@ function keyed(keys, t) {
   return o;
 }
 const ATT = [
-  { t: 0.00, hipx: -3, hipy: -17, lean: -10, bend: -8, head: 8, nfx: 8, ffx: -9, nfy: 0, ffy: 0, fx: -9, fy: -3, gx: 9, gy: 6, blade: 125, capeTx: 0.3, capeTy: 0.5, capeAmt: 0.6, scTx: 0.4, scAmt: 0.6 },
-  { t: 0.06, hipx: -3, hipy: -16, lean: -16, bend: -10, head: 10, nfx: 9, ffx: -10, nfy: 0, ffy: 0, fx: -11, fy: -12, gx: 10, gy: 3, blade: 140, capeTx: 0.6, capeTy: 0.3, capeAmt: 0.7, scTx: 0.6, scAmt: 0.7 },
-  { t: 0.12, hipx: 2, hipy: -17, lean: 6, bend: 2, head: -4, nfx: 12, ffx: -11, nfy: 0, ffy: 0, fx: 4, fy: -17, gx: 8, gy: -3, blade: 80, capeTx: -0.6, capeTy: 0.1, capeAmt: 0.8, scTx: -0.6, scAmt: 0.8 },
-  { t: 0.20, hipx: 7, hipy: -16.5, lean: 30, bend: 14, head: -16, nfx: 15, ffx: -13, nfy: 0, ffy: 0, fx: 17, fy: -6, gx: -6, gy: 10, blade: 38, capeTx: -1, capeTy: -0.1, capeAmt: 1, scTx: -1, scAmt: 1 },
-  { t: 0.32, hipx: 9, hipy: -16, lean: 36, bend: 14, head: -18, nfx: 17, ffx: -14, nfy: 0, ffy: 0, fx: 20, fy: 3, gx: -8, gy: 9, blade: 62, capeTx: -1, capeTy: -0.2, capeAmt: 1, scTx: -1, scAmt: 1 },
-  { t: 0.48, hipx: 8, hipy: -17, lean: 30, bend: 12, head: -14, nfx: 16, ffx: -12, nfy: 0, ffy: 0, fx: 17, fy: 11, gx: -3, gy: 10, blade: 84, capeTx: -0.9, capeTy: 0.1, capeAmt: 0.9, scTx: -0.9, scAmt: 0.9 },
-  { t: 0.70, hipx: 5, hipy: -17.5, lean: 14, bend: 6, head: -8, nfx: 12, ffx: -8, nfy: 0, ffy: 0, fx: 12, fy: 12, gx: -1, gy: 12, blade: 72, capeTx: -0.7, capeTy: 0.3, capeAmt: 0.6, scTx: -0.7, scAmt: 0.7 },
-  { t: 1.00, hipx: 1, hipy: -19, lean: 5, bend: 3, head: -3, nfx: 6, ffx: -5, nfy: 0, ffy: 0, fx: 9, fy: 11, gx: -3, gy: 12, blade: 80, capeTx: -0.9, capeTy: 0.3, capeAmt: 0.3, scTx: -0.9, scAmt: 0.5 },
+  // listo, agazapado
+  { t: 0.00, hipx: 2, hipy: -17.4, lean: 24, bend: 8, head: -16, nfx: 8, ffx: -7, nfy: 0, ffy: 0, fx: 9, fy: 8, gx: -8, gy: 8, blade: 95, capeTx: -1, capeTy: 0.3, capeAmt: 0.5, scTx: -1, scAmt: 0.6 },
+  // recoge: el cuerpo se carga hacia atras, el puño va atras y abajo con la hoja a la espalda
+  { t: 0.07, hipx: -2, hipy: -16.4, lean: 8, bend: -2, head: -2, nfx: 9, ffx: -9, nfy: 0, ffy: 0, fx: -7, fy: 13, gx: 12, gy: 0, blade: 150, capeTx: 0.2, capeTy: 0.5, capeAmt: 0.7, scTx: 0.2, scAmt: 0.7 },
+  // arranca: la cadera empuja, el puño cruza por delante
+  { t: 0.14, hipx: 5, hipy: -15.8, lean: 34, bend: 12, head: -22, nfx: 13, ffx: -11, nfy: 0, ffy: 0, fx: 11, fy: 7, gx: -10, gy: 6, blade: 80, capeTx: -1, capeTy: 0.1, capeAmt: 0.9, scTx: -1, scAmt: 0.9 },
+  // golpe: brazo extendido, la hoja corta de abajo hacia delante
+  { t: 0.22, hipx: 9, hipy: -15, lean: 46, bend: 14, head: -30, nfx: 16, ffx: -13, nfy: 0, ffy: 0, fx: 20, fy: -1, gx: -12, gy: 5, blade: 20, capeTx: -1, capeTy: -0.2, capeAmt: 1, scTx: -1, scAmt: 1 },
+  // sigue: el arco asciende y el torso se estira
+  { t: 0.34, hipx: 11, hipy: -15.4, lean: 52, bend: 12, head: -34, nfx: 17, ffx: -14, nfy: 0, ffy: 0, fx: 19, fy: -11, gx: -11, gy: 6, blade: -30, capeTx: -1, capeTy: -0.4, capeAmt: 1, scTx: -1, scTy: -0.3, scAmt: 1 },
+  // la muñeca vuelve la hoja y el puño baja
+  { t: 0.50, hipx: 8, hipy: -16.4, lean: 40, bend: 12, head: -26, nfx: 15, ffx: -12, nfy: 0, ffy: 0, fx: 15, fy: -2, gx: -9, gy: 7, blade: 40, capeTx: -1, capeTy: 0, capeAmt: 0.9, scTx: -1, scAmt: 0.9 },
+  { t: 0.72, hipx: 5, hipy: -17, lean: 30, bend: 10, head: -20, nfx: 11, ffx: -8, nfy: 0, ffy: 0, fx: 11, fy: 6, gx: -8, gy: 8, blade: 85, capeTx: -1, capeTy: 0.2, capeAmt: 0.7, scTx: -1, scAmt: 0.8 },
+  { t: 1.00, hipx: 2, hipy: -17.4, lean: 24, bend: 8, head: -16, nfx: 8, ffx: -7, nfy: 0, ffy: 0, fx: 9, fy: 8, gx: -8, gy: 8, blade: 95, capeTx: -1, capeTy: 0.3, capeAmt: 0.5, scTx: -1, scAmt: 0.6 },
 ];
 const attFrames = Array.from({ length: 12 }, (_, i) => pose(Object.assign(keyed(ATT, i / 11), { phase: i * 0.8 })));
-// estela: puntas de la hoja en los fotogramas anteriores
 {
   const tipAt = t => figure(pose(keyed(ATT, clamp(t, 0, 1)))).tip;
   for (let i = 0; i < attFrames.length; i++) {
     const t = i / 11;
     if (i >= 2 && i <= 8) {
       const pts = [];
-      for (let k = 0; k <= 10; k++) pts.push(tipAt(t - 0.14 + 0.14 * k / 10));
+      for (let k = 0; k <= 12; k++) pts.push(tipAt(t - 0.15 + 0.15 * k / 12));
       attFrames[i].trailFrom = pts;
     }
   }
 }
 anims.attack = { fps: 40, loop: false, frames: attFrames };
 
-// guardia: antebrazo en alto con la hoja colgando por delante del cuerpo
+// guardia: puño alto delante del pecho con la hoja curva cubriendo el cuerpo
 anims.parry = { fps: 20, loop: false, frames: [
-  pose({ hipx: -1, hipy: -18, lean: -2, bend: 0, head: 2, nfx: 7, ffx: -7, fx: 4, fy: 0, gx: 2, gy: 8, blade: 95 }),
-  pose({ hipx: -1.5, hipy: -17.5, lean: -4, bend: -1, head: 3, nfx: 8, ffx: -8, fx: 12, fy: -9, gx: 3, gy: 6, blade: 92 }),
-  pose({ hipx: -2, hipy: -17.5, lean: -5, bend: -1, head: 3, nfx: 8, ffx: -8, fx: 14, fy: -10, gx: 4, gy: 5, blade: 91 }),
-  pose({ hipx: -2, hipy: -17.5, lean: -5, bend: -1, head: 3, nfx: 8, ffx: -8, fx: 14, fy: -10, gx: 4, gy: 5, blade: 90, capeAmt: 0.35 }),
+  pose({ hipx: 1, hipy: -17.4, lean: 18, bend: 4, head: -10, nfx: 8, ffx: -8, fx: 6, fy: 2, gx: -4, gy: 8, blade: 100 }),
+  pose({ hipx: 0, hipy: -17, lean: 12, bend: 2, head: -6, nfx: 9, ffx: -9, fx: 12, fy: -7, gx: -3, gy: 6, blade: 96 }),
+  pose({ hipx: -0.5, hipy: -17, lean: 10, bend: 1, head: -4, nfx: 9, ffx: -9, fx: 14, fy: -9, gx: -2, gy: 5, blade: 94 }),
+  pose({ hipx: -0.5, hipy: -17, lean: 10, bend: 1, head: -4, nfx: 9, ffx: -9, fx: 14, fy: -9, gx: -2, gy: 5, blade: 94, capeAmt: 0.35 }),
 ] };
 
 // golpe recibido: el cuerpo se dobla hacia atras y todo se sacude
 anims.hit = { fps: 16, loop: false, frames: [
-  pose({ hipx: -3, hipy: -18, lean: -18, bend: -10, head: 12, nfx: 6, ffx: -8, fx: -6, fy: -8, gx: 8, gy: -4, blade: 150, capeTx: 1, capeTy: 0.3, capeAmt: 0.9, scTx: 1, scTy: 0.2, scAmt: 0.9 }),
-  pose({ hipx: -5, hipy: -17, lean: -24, bend: -12, head: 14, nfx: 5, ffx: -10, nfa: 0, fx: -9, fy: -4, gx: 9, gy: -1, blade: 160, capeTx: 0.8, capeTy: 0.5, capeAmt: 0.9, scTx: 0.8, scAmt: 0.9 }),
-  pose({ hipx: -4, hipy: -17.5, lean: -14, bend: -6, head: 8, nfx: 5, ffx: -9, fx: -2, fy: 3, gx: 7, gy: 4, blade: 120, capeTx: 0.2, capeTy: 0.8, capeAmt: 0.6 }),
-  pose({ hipx: -2, hipy: -18.5, lean: -6, bend: -2, head: 4, nfx: 5, ffx: -6, fx: 5, fy: 8, gx: 1, gy: 9, blade: 95, capeTx: -0.4, capeTy: 0.6, capeAmt: 0.4 }),
+  pose({ hipx: -3, hipy: -18, lean: -14, bend: -10, head: 12, nfx: 6, ffx: -8, fx: -5, fy: -8, gx: 8, gy: -4, blade: 140, capeTx: 1, capeTy: 0.3, capeAmt: 0.9, scTx: 1, scTy: 0.2, scAmt: 0.9 }),
+  pose({ hipx: -5, hipy: -17, lean: -22, bend: -12, head: 14, nfx: 5, ffx: -10, fx: -8, fy: -4, gx: 9, gy: -1, blade: 150, capeTx: 0.8, capeTy: 0.5, capeAmt: 0.9, scTx: 0.8, scAmt: 0.9 }),
+  pose({ hipx: -4, hipy: -17.5, lean: -10, bend: -6, head: 8, nfx: 5, ffx: -9, fx: -2, fy: 3, gx: 7, gy: 4, blade: 125, capeTx: 0.2, capeTy: 0.8, capeAmt: 0.6 }),
+  pose({ hipx: -1, hipy: -18, lean: 8, bend: 0, head: -4, nfx: 6, ffx: -7, fx: 6, fy: 8, gx: -2, gy: 9, blade: 100, capeTx: -0.4, capeTy: 0.6, capeAmt: 0.4 }),
 ] };
 
-// dash: casi horizontal, imagenes residuales y lineas de velocidad
+// dash: casi a ras de suelo, hoja hacia atras, imagenes residuales y lineas
 anims.dash = { fps: 40, loop: false, frames: [
-  pose({ hipx: -2, hipy: -15.5, lean: 20, bend: 12, head: -10, nfx: 8, ffx: -10, fx: -6, fy: 6, gx: 8, gy: 8, blade: 150, capeTx: -1, capeTy: 0.1, capeAmt: 0.8, scAmt: 0.9 }),
-  pose({ hipx: 4, hipy: -13, lean: 62, bend: 14, head: -40, nfx: 14, nfy: -2, nfa: 12, ffx: -18, ffy: -6, ffa: 25, fx: -4, fy: 8, gx: 9, gy: 12, blade: 168, capeTx: -1, capeTy: -0.05, capeAmt: 1, capeWave: 0.25, scAmt: 1, scTy: -0.05, ghost: 1, lines: 4, hoodTy: -0.25 }),
-  pose({ hipx: 5, hipy: -12.5, lean: 68, bend: 12, head: -46, nfx: 17, nfy: -3, nfa: 12, ffx: -20, ffy: -7, ffa: 25, fx: -6, fy: 9, gx: 11, gy: 13, blade: 172, capeTx: -1, capeTy: -0.02, capeAmt: 1, capeWave: 0.2, scAmt: 1, scTy: -0.02, ghost: 2, lines: 6, phase: 1, hoodTy: -0.2 }),
-  pose({ hipx: 5, hipy: -12.5, lean: 68, bend: 12, head: -46, nfx: 18, nfy: -3, nfa: 12, ffx: -21, ffy: -6, ffa: 25, fx: -7, fy: 9, gx: 11, gy: 13, blade: 172, capeTx: -1, capeTy: 0, capeAmt: 1, capeWave: 0.2, scAmt: 1, scTy: 0, ghost: 2, lines: 6, phase: 2, hoodTy: -0.2 }),
-  pose({ hipx: 4, hipy: -13.5, lean: 56, bend: 12, head: -36, nfx: 14, nfy: -2, ffx: -17, ffy: -4, ffa: 20, fx: -2, fy: 8, gx: 9, gy: 11, blade: 160, capeTx: -1, capeTy: 0.1, capeAmt: 1, scAmt: 1, ghost: 1, lines: 3, phase: 3 }),
-  pose({ hipx: 2, hipy: -17, lean: 28, bend: 10, head: -18, nfx: 10, ffx: -8, fx: 6, fy: 10, gx: 2, gy: 11, blade: 100, capeTx: -1, capeTy: 0.3, capeAmt: 0.8, scAmt: 0.8 }),
+  pose({ hipx: -1, hipy: -15.5, lean: 30, bend: 12, head: -18, nfx: 9, ffx: -10, fx: -5, fy: 6, gx: 8, gy: 8, blade: 140, capeTx: -1, capeTy: 0.1, capeAmt: 0.8, scAmt: 0.9 }),
+  pose({ hipx: 5, hipy: -13, lean: 64, bend: 14, head: -42, nfx: 15, nfy: -2, nfa: 12, ffx: -18, ffy: -6, ffa: 25, fx: -3, fy: 8, gx: 10, gy: 12, blade: 160, capeTx: -1, capeTy: -0.05, capeAmt: 1, capeWave: 0.25, scAmt: 1, scTy: -0.05, ghost: 1, lines: 4, hoodTy: -0.25 }),
+  pose({ hipx: 6, hipy: -12.5, lean: 70, bend: 12, head: -48, nfx: 18, nfy: -3, nfa: 12, ffx: -20, ffy: -7, ffa: 25, fx: -5, fy: 9, gx: 12, gy: 13, blade: 165, capeTx: -1, capeTy: -0.02, capeAmt: 1, capeWave: 0.2, scAmt: 1, scTy: -0.02, ghost: 2, lines: 6, phase: 1, hoodTy: -0.2 }),
+  pose({ hipx: 6, hipy: -12.5, lean: 70, bend: 12, head: -48, nfx: 19, nfy: -3, nfa: 12, ffx: -21, ffy: -6, ffa: 25, fx: -6, fy: 9, gx: 12, gy: 13, blade: 165, capeTx: -1, capeTy: 0, capeAmt: 1, capeWave: 0.2, scAmt: 1, scTy: 0, ghost: 2, lines: 6, phase: 2, hoodTy: -0.2 }),
+  pose({ hipx: 5, hipy: -13.5, lean: 58, bend: 12, head: -38, nfx: 15, nfy: -2, ffx: -17, ffy: -4, ffa: 20, fx: -1, fy: 8, gx: 9, gy: 11, blade: 150, capeTx: -1, capeTy: 0.1, capeAmt: 1, scAmt: 1, ghost: 1, lines: 3, phase: 3 }),
+  pose({ hipx: 3, hipy: -17, lean: 32, bend: 10, head: -20, nfx: 10, ffx: -8, fx: 7, fy: 9, gx: -4, gy: 9, blade: 105, capeTx: -1, capeTy: 0.3, capeAmt: 0.8, scAmt: 0.8 }),
 ] };
 
 // ---------- salida ----------
@@ -400,12 +433,12 @@ const order = ['idle', 'run', 'jump', 'fall', 'attack', 'parry', 'hit', 'dash'];
 let out = [
   '# El caminante, un asesino de la memoria: capucha, bufanda de luz azul y una',
   '# espada que empuña del reves (la hoja cuelga por debajo del puño). Cada',
-  '# fotograma es un lienzo completo de 96x64 con los pies en la fila de abajo.',
+  '# fotograma es un lienzo completo de 112x64 con los pies en la fila de abajo.',
   '# Lo genera el esqueleto de tools/rig_caminante.js (columna curvada, piernas y',
   '# brazos con cinematica inversa, capa y bufanda con inercia); para cambiar el',
   '# movimiento se edita el esqueleto y se regenera, no estos fotogramas a mano.',
   '# Leyenda: ver art/palette.txt. El punto (.) es transparente.', '',
-  'sheet 96x64', 'out res://game/player/player_sheet.png', ''].join(NL) + NL;
+  'sheet 112x64', 'out res://game/player/player_sheet.png', ''].join(NL) + NL;
 const info = {};
 let animText = '';
 for (const name of order) {

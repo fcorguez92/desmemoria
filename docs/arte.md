@@ -35,7 +35,7 @@ zona.
 
 | Elemento | Colisión actual | Lienzo del sprite | Punto de anclaje |
 |---|---|---|---|
-| Jugador | 24×48 | 96×64 (cuerpo de 20×44) | Los pies, centrados |
+| Jugador | 24×48 | 112×64 (cuerpo de 20×44) | Los pies, centrados |
 | Enemigo básico | 32×48 | 64×56 (cuerpo de 24×44) | Los pies, centrados |
 | Ancla, objetos, Eco | según objeto | múltiplos de 8 | Base, centrada |
 
@@ -111,7 +111,7 @@ dos maneras: empezar con el texto y pasar a retocar a mano cuando compense.
 
 | Sprite | Dibujo | Lienzo | Animaciones |
 |---|---|---|---|
-| Caminante (jugador) | 20×44, asesino encapuchado con bufanda de luz azul y capa con inercia; empuña la espada ("el Filo") del revés, con la hoja colgando por debajo del puño | 96×64 | reposo (10 fotogramas), correr (14, cuerpo curvado hacia delante), salto (4), caída (4), ataque (12, tajo con giro de muñeca y estela), guardia (4), golpe recibido (4), dash (6, casi horizontal con imágenes residuales) |
+| Caminante (jugador) | 20×44, asesino agazapado y encapuchado, con máscara azul sobre el rostro, ribete ámbar en la capucha, bolsa en el cinto y capa con inercia; empuña una daga curva ("el Filo") del revés junto al pecho, con la hoja colgando por debajo del puño y curvándose hacia delante | 112×64 | reposo (10, agazapado), correr (14, muy curvado, con líneas de velocidad), salto (4), caída (4), ataque (12, tajo con giro de muñeca y estela), guardia (4), golpe recibido (4), dash (6, casi horizontal con imágenes residuales) |
 | Cascarón (enemigo) | 24×44, figura pálida sin rostro con trapos rojos; cuchillo pesado oxidado | 64×56 | reposo (2), andar (6), aviso (2), golpe (2), golpe recibido (2) |
 | Decorado del entorno | 13 piezas: árbol muerto, columna rota, hierba, zarza, huesos, estandarte, cadenas, estatua, mojón, poste, farol, arco ciego, enredaderas | 48×64 | una fila de 13 fotogramas (`game/environment/decor_sheet.png`); lo que se apoya toca la fila de abajo y lo que cuelga la de arriba |
 | Iconos del HUD | 16×16: frasco de curación (lleno y vacío, ámbar) y Eco (gota azul) | 16×16 | una fila de 3 fotogramas (`game/ui/hud_icons.png`) |
