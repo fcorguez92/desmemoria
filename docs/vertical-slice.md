@@ -63,7 +63,7 @@ inscripción (que el jugador elige leer, no se le impone):
 
 - `game/levels/ultimo_umbral.map` — el terreno como texto. Leyenda: `T` suelo con
   musgo, `G` relleno de piedra, `B` ladrillo, `C` remate de muro, `S` tablón de
-  madera; `P` inicio del jugador, `A` Ancla de Memoria, `E` enemigo, `R` urna
+  madera; `P` inicio del jugador, `A` Ancla de Memoria, `E` cascarón (tajo), `1` lancero (estocada larga), `2` arrojador (esquirlas a distancia), `3` coloso (mazazo lento) y `4` acechador (embestida), `R` urna
   rompible, `I` inscripción legible, `d` / `j` / `w` recuerdo de dash / doble
   salto / salto de pared; `Q` caja rompible, `O` barril rompible (aguanta 2 golpes);
   `.` vacío. Marcadores de **decorado** sin función (sprites de `decor.sprite`, sin

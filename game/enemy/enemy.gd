@@ -1,7 +1,17 @@
 extends CharacterBody2D
-## Enemigo básico: patrulla, persigue al jugador y ataca con un aviso (se pone
-## amarillo) que da tiempo a esquivar. Un golpe suyo o del jugador lo hace
-## retroceder y cancela su ataque. Da Ecos al morir.
+## Enemigo: patrulla, persigue al jugador y ataca con un aviso (se pone amarillo)
+## que da tiempo a esquivar. Un golpe suyo o del jugador lo hace retroceder y
+## cancela su ataque. Da Ecos al morir.
+##
+## Todos los enemigos comparten este script y se diferencian por su escena (hoja
+## de sprites, vida, alcance, tiempos) y por `attack_kind`, que decide qué hace
+## el golpe cuando cae:
+## - MELEE: golpea lo que haya dentro de su hitbox (tajo, estocada, mazazo).
+## - PROJECTILE: lanza `projectile_scene` desde `muzzle` (a distancia).
+## - LUNGE: se lanza hacia delante a `lunge_speed` durante `lunge_time` y golpea
+##   a lo que toque por el camino (embestida).
+
+enum AttackKind { MELEE, PROJECTILE, LUNGE }
 
 const TELEGRAPH_COLOR := Color(1.0, 0.85, 0.3)
 const STUN_COLOR := Color(0.7, 0.9, 1.0)
@@ -11,7 +21,18 @@ const STUN_COLOR := Color(0.7, 0.9, 1.0)
 ## Segundos de aturdimiento tras un parry, durante los que recibe doble daño.
 @export var parry_stun_time: float = 1.2
 
+@export_group("Ataque")
+@export var attack_kind: AttackKind = AttackKind.MELEE
+## PROJECTILE: escena del proyectil y punto de salida (con el enemigo mirando a la derecha).
+@export var projectile_scene: PackedScene
+@export var muzzle: Vector2 = Vector2(24.0, -8.0)
+## LUNGE: velocidad y duración de la embestida.
+@export var lunge_speed: float = 520.0
+@export var lunge_time: float = 0.22
+
 var _stun_timer: float = 0.0
+var _lunge_timer: float = 0.0
+var _lunge_hit: bool = false
 
 @onready var health: HealthComponent = $HealthComponent
 @onready var hit_flash: HitFlashComponent = $HitFlashComponent
@@ -24,6 +45,7 @@ var _stun_timer: float = 0.0
 
 
 func _ready() -> void:
+	add_to_group("enemy")
 	health.damaged.connect(_on_damaged)
 	health.died.connect(_on_died)
 	ai.facing_changed.connect(_on_facing_changed)
@@ -44,11 +66,16 @@ func _physics_process(delta: float) -> void:
 		velocity.y += gravity * delta
 
 	if knockback.is_active:
+		_lunge_timer = 0.0
 		knockback.step(self, delta)
 	else:
 		ai.step(self, delta)
+		if _lunge_timer > 0.0:
+			_step_lunge(delta)
 
 	move_and_slide()
+	if _lunge_timer > 0.0 and is_on_wall():
+		_lunge_timer = 0.0
 	animator.play("walk" if absf(velocity.x) > 5.0 else "idle")
 
 
@@ -56,6 +83,7 @@ func _physics_process(delta: float) -> void:
 func take_hit(damage: int, from_direction: int, _attacker: Node = null) -> void:
 	var stunned := _stun_timer > 0.0
 	if health.take_hit(damage * 2 if stunned else damage):
+		_lunge_timer = 0.0
 		knockback.apply(from_direction)
 		ai.interrupt(maxf(0.3, _stun_timer))
 		visual.modulate = STUN_COLOR if stunned else Color.WHITE
@@ -70,6 +98,7 @@ func take_hit(damage: int, from_direction: int, _attacker: Node = null) -> void:
 ## daño mientras dure. Lo llama el jugador (ver Player._on_parried).
 func on_parried() -> void:
 	_stun_timer = parry_stun_time
+	_lunge_timer = 0.0
 	ai.interrupt(parry_stun_time)
 	attack_visual.reset()
 	visual.modulate = STUN_COLOR
@@ -100,9 +129,40 @@ func _on_attack_started() -> void:
 func _on_attack_landed() -> void:
 	visual.modulate = Color.WHITE
 	attack_visual.strike()
-	melee.try_attack(self, ai.facing)
+	match attack_kind:
+		AttackKind.MELEE:
+			melee.try_attack(self, ai.facing)
+		AttackKind.PROJECTILE:
+			_shoot()
+		AttackKind.LUNGE:
+			_lunge_timer = lunge_time
+			_lunge_hit = false
+
+
+func _shoot() -> void:
+	if projectile_scene == null:
+		return
+	var shot := projectile_scene.instantiate() as Projectile
+	get_parent().add_child(shot)
+	shot.global_position = global_position + Vector2(muzzle.x * ai.facing, muzzle.y)
+	shot.launch(Vector2(ai.facing, 0.0))
+
+
+## Durante la embestida avanza a velocidad fija (pisa la de la IA) y golpea una
+## sola vez a lo primero que toque.
+func _step_lunge(delta: float) -> void:
+	_lunge_timer -= delta
+	# No se lanza al vacío: la embestida se corta en el borde.
+	if ai._ledge_ahead(self):
+		_lunge_timer = 0.0
+		return
+	velocity.x = ai.facing * lunge_speed
+	if not _lunge_hit:
+		melee.try_attack(self, ai.facing)
 
 
 func _on_hit_landed(body: Node) -> void:
+	_lunge_hit = true
+	_lunge_timer = 0.0 if attack_kind == AttackKind.LUNGE else _lunge_timer
 	HitSpark.spawn(get_parent(), (body as Node2D).global_position)
 	HitStop.trigger(self)

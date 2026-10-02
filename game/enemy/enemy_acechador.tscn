@@ -1,0 +1,48 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="PackedScene" path="res://game/enemy/enemy.tscn" id="1_base"]
+[ext_resource type="Texture2D" path="res://game/enemy/acechador_sheet.png" id="2_sheet"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_body"]
+size = Vector2(30, 36)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_attack"]
+size = Vector2(38, 28)
+
+[node name="Acechador" instance=ExtResource("1_base")]
+ecos_reward = 3
+attack_kind = 2
+
+[node name="CollisionShape2D" parent="." index="0"]
+shape = SubResource("RectangleShape2D_body")
+
+[node name="Visual" parent="." index="1"]
+texture = ExtResource("2_sheet")
+offset = Vector2(0, -14)
+
+[node name="SheetAnimator" parent="." index="2"]
+animations = {"hit": [4, 4, 16.0, false], "idle": [0, 8, 9.0, true], "strike": [3, 6, 24.0, false], "walk": [1, 12, 30.0, true], "windup": [2, 6, 12.0, false]}
+
+[node name="AttackHitbox" parent="." index="3"]
+position = Vector2(18, -2)
+
+[node name="CollisionShape2D" parent="AttackHitbox" index="0"]
+shape = SubResource("RectangleShape2D_attack")
+
+[node name="LedgeProbe" parent="." index="4"]
+position = Vector2(20, 14)
+
+[node name="HealthComponent" parent="." index="5"]
+max_health = 2
+
+[node name="MeleeAttackComponent" parent="." index="7"]
+reach = 18.0
+
+[node name="PatrolChaseAI" parent="." index="9"]
+patrol_speed = 80.0
+chase_speed = 200.0
+detect_range = 280.0
+attack_range = 150.0
+windup_time = 0.35
+recovery_time = 0.9
+ledge_probe_offset = 20.0

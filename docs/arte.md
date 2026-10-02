@@ -112,7 +112,12 @@ dos maneras: empezar con el texto y pasar a retocar a mano cuando compense.
 | Sprite | Dibujo | Lienzo | Animaciones |
 |---|---|---|---|
 | Caminante (jugador) | 20×44, asesino agazapado y encapuchado, con máscara azul sobre el rostro, ribete ámbar en la capucha, bolsa en el cinto y capa con inercia; empuña una daga curva ("el Filo") del revés, con el puño junto a la cadera y la hoja hacia atrás, casi horizontal, mientras corre; el tajo arranca desde atrás y barre hacia delante | 112×64 | reposo (10, agazapado), correr (14, muy curvado, con líneas de velocidad), salto (4), caída (4), ataque (12, tajo con giro de muñeca y estela), guardia (4), golpe recibido (4), dash (6, casi horizontal con imágenes residuales) |
-| Cascarón (enemigo) | 24×44, figura pálida sin rostro con trapos rojos; cuchillo pesado oxidado | 64×56 | reposo (2), andar (6), aviso (2), golpe (2), golpe recibido (2) |
+| Cascarón (enemigo, tajo) | 24×44, figura pálida y encorvada, sin rostro, con vendas y trapos rojos; cuchillo pesado y oxidado | 96×64 | reposo (8), andar (12), aviso (6), golpe (6), golpe recibido (4) |
+| Lancero (estocada larga) | yelmo oxidado con penacho rojo, hombrera y bandolera; lanza de 36 px | 144×64 | las mismas cinco animaciones y fotogramas |
+| Arrojador (a distancia) | encapuchado de rojo, flaco, con esquirlas de hueso en la mano | 96×64 | las mismas |
+| Coloso (mazazo) | 44×64, enorme, hombrera de hierro, mazo de piedra; el golpe levanta escombros | 144×96 | las mismas |
+| Acechador (embestida) | casi a cuatro patas, garras; el golpe es un salto horizontal | 112×64 | las mismas |
+| Esquirla (proyectil del arrojador) | hueso afilado con estela roja | 16×16 | 2 fotogramas (`game/enemy/shard_sheet.png`) |
 | Decorado del entorno | 13 piezas: árbol muerto, columna rota, hierba, zarza, huesos, estandarte, cadenas, estatua, mojón, poste, farol, arco ciego, enredaderas | 48×64 | una fila de 13 fotogramas (`game/environment/decor_sheet.png`); lo que se apoya toca la fila de abajo y lo que cuelga la de arriba |
 | Iconos del HUD | 16×16: frasco de curación (lleno y vacío, ámbar) y Eco (gota azul) | 16×16 | una fila de 3 fotogramas (`game/ui/hud_icons.png`) |
 | Eco (recuerdo de tu muerte) | 20×44, silueta del Caminante en azul frío que se deshace por abajo en jirones; flota y su brillo late | 32×56 | flotar (4), `game/echo/echo_sheet.png` |
@@ -154,3 +159,16 @@ godot --headless --path . --import
 ```
 
 Por qué: con 54 fotogramas a 40 fps (para aprovechar los 60 fps del juego) dibujar cada pose a mano en texto no es viable ni coherente. Si algún día se pasa a dibujar a mano o con Pixelorama, se borra este script y este `.sprite` y se sustituye la hoja (ver "una sola fuente de verdad").
+
+### Los enemigos y el Eco también salen del esqueleto
+
+`art/source/enemy.sprite` (cascarón), `lancero.sprite`, `arrojador.sprite`, `coloso.sprite` y `acechador.sprite` los genera `tools/rig_enemigos.js`, y `echo.sprite` (la silueta del Caminante en azul deshaciéndose) `tools/rig_eco.js`; ambos usan la biblioteca `tools/rig_lib.js`, la misma que el Caminante. Cada enemigo es un estilo (proporciones, cabeza, arma, colores, vendas) más sus poses; para cambiar uno se edita su bloque en `rig_enemigos.js` y se regenera:
+
+```
+node tools/rig_enemigos.js        # o: node tools/rig_enemigos.js lancero
+node tools/rig_eco.js
+godot --headless --path . --script res://tools/build_sprites.gd
+godot --headless --path . --import
+```
+
+Todas las hojas de enemigo tienen las mismas filas (reposo, andar, aviso, golpe, golpe recibido), así que se animan con la misma escena base. `shard.sprite` (la esquirla) sí está dibujada a mano.

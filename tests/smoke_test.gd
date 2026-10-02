@@ -58,6 +58,7 @@ func _run() -> void:
 	await _test_planks_are_one_way_platforms()
 	await _test_breakable_props()
 	await _test_scenery_is_dense_and_harmless()
+	await _test_enemy_types()
 	await _test_inscription_is_readable()
 	await _test_enemy_does_not_jitter_against_a_wall()
 	await _test_map_data()
@@ -366,7 +367,7 @@ func _test_sprites_and_animations() -> void:
 	var player_sprite: Sprite2D = _player.visual
 	var enemy_sprite: Sprite2D = enemy.visual
 	_check(player_sprite.texture.get_size() == Vector2(player_sprite.hframes * 112, player_sprite.vframes * 64), "la hoja del jugador cuadra con su cuadrícula de 112x64")
-	_check(enemy_sprite.texture.get_size() == Vector2(enemy_sprite.hframes * 64, enemy_sprite.vframes * 56), "la hoja del enemigo cuadra con su cuadrícula de 64x56")
+	_check(enemy_sprite.texture.get_size() == Vector2(enemy_sprite.hframes * 96, enemy_sprite.vframes * 64), "la hoja del enemigo cuadra con su cuadrícula de 96x64")
 
 	await _wait(15)
 	_check(_player.animator.current == "idle", "quieto en el suelo usa la animación de reposo")
@@ -930,6 +931,95 @@ func _test_scenery_is_dense_and_harmless() -> void:
 	_check(not is_instance_valid(barrel), "y se rompe con el segundo")
 
 
+## Pone un enemigo de `scene_path` en el suelo plano de El Último Umbral, a `distance`
+## píxeles a la derecha del jugador (que se coloca en x = 60: a su izquierda hay un
+## muro y a la derecha, más allá de x = 250, la cabaña, que pararía los proyectiles).
+func _spawn_enemy_next_to_player(scene_path: String, distance: float) -> Node2D:
+	_player.global_position = Vector2(60.0, 296.0)
+	_player.velocity = Vector2.ZERO
+	var enemy: Node2D = load(scene_path).instantiate()
+	_room.add_child(enemy)
+	var half_height: float = enemy.get_node("CollisionShape2D").shape.size.y / 2.0
+	enemy.global_position = Vector2(60.0 + distance, 320.0 - half_height)
+	enemy.ai._home_x = enemy.global_position.x
+	return enemy
+
+
+func _test_enemy_types() -> void:
+	print("
+[Enemigos distintos, ataques distintos]")
+
+	# Lancero: la estocada llega mucho más lejos que un tajo.
+	await _load_world()
+	var lancero := await _spawn_enemy_next_to_player("res://game/enemy/enemy_lancero.tscn", 78.0)
+	var hp_before: int = _player.health.health
+	await _wait(150)
+	_check(_player.health.health < hp_before, "el lancero alcanza al jugador desde lejos (78 px) con la lanza")
+	var melee_reach: float = lancero.melee.reach
+	_check(melee_reach > 40.0, "su alcance es mayor que el del cascarón")
+
+	# Cascarón a la misma distancia: ni siquiera inicia el ataque.
+	await _load_world()
+	var casc := await _spawn_enemy_next_to_player("res://game/enemy/enemy.tscn", 78.0)
+	await _wait(3)
+	_check(casc.ai.state == PatrolChaseAI.State.CHASE, "el cascarón a 78 px aún no ataca: tiene que acercarse (su alcance es corto)")
+
+	# Arrojador: lanza una esquirla que hiere al jugador.
+	await _load_world()
+	var thrower := await _spawn_enemy_next_to_player("res://game/enemy/enemy_arrojador.tscn", 130.0)
+	var shot: Projectile = null
+	for i in 150:
+		await _wait(1)
+		for child in _room.get_children():
+			if child is Projectile:
+				shot = child
+				break
+		if shot:
+			break
+	_check(shot != null, "el arrojador lanza un proyectil")
+	_check(shot != null and shot.direction.x < 0.0, "el proyectil viaja hacia el jugador")
+	hp_before = _player.health.health
+	await _wait(60)
+	_check(_player.health.health < hp_before, "el proyectil hiere al jugador")
+	_check(thrower.health.max_health == 2, "el arrojador es frágil (2 de vida)")
+
+	# Un proyectil desviado con parry vuelve hacia quien lo lanzó y hiere a los enemigos.
+	await _load_world()
+	var shard: Projectile = load("res://game/enemy/shard.tscn").instantiate()
+	_room.add_child(shard)
+	shard.global_position = Vector2(300.0, 296.0)
+	shard.launch(Vector2.LEFT)
+	shard.on_parried()
+	_check(shard.direction.x > 0.0 and shard.target_group == &"enemy", "un proyectil desviado se devuelve y pasa a herir a los enemigos")
+	shard.queue_free()
+
+	# Acechador: la embestida lo lleva hacia el jugador a gran velocidad.
+	await _load_world()
+	var stalker := await _spawn_enemy_next_to_player("res://game/enemy/enemy_acechador.tscn", 120.0)
+	var x_at_windup := 0.0
+	var lunged_far := false
+	hp_before = _player.health.health
+	for i in 200:
+		await _wait(1)
+		if stalker.ai.state == PatrolChaseAI.State.WINDUP:
+			x_at_windup = stalker.global_position.x
+		if x_at_windup > 0.0 and x_at_windup - stalker.global_position.x > 70.0:
+			lunged_far = true
+			break
+	_check(lunged_far, "el acechador se lanza hacia delante más de 70 px en un instante")
+	await _wait(30)
+	_check(_player.health.health < hp_before, "y la embestida hiere al jugador")
+
+	# Coloso: aguanta mucho y su mazazo hace doble daño.
+	await _load_world()
+	var colossus := await _spawn_enemy_next_to_player("res://game/enemy/enemy_coloso.tscn", 70.0)
+	_check(colossus.health.max_health == 8, "el coloso tiene 8 de vida")
+	hp_before = _player.health.health
+	await _wait(240)
+	_check(hp_before - _player.health.health >= 2, "su mazazo quita 2 de vida de una vez")
+	_check(colossus.ai.windup_time >= 0.9, "y avisa el golpe durante casi un segundo")
+
+
 func _test_inscription_is_readable() -> void:
 	print("\n[La inscripción se lee con Z, sin afectar a la partida]")
 	await _load_world()
@@ -1067,7 +1157,7 @@ func _test_ultimo_umbral_builds_from_text_map() -> void:
 	for child in _room.get_children():
 		if child is EntitySpawner:
 			spawners += 1
-	_check(spawners == 2, "dos enemigos colocados por los marcadores E")
+	_check(spawners == 3, "tres enemigos colocados por los marcadores (dos cascarones E y un arrojador 2)")
 	var anchors := 0
 	for child in _room.get_children():
 		if child is Checkpoint:
