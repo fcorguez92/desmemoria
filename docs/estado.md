@@ -1,6 +1,6 @@
 # Estado del proyecto (documento vivo)
 
-Última actualización: controles con mando.
+Última actualización: Ecos con forma, ataque en arco y primera pasada de optimización.
 
 ## Dónde estamos en la metodología
 
@@ -22,7 +22,7 @@ tests/        smoke_test.gd — 317 comprobaciones, todas en verde
 docs/         Diseño, decisiones, arquitectura y estado
 ```
 
-Los personajes ya usan sprites de píxeles; el entorno, los objetos y los Ecos siguen siendo geometría de colores planos (`Polygon2D`) sin arte final: el objetivo
+Los personajes ya usan sprites de píxeles; el entorno, los objetos siguen siendo geometría de colores planos (`Polygon2D`) sin arte final: el objetivo
 de esta fase era validar cómo se siente, no cómo se ve.
 
 ## Controles actuales
@@ -64,3 +64,14 @@ están cambiadas respecto a Xbox):
 - Jugar: abrir el proyecto en Godot 4.7 y pulsar F5.
 - Verificar reglas: `godot --headless --path . --script res://tests/smoke_test.gd`
   (código 0 = todo bien). Ver `arquitectura.md#verificación`.
+
+## Rendimiento
+
+Medido con ventana real (RTX 2060, 4 salas, ~285 nodos, 32-42 draw calls): 480-680 FPS
+sin vsync con Forward+, así que en un equipo normal el juego va con mucho margen sobre
+60 FPS. Aun así se ha recortado trabajo evitable: el minimapa solo se redibuja al cambiar
+de baldosa, el animador solo toca el sprite cuando cambia el fotograma, solo procesan la
+sala actual y sus vecinas (`World._activate_nearby_rooms`) y el autoguardado se difiere
+un fotograma al cambiar de sala. **No se ha cambiado de renderizador** (Compatibility fue
+más lento). Pendiente de medir en un equipo flojo (portátil con gráfica integrada) con
+un script de medición; si hay tirones allí, mirar vsync y la interpolación de físicas.

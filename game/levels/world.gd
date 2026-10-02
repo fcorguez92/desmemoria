@@ -34,6 +34,8 @@ const FALL_MARGIN := 96.0
 ## Para cambiar de sala hay que adentrarse en la nueva este tanto (y menos que
 ## FALL_MARGIN): así, saltando justo en una frontera, la cámara no va y viene.
 const ROOM_HYSTERESIS := 32.0
+## Margen alrededor de la sala actual dentro del cual las salas vecinas siguen vivas.
+const ACTIVE_ROOM_MARGIN := 64.0
 ## Lo que tarda el cielo en aparecer o desaparecer al cambiar de sala: la cámara
 ## se desliza a la sala nueva y un corte seco se notaría a mitad de camino.
 const SKY_FADE_SECONDS := 0.5
@@ -149,8 +151,20 @@ func _enter_room(room: Node2D, announce: bool = true, autosave: bool = true) -> 
 	player.respawn.fall_limit_y = rect.end.y + FALL_MARGIN
 	if map_data.visit(room.name) and announce:
 		player.announce_area(room.title)
+	_activate_nearby_rooms(rect)
 	if autosave:
-		save_game()
+		# Un fotograma después: que el guardado en disco no coincida con el
+		# arranque del deslizamiento de la cámara.
+		save_game.call_deferred()
+
+
+## Solo la sala actual y las que tocan con ella (con un margen) procesan: los
+## enemigos de salas lejanas no piensan, no se mueven ni lanzan raycasts. Siguen
+## dibujadas y con sus colisiones; solo se les quita el trabajo por fotograma.
+func _activate_nearby_rooms(current_rect: Rect2) -> void:
+	var zone := current_rect.grow(ACTIVE_ROOM_MARGIN)
+	for i in _rooms.size():
+		_rooms[i].process_mode = Node.PROCESS_MODE_INHERIT if zone.intersects(_room_rects[i]) else Node.PROCESS_MODE_DISABLED
 
 
 ## Que la cámara no salga de la sala. Si la sala es más baja o más estrecha que

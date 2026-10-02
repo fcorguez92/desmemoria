@@ -1,6 +1,8 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://game/echo/echo.gd" id="1_echo"]
+[ext_resource type="Texture2D" path="res://game/echo/echo_sheet.png" id="2_sheet"]
+[ext_resource type="Script" path="res://core/components/sheet_animator.gd" id="3_animator"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_echo"]
 size = Vector2(36, 44)
@@ -8,9 +10,17 @@ size = Vector2(36, 44)
 [node name="Echo" type="Node2D"]
 script = ExtResource("1_echo")
 
-[node name="Visual" type="Polygon2D" parent="."]
-color = Color(0.6, 0.75, 0.85, 0.85)
-polygon = PackedVector2Array(-14, -20, 14, -20, 14, 20, -14, 20)
+[node name="Visual" type="Sprite2D" parent="."]
+modulate = Color(1, 1, 1, 0.85)
+position = Vector2(0, -4)
+texture = ExtResource("2_sheet")
+hframes = 4
+
+[node name="SheetAnimator" type="Node" parent="." node_paths=PackedStringArray("sprite")]
+script = ExtResource("3_animator")
+sprite = NodePath("../Visual")
+animations = {"float": [0, 4, 5.0, true]}
+default_animation = "float"
 
 [node name="PickupArea" type="Area2D" parent="."]
 
