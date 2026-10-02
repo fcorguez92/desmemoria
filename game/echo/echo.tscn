@@ -1,8 +1,9 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://game/echo/echo.gd" id="1_echo"]
 [ext_resource type="Texture2D" path="res://game/echo/echo_sheet.png" id="2_sheet"]
 [ext_resource type="Script" path="res://core/components/sheet_animator.gd" id="3_animator"]
+[ext_resource type="Script" path="res://core/ui/input_prompt.gd" id="4_prompt"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_echo"]
 size = Vector2(36, 44)
@@ -26,3 +27,8 @@ default_animation = "float"
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="PickupArea"]
 shape = SubResource("RectangleShape2D_echo")
+
+[node name="Prompt" type="Node2D" parent="."]
+visible = false
+position = Vector2(0, -64)
+script = ExtResource("4_prompt")

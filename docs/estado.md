@@ -1,6 +1,6 @@
 # Estado del proyecto (documento vivo)
 
-Última actualización: cinco enemigos con ataques distintos, Eco nuevo.
+Última actualización: iconos de botones según el dispositivo y Eco que se recoge con el botón de interactuar.
 
 ## Dónde estamos en la metodología
 

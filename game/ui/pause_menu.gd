@@ -20,12 +20,21 @@ const OPTION_CONTROLS := 3
 const OPTION_TITLE := 4
 const OPTION_QUIT := 5
 
-const HINT_MAIN := "↑ ↓ elegir · Intro o Z confirmar · Esc continuar"
-## En Controles, cómo leer la columna del mando en uno de Nintendo, cuyas letras
-## están cambiadas: los botones van por posición, no por la letra impresa.
-const HINT_CONTROLS := "Nintendo, por posición: B salta, Y ataca, A cura, X Ancla · Esc para volver"
-const HINT_SUBPAGE := "Esc, Intro o Z para volver"
-const HINT_MAP := "Dorado: tú · Azul: Ancla · Violeta: tu Eco · Esc, Intro o Z para volver"
+## Los indicadores de botón del pie de cada página (ver InputHintBar): sin texto, solo
+## los iconos del dispositivo que se use. El mapa añade su leyenda de colores (tú,
+## Ancla, tu Eco).
+const HINTS_MAIN := [
+	{ hint = InputGlyphs.Hint.UP_DOWN },
+	{ action = &"ui_accept", hint = InputGlyphs.Hint.CHECK },
+	{ action = &"ui_cancel", hint = InputGlyphs.Hint.BACK },
+]
+const HINTS_SUBPAGE := [{ action = &"ui_cancel", hint = InputGlyphs.Hint.BACK }]
+const HINTS_MAP := [
+	{ color = Color(0.953, 0.769, 0.416) },
+	{ color = Color(0.3, 0.62, 0.95) },
+	{ color = Color(0.75, 0.55, 0.95) },
+	{ action = &"ui_cancel", hint = InputGlyphs.Hint.BACK },
+]
 ## Tecla, botón del mando (Xbox / PlayStation) y qué hace, una fila por control.
 ## Los botones van por posición: el de abajo, el de la izquierda... son los
 ## mismos en todos los mandos (ver project.godot, sección [input]).
@@ -51,7 +60,7 @@ var _character_text: String = ""
 @onready var pad_label: Label = $Root/Panel/Content/Info/Pad
 @onready var actions_label: Label = $Root/Panel/Content/Info/Right
 @onready var menu: MenuList = $Root/Panel/Content/Options
-@onready var hint_label: Label = $Root/Panel/Content/Hint
+@onready var hint_bar: InputHintBar = $Root/Panel/Content/Hint
 @onready var map_view: MapView = $Root/Panel/Content/Map
 
 
@@ -128,7 +137,7 @@ func _show_page(page: Page) -> void:
 	actions_label.text = ""
 	pad_label.text = ""
 	info_label.custom_minimum_size.x = 0.0
-	hint_label.text = HINT_MAIN if page == Page.MAIN else (HINT_MAP if page == Page.MAP else HINT_SUBPAGE)
+	hint_bar.set_entries(HINTS_MAIN if page == Page.MAIN else (HINTS_MAP if page == Page.MAP else HINTS_SUBPAGE))
 	match page:
 		Page.MAIN:
 			title_label.text = "Pausa"
@@ -151,7 +160,6 @@ func _show_page(page: Page) -> void:
 			pad_label.text = "\n".join(pad)
 			actions_label.text = "\n".join(actions)
 			info_label.custom_minimum_size.x = 90.0
-			hint_label.text = HINT_CONTROLS
 
 
 ## "Mapa", y el nombre de la sala donde está el jugador si se sabe.

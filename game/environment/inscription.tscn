@@ -1,6 +1,7 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://core/objects/readable.gd" id="1_readable"]
+[ext_resource type="Script" path="res://core/ui/input_prompt.gd" id="3_prompt"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_inscription"]
 size = Vector2(20, 26)
@@ -25,11 +26,7 @@ polygon = PackedVector2Array(-5, 0, 4, 0, 4, 3, -5, 3)
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("RectangleShape2D_inscription")
 
-[node name="Prompt" type="Label" parent="."]
+[node name="Prompt" type="Node2D" parent="."]
 visible = false
-offset_left = -80.0
-offset_top = -46.0
-offset_right = 80.0
-offset_bottom = -14.0
-text = "Z: Leer"
-horizontal_alignment = 1
+position = Vector2(0, -38)
+script = ExtResource("3_prompt")

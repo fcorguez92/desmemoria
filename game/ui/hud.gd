@@ -10,6 +10,12 @@ extends CanvasLayer
 @onready var ecos_label: Label = $Ecos/Amount
 @onready var message_box: PanelContainer = $MessageBox
 @onready var message_label: Label = $MessageBox/MessageLabel
+@onready var controls_hint: InputHintBar = $ControlsLabel
+
+
+func _ready() -> void:
+	# El botón de pausa y controles, con el icono del dispositivo que se use.
+	controls_hint.set_entries([{ action = &"pause", hint = InputGlyphs.Hint.MENU }])
 
 
 func set_health(value: int, max_value: int) -> void:

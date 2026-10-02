@@ -27,8 +27,16 @@ const CONFIRM_YES := 1
 const OPTION_FULLSCREEN := 0
 const OPTION_BACK := 1
 
-const HINT_MAIN := "↑ ↓ elegir · Intro o Z confirmar"
-const HINT_SUBPAGE := "↑ ↓ elegir · Intro o Z confirmar · Esc volver"
+## Indicadores de botón del pie (ver InputHintBar): elegir, aceptar y, en las subpáginas, volver.
+const HINTS_MAIN := [
+	{ hint = InputGlyphs.Hint.UP_DOWN },
+	{ action = &"ui_accept", hint = InputGlyphs.Hint.CHECK },
+]
+const HINTS_SUBPAGE := [
+	{ hint = InputGlyphs.Hint.UP_DOWN },
+	{ action = &"ui_accept", hint = InputGlyphs.Hint.CHECK },
+	{ action = &"ui_cancel", hint = InputGlyphs.Hint.BACK },
+]
 
 ## Las pruebas cambian estas rutas para no tocar la partida ni las opciones reales.
 @export var save_path: String = World.SAVE_PATH
@@ -40,13 +48,15 @@ var _page: Page = Page.MAIN
 
 @onready var menu: MenuList = $Center/Content/Options
 @onready var info_label: Label = $Center/Content/Info
-@onready var hint_label: Label = $Hint
+@onready var hint_bar: InputHintBar = $Hint
 
 
 func _ready() -> void:
 	# Al volver desde la pausa, el mundo deja el árbol en pausa hasta el cambio de
 	# escena (para que no siga jugándose ni guardándose a medias): se quita aquí.
 	get_tree().paused = false
+	# Desde aquí se sabe con qué se juega (teclado o mando) para los iconos de botones.
+	InputGlyphs.ensure_tracker(get_tree())
 	_load_options()
 	menu.chosen.connect(_on_chosen)
 	menu.cancelled.connect(_on_cancelled)
@@ -105,7 +115,7 @@ func _show_page(page: Page, selected: int = -1) -> void:
 	if selected >= 0:
 		menu.selected = selected
 	info_label.visible = page == Page.CONFIRM_NEW_GAME
-	hint_label.text = HINT_MAIN if page == Page.MAIN else HINT_SUBPAGE
+	hint_bar.set_entries(HINTS_MAIN if page == Page.MAIN else HINTS_SUBPAGE)
 	match page:
 		Page.MAIN:
 			var saved := has_save()
