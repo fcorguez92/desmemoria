@@ -120,9 +120,14 @@ func remove_marker(id: StringName) -> void:
 		changed.emit()
 
 
+## Solo avisa (y hace redibujar los mapas) al cambiar de baldosa: dentro de una
+## baldosa el desplazamiento mide menos que un píxel del minimapa.
 func set_focus(cell: Vector2) -> void:
-	if cell != focus_cell:
-		focus_cell = cell
+	if cell == focus_cell:
+		return
+	var moved_tile := Vector2i(cell.floor()) != Vector2i(focus_cell.floor())
+	focus_cell = cell
+	if moved_tile:
 		changed.emit()
 
 

@@ -11,12 +11,27 @@ extends Node2D
 @export var arm_delay: float = 0.3
 
 @onready var pickup_area: Area2D = $PickupArea
+@onready var visual: Sprite2D = $Visual
 
 
 func _ready() -> void:
 	pickup_area.monitoring = false
 	pickup_area.body_entered.connect(_on_pickup_area_body_entered)
 	get_tree().create_timer(arm_delay).timeout.connect(_arm)
+	_start_hover()
+
+
+## El recuerdo flota y respira: sube y baja despacio y su brillo late. Un solo
+## Tween en bucle (muere con el nodo), sin trabajo por frame.
+func _start_hover() -> void:
+	var hover := create_tween().set_loops()
+	hover.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	hover.tween_property(visual, "position:y", visual.position.y - 3.0, 1.1)
+	hover.tween_property(visual, "position:y", visual.position.y, 1.1)
+	var glow := create_tween().set_loops()
+	glow.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	glow.tween_property(visual, "modulate:a", 0.6, 0.9)
+	glow.tween_property(visual, "modulate:a", 0.95, 0.9)
 
 
 func _arm() -> void:

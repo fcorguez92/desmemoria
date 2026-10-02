@@ -88,4 +88,6 @@ func _apply() -> void:
 				return
 	else:
 		frame = frame % count if data[3] else mini(frame, count - 1)
-	sprite.frame = int(data[0]) * sprite.hframes + frame
+	var cell := int(data[0]) * sprite.hframes + frame
+	if sprite.frame != cell:
+		sprite.frame = cell
