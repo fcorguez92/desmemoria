@@ -6,6 +6,8 @@
 size = Vector2(14, 22)
 
 [node name="BreakableUrn" type="StaticBody2D"]
+collision_layer = 2
+collision_mask = 0
 script = ExtResource("1_prop")
 spark_color = Color(0.82, 0.53, 0.18, 1)
 

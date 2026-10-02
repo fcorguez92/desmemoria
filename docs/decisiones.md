@@ -92,7 +92,7 @@ Cada entrada: qué se decidió, por qué, qué alternativas se descartaron y por
 
 ## 2026-09-27 — Ambiente de El Último Umbral: parallax y objetos rompibles decorativos
 
-**Decisión**: un `ParallaxBackground` con dos capas de siluetas (colinas lejanas y ruinas a media distancia) da profundidad al fondo negro. Se añaden urnas rompibles junto al camino: `BreakableProp` (`core/objects/`) implementa el contrato "golpeable" y se destruye de un golpe con un chispazo; hasta entonces es un obstáculo físico normal. No sueltan nada ni dan Ecos, así que no reaparecen al reiniciar el mundo (no pertenecen al grupo `resettable`).
+**Decisión**: un `ParallaxBackground` con dos capas de siluetas (colinas lejanas y ruinas a media distancia) da profundidad al fondo negro. Se añaden urnas rompibles junto al camino: `BreakableProp` (`core/objects/`) implementa el contrato "golpeable" y se destruye de un golpe con un chispazo; hasta entonces es un obstáculo físico normal (desde 2026-10-02 se atraviesan, ver abajo). No sueltan nada ni dan Ecos, así que no reaparecen al reiniciar el mundo (no pertenecen al grupo `resettable`).
 
 **Alternativas**: dibujar el fondo y las urnas con el pipeline de sprites de texto (como los personajes y las baldosas) — descartado por ahora: el entorno y los objetos siguen en fase de geometría de colores planos (ver `docs/estado.md`), y una silueta de colinas grande e irregular encaja peor en una rejilla de caracteres que en polígonos ajustados a mano. Objetos rompibles que sueltan Ecos o curaciones — descartado: el usuario pidió que fuesen solo decoración, sin afectar al balance del juego.
 
@@ -298,3 +298,9 @@ Cada entrada: qué se decidió, por qué, qué alternativas se descartaron y por
 **Por qué**: reduce el alcance a lo esencial (núcleo jugable + mundo coherente pequeño) y evita construir sistemas que el proyecto no necesita en esta fase.
 
 **Decidido por**: el usuario.
+
+## 2026-10-02 — Los objetos rompibles se atraviesan
+
+**Decisión**: las urnas rompibles ya no bloquean el paso. Viven en la capa de física 2 ("rompibles"), sin máscara, y el hitbox de ataque del jugador incluye esa capa (máscara 3) para seguir pudiendo romperlas. Se dibujan detrás del personaje (las salas se pintan antes que el jugador). Sustituye a lo dicho el 2026-09-27 de que fuesen un obstáculo físico.
+
+**Por qué**: un tarro que frena al jugador estorba más que decora, y al correr o hacer dash se queda atascado en ellos. **Alternativa descartada**: mantenerlas sólidas y dejar que el dash las atraviese: añade una regla especial para poco beneficio.

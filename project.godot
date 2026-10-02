@@ -76,6 +76,11 @@ pause={
 ]
 }
 
+[layer_names]
+
+2d_physics/layer_1="mundo"
+2d_physics/layer_2="rompibles"
+
 [rendering]
 
 textures/canvas_textures/default_texture_filter=0

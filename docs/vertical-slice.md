@@ -36,7 +36,7 @@ De izquierda a derecha:
 
 Un fondo con dos capas de parallax (colinas lejanas y ruinas a media distancia,
 ambas siluetas de colores planos, sin arte final todavía) da profundidad al
-cielo negro. Junto al camino hay urnas rompibles: no dan nada al romperlas, son
+cielo negro. Junto al camino hay urnas rompibles (se atraviesan, solo se rompen al golpearlas): no dan nada al romperlas, son
 solo decoración, como los tarros de Hollow Knight o Dark Souls (ver "Cómo está
 construida").
 
