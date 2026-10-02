@@ -19,8 +19,11 @@ Ver [`docs/estado.md`](docs/estado.md).
 1. Instalar Godot 4.7 (`winget install GodotEngine.GodotEngine`).
 2. Abrir esta carpeta como proyecto y pulsar **F5**.
 
-Controles: flechas izq/dcha mover · Espacio saltar · flechas arriba/abajo mirar · abajo + Espacio sobre un tablón: bajar de él ·
-Espacio en el aire: doble salto · junto a una pared, dirección hacia ella + Espacio: salto de pared · X atacar · V parry · Shift dash · H curarse · Z descansar en un Ancla y abrir su menú · Esc pausa (mapa, personaje, controles y menú principal). El juego arranca en un menú principal (continuar, nuevo juego, opciones) y la partida se guarda sola.
+Se juega con teclado o con mando (Xbox, PlayStation o Nintendo; ver la tabla en `docs/estado.md`).
+
+Controles de teclado: flechas izq/dcha mover · Espacio saltar · flechas arriba/abajo mirar · abajo + Espacio sobre un tablón: bajar de él ·
+Espacio en el aire: doble salto · junto a una pared, dirección hacia ella + Espacio: salto de pared · X atacar · V parry · Shift dash · H curarse · Z descansar en un Ancla y abrir su menú · Esc pausa (mapa, personaje, controles y menú principal).
+Controles de mando (al estilo de Hollow Knight): palanca o cruceta mover · A/Cruz saltar · X/Cuadrado atacar · B/Círculo curarse · Y/Triángulo Ancla · RT/R2 dash · LT/L2 guardia · Start pausa. El juego arranca en un menú principal (continuar, nuevo juego, opciones) y la partida se guarda sola.
 
 ## Probar
 

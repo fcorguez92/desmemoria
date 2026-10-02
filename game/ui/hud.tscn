@@ -103,4 +103,4 @@ grow_horizontal = 2
 grow_vertical = 0
 modulate = Color(1, 1, 1, 0.55)
 theme_override_font_sizes/font_size = 12
-text = "Esc: pausa y controles"
+text = "Esc o Start: pausa y controles"

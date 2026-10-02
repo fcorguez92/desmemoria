@@ -184,10 +184,12 @@ func add_ecos(amount: int) -> void:
 	_update_hud()
 
 
-## Esc abre la pausa. Esta capa solo funciona con el juego en pausa, así que la
-## tecla que la abre la escucha el jugador, que sí recibe entrada mientras se juega.
+## Esc o Start abren la pausa. Esta capa solo funciona con el juego en pausa, así
+## que la tecla que la abre la escucha el jugador, que sí recibe entrada mientras se
+## juega. Es la acción `pause` y no `ui_cancel`: en el mando, el botón de cancelar
+## (B / Círculo) es curarse.
 func _unhandled_input(event: InputEvent) -> void:
-	if event.is_action_pressed(&"ui_cancel") and not get_tree().paused:
+	if event.is_action_pressed(&"pause") and not get_tree().paused:
 		_refresh_pause_menu()
 		pause_menu.open()
 		get_viewport().set_input_as_handled()

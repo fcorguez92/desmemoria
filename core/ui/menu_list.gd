@@ -34,6 +34,8 @@ var selected: int = 0
 
 var _texts: PackedStringArray = []
 var _enabled: Array[bool] = []
+## Hacia dónde está inclinada la palanca del mando (-1 arriba, 1 abajo, 0 en reposo).
+var _stick_step: int = 0
 
 
 ## Sustituye las opciones. `enabled` es opcional: sin él, todas están activas.
@@ -75,14 +77,25 @@ func cancel() -> void:
 
 
 func _input(event: InputEvent) -> void:
-	if not is_visible_in_tree():
-		return
 	var step := 0
 	if event.is_action_pressed(&"ui_down"):
 		step = 1
 	elif event.is_action_pressed(&"ui_up"):
 		step = -1
-	elif not _is_accept(event) and not event.is_action_pressed(&"ui_cancel"):
+	# La palanca manda un evento por cada pequeño movimiento mientras está
+	# inclinada: solo cuenta el primero que pasa la zona muerta, como una
+	# pulsación. Para bajar otra opción hay que soltarla y volver a inclinarla.
+	# (Se sigue aunque la lista esté oculta, para no quedarse con un estado viejo.)
+	if event is InputEventJoypadMotion:
+		if not (event.is_action(&"ui_down") or event.is_action(&"ui_up")):
+			return
+		var previous := _stick_step
+		_stick_step = step
+		if step == 0 or step == previous:
+			return
+	if not is_visible_in_tree():
+		return
+	if step == 0 and not _is_accept(event) and not event.is_action_pressed(&"ui_cancel"):
 		return
 	# La tecla se da por usada ANTES de actuar: elegir una opción puede sacar
 	# esta lista del árbol (p. ej. cambiar de escena) y después ya no habría

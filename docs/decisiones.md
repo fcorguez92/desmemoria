@@ -2,6 +2,20 @@
 
 Cada entrada: qué se decidió, por qué, qué alternativas se descartaron y por qué. Se añade una entrada nueva por decisión importante, no se reescribe el historial.
 
+## 2026-10-01 — Controles con mando, iguales en todos los mandos
+
+**Petición del usuario**: jugar con mando, al estilo de Hollow Knight (saltar con la Cruz, atacar con el Cuadrado, dash en R2/RT/ZR), y que todos los mandos funcionen igual: lo que hace la Y de Xbox lo hace el Triángulo de PlayStation y la X de Nintendo.
+
+**Decisión**: los botones se asignan en el Mapa de entrada (`project.godot`) por **posición**, que es como los numera Godot 4.7 (con SDL3 por debajo): `JOY_BUTTON_A` es el botón de abajo en cualquier mando (A en Xbox, Cruz en PlayStation, B en Nintendo). Así se cumple lo pedido sin código que detecte el tipo de mando. Reparto: abajo saltar y aceptar en menús; izquierda atacar; derecha curarse y volver en menús; arriba Ancla/interactuar; RT dash; LT guardia; Start pausa.
+
+- **Pausa con su propia acción (`pause`: Esc y Start)**. Antes la abría `ui_cancel`, pero en el mando cancelar es el botón de la derecha, que en juego es curarse (como el Focus de Hollow Knight). En los menús ese botón sigue siendo "volver".
+- **Guardia en LT**: Hollow Knight no tiene parry; LT queda simétrico al dash (gatillos = defensa) y es donde lo pone Dark Souls. Si al jugarlo se prefiere LB (más rápido de pulsar que un gatillo), es cambiar una línea del Mapa de entrada.
+- **Interactuar en el botón de arriba**. En Hollow Knight se interactúa pulsando arriba, pero aquí arriba también es mirar y mover el cursor en los menús, donde interactuar acepta: se cruzarían. Por eso va a un botón propio.
+- **Movimiento todo o nada**: pasada la zona muerta de la palanca se corre a toda velocidad, como con teclado y como en Hollow Knight. Un plataformas de precisión con velocidades intermedias se siente impreciso.
+- **La palanca en los menús** mueve una opción por inclinación (`MenuList`): sin ello, cada pequeño movimiento de la palanca contaba como otra pulsación y el cursor volaba.
+
+**Alternativas descartadas**: detectar el mando y mapear por la letra impresa (lo contrario de lo pedido, y más código); remapeo de controles en Opciones (útil, pero no hace falta todavía: se añadirá cuando haya quien lo pida). Los textos de ayuda de los menús siguen en teclado; la pantalla Controles de la pausa muestra teclado y mando. Mostrar iconos del mando que se esté usando queda para cuando haya arte de interfaz.
+
 ## 2026-10-01 — Z también acepta en los menús
 
 **Petición del usuario**: que Z sirva para aceptar en los menús (comprar mejoras, elegir Salir...) en vez de cerrar el menú del Ancla directamente.

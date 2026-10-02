@@ -1,6 +1,6 @@
 # Estado del proyecto (documento vivo)
 
-Última actualización: guardado automático como en Hollow Knight.
+Última actualización: controles con mando.
 
 ## Dónde estamos en la metodología
 
@@ -18,7 +18,7 @@
 ```
 core/         Base reutilizable: 14 componentes + 6 objetos + 2 efectos + 5 piezas de interfaz + guardado (ver core/README.md)
 game/         player, enemy (de prueba), echo, memory_anchor, ability_pickup, levels (el mundo y sus 4 salas + banco de pruebas)
-tests/        smoke_test.gd — 298 comprobaciones, todas en verde
+tests/        smoke_test.gd — 317 comprobaciones, todas en verde
 docs/         Diseño, decisiones, arquitectura y estado
 ```
 
@@ -30,6 +30,21 @@ de esta fase era validar cómo se siente, no cómo se ve.
 - Flecha izq/dcha: moverse · Espacio: saltar · Flecha arriba/abajo: mirar · Abajo + Espacio sobre un tablón: bajar atravesándolo
 - En el aire, Espacio otra vez: doble salto (tras conseguirlo) · Junto a una pared, mantén la dirección hacia ella para agarrarte y pulsa Espacio para saltar de ella (tras conseguirlo)
 - Esc: pausa (continuar, mapa, personaje, controles, menú principal, salir) · X: atacar · V: parry · Shift izquierdo: dash · H: curarse (si quedan cargas y no estás a vida completa) · Z: descansar en un Ancla y abrir su menú (Intro o Z eligen, Esc cierra; en todos los menús Z vale como aceptar)
+
+Con mando, al estilo de Hollow Knight. Los botones van por **posición**, así que
+el mismo botón hace lo mismo en todos los mandos (en el de Nintendo las letras
+están cambiadas respecto a Xbox):
+
+| Acción | Posición | Xbox | PlayStation | Nintendo |
+|---|---|---|---|---|
+| Moverse / mirar | palanca izquierda o cruceta | | | |
+| Saltar · aceptar en menús | abajo | A | Cruz | B |
+| Atacar | izquierda | X | Cuadrado | Y |
+| Curarse · volver en menús | derecha | B | Círculo | A |
+| Ancla (descansar, interactuar) | arriba | Y | Triángulo | X |
+| Dash | gatillo derecho | RT | R2 | ZR |
+| Guardia (parry) | gatillo izquierdo | LT | L2 | ZL |
+| Pausa | Start | Menú | Options | + |
 
 ## Qué falta del núcleo jugable
 

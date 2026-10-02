@@ -83,6 +83,11 @@ layout_mode = 2
 size_flags_vertical = 0
 theme_override_colors/font_color = Color(0.663, 0.89, 0.949, 1)
 
+[node name="Pad" type="Label" parent="Root/Panel/Content/Info"]
+layout_mode = 2
+size_flags_vertical = 0
+theme_override_colors/font_color = Color(0.663, 0.89, 0.949, 1)
+
 [node name="Right" type="Label" parent="Root/Panel/Content/Info"]
 layout_mode = 2
 size_flags_vertical = 0

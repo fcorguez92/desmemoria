@@ -5,7 +5,7 @@ extends ModalLayer
 ## jugador: recibe los datos con `show_character()` y `set_map()` (los datos
 ## bajan; ver docs/arquitectura.md).
 ##
-## Quien lo abre (el jugador, al pulsar Esc) llama a `open()`: una capa que solo
+## Quien lo abre (el jugador, al pulsar Esc o Start) llama a `open()`: una capa que solo
 ## funciona en pausa no puede escuchar la tecla mientras se juega.
 
 enum Page { MAIN, MAP, CHARACTER, CONTROLS }
@@ -21,20 +21,25 @@ const OPTION_TITLE := 4
 const OPTION_QUIT := 5
 
 const HINT_MAIN := "↑ ↓ elegir · Intro o Z confirmar · Esc continuar"
+## En Controles, cómo leer la columna del mando en uno de Nintendo, cuyas letras
+## están cambiadas: los botones van por posición, no por la letra impresa.
+const HINT_CONTROLS := "Nintendo, por posición: B salta, Y ataca, A cura, X Ancla · Esc para volver"
 const HINT_SUBPAGE := "Esc, Intro o Z para volver"
 const HINT_MAP := "Dorado: tú · Azul: Ancla · Violeta: tu Eco · Esc, Intro o Z para volver"
-## Tecla y qué hace, una fila por control.
+## Tecla, botón del mando (Xbox / PlayStation) y qué hace, una fila por control.
+## Los botones van por posición: el de abajo, el de la izquierda... son los
+## mismos en todos los mandos (ver project.godot, sección [input]).
 const CONTROLS := [
-	["← →", "Moverse"],
-	["Espacio", "Saltar (en el aire, otra vez: doble salto)"],
-	["↓ + Espacio", "Bajar de un tablón"],
-	["X", "Atacar"],
-	["V", "Guardia: desvía un golpe justo a tiempo"],
-	["Shift", "Dash"],
-	["H", "Curarse"],
-	["Z", "Ancla de Memoria: descansar y abrir su menú"],
-	["↑ ↓", "Mirar arriba o abajo"],
-	["Esc", "Pausa"],
+	["← →", "Palanca / Cruceta", "Moverse"],
+	["Espacio", "A / Cruz", "Saltar (en el aire, otra vez: doble salto)"],
+	["↓ + Espacio", "↓ + A / Cruz", "Bajar de un tablón"],
+	["X", "X / Cuadrado", "Atacar"],
+	["V", "LT / L2", "Guardia: desvía un golpe a tiempo"],
+	["Shift", "RT / R2", "Dash"],
+	["H", "B / Círculo", "Curarse"],
+	["Z", "Y / Triángulo", "Ancla: descansar y abrir su menú"],
+	["↑ ↓", "Palanca ↑ ↓", "Mirar arriba o abajo"],
+	["Esc", "Start", "Pausa"],
 ]
 
 var _page: Page = Page.MAIN
@@ -43,6 +48,7 @@ var _character_text: String = ""
 @onready var title_label: Label = $Root/Panel/Content/Title
 @onready var info: HBoxContainer = $Root/Panel/Content/Info
 @onready var info_label: Label = $Root/Panel/Content/Info/Left
+@onready var pad_label: Label = $Root/Panel/Content/Info/Pad
 @onready var actions_label: Label = $Root/Panel/Content/Info/Right
 @onready var menu: MenuList = $Root/Panel/Content/Options
 @onready var hint_label: Label = $Root/Panel/Content/Hint
@@ -82,11 +88,18 @@ func set_map(data: MapData) -> void:
 
 
 func _input(event: InputEvent) -> void:
+	if not is_open():
+		return
 	# En las subpantallas no hay lista de opciones: Esc, Intro o Z vuelven al menú.
-	if is_open() and _page != Page.MAIN and (event.is_action_pressed(&"ui_cancel") \
+	if _page != Page.MAIN and (event.is_action_pressed(&"ui_cancel") \
 			or event.is_action_pressed(&"ui_accept") or event.is_action_pressed(&"interact")):
 		_show_page(Page.MAIN)
 		get_viewport().set_input_as_handled()
+	# Start, que abre la pausa, también la cierra desde cualquier pantalla. (Esc es
+	# también `ui_cancel`: en el menú principal lo atiende antes la lista de opciones.)
+	elif event.is_action_pressed(&"pause"):
+		get_viewport().set_input_as_handled()
+		close()
 
 
 func _on_chosen(index: int) -> void:
@@ -113,6 +126,7 @@ func _show_page(page: Page) -> void:
 	info.visible = page == Page.CHARACTER or page == Page.CONTROLS
 	map_view.visible = page == Page.MAP
 	actions_label.text = ""
+	pad_label.text = ""
 	info_label.custom_minimum_size.x = 0.0
 	hint_label.text = HINT_MAIN if page == Page.MAIN else (HINT_MAP if page == Page.MAP else HINT_SUBPAGE)
 	match page:
@@ -125,15 +139,19 @@ func _show_page(page: Page) -> void:
 			info_label.text = _character_text
 		Page.CONTROLS:
 			title_label.text = "Controles"
-			# Dos columnas: teclas a la izquierda y qué hace cada una a la derecha.
+			# Tres columnas: teclas, botones del mando y qué hace cada uno.
 			var keys := PackedStringArray()
+			var pad := PackedStringArray()
 			var actions := PackedStringArray()
 			for line in CONTROLS:
 				keys.append(line[0])
-				actions.append(line[1])
+				pad.append(line[1])
+				actions.append(line[2])
 			info_label.text = "\n".join(keys)
+			pad_label.text = "\n".join(pad)
 			actions_label.text = "\n".join(actions)
-			info_label.custom_minimum_size.x = 150.0
+			info_label.custom_minimum_size.x = 90.0
+			hint_label.text = HINT_CONTROLS
 
 
 ## "Mapa", y el nombre de la sala donde está el jugador si se sabe.
