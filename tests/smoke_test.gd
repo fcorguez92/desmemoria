@@ -59,6 +59,7 @@ func _run() -> void:
 	await _test_breakable_props()
 	await _test_scenery_is_dense_and_harmless()
 	await _test_enemy_types()
+	await _test_input_glyphs()
 	await _test_inscription_is_readable()
 	await _test_enemy_does_not_jitter_against_a_wall()
 	await _test_map_data()
@@ -135,7 +136,13 @@ func _test_echo_pickup_returns_ecos() -> void:
 	_check(is_instance_valid(echo), "el Eco no se recoge solo al aparecer")
 	_player.global_position = echo.global_position
 	await _wait(30)
-	_check(_player.ecos == 5, "tocar el Eco devuelve los Ecos")
+	_check(_player.ecos == 0 and is_instance_valid(echo), "tocar el Eco no basta: hay que interactuar")
+	_check(echo.get_node("Prompt").visible, "al estar al alcance aparece el icono del botón")
+	Input.action_press("interact")
+	await _wait(2)
+	Input.action_release("interact")
+	await _wait(2)
+	_check(_player.ecos == 5, "interactuar con el Eco devuelve los Ecos")
 	_check(_player.active_echo == null, "el Eco desaparece al recogerlo")
 
 
@@ -1018,6 +1025,57 @@ func _test_enemy_types() -> void:
 	await _wait(240)
 	_check(hp_before - _player.health.health >= 2, "su mazazo quita 2 de vida de una vez")
 	_check(colossus.ai.windup_time >= 0.9, "y avisa el golpe durante casi un segundo")
+
+
+func _test_input_glyphs() -> void:
+	print("
+[Los iconos de botones se adaptan al dispositivo]")
+	_check(InputGlyphs.kind_from_name("Xbox 360 Controller") == InputGlyphs.Kind.XBOX, "un mando de Xbox se reconoce")
+	_check(InputGlyphs.kind_from_name("PS5 Controller") == InputGlyphs.Kind.PLAYSTATION, "un mando de PlayStation se reconoce")
+	_check(InputGlyphs.kind_from_name("Nintendo Switch Pro Controller") == InputGlyphs.Kind.NINTENDO, "un mando de Nintendo se reconoce")
+	_check(InputGlyphs.kind_from_name("Mando raro") == InputGlyphs.Kind.XBOX, "uno desconocido usa la disposición de Xbox")
+
+	var key := InputGlyphs.binding(&"interact", InputGlyphs.Kind.KEYBOARD)
+	_check(key.get("type") == "key" and key.get("label") == "Z", "en teclado, interactuar es la tecla Z")
+	var pad := InputGlyphs.binding(&"interact", InputGlyphs.Kind.PLAYSTATION)
+	_check(pad.get("type") == "button" and pad.get("index") == JOY_BUTTON_Y, "en el mando, interactuar es el botón de arriba (Y / Triángulo / X)")
+	var trigger := InputGlyphs.binding(&"dash", InputGlyphs.Kind.XBOX)
+	_check(trigger.get("type") == "trigger" and trigger.get("right") == true, "el dash es el gatillo derecho")
+	_check(InputGlyphs.binding(&"no_existe", InputGlyphs.Kind.KEYBOARD).is_empty(), "una acción que no existe no da icono")
+
+	# Dibujar un indicador y una fila de ayuda con cada dispositivo no da errores.
+	var prompt := InputPrompt.new()
+	prompt.action = &"interact"
+	root.add_child(prompt)
+	var bar := InputHintBar.new()
+	bar.size = Vector2(300, 22)
+	bar.set_entries([{ hint = InputGlyphs.Hint.UP_DOWN }, { action = &"ui_accept", hint = InputGlyphs.Hint.CHECK }, { action = &"pause", hint = InputGlyphs.Hint.MENU }, { color = Color.RED }])
+	root.add_child(bar)
+	var widths := {}
+	for device in [InputGlyphs.Kind.KEYBOARD, InputGlyphs.Kind.XBOX, InputGlyphs.Kind.PLAYSTATION, InputGlyphs.Kind.NINTENDO]:
+		InputGlyphs.kind = device
+		prompt.queue_redraw()
+		bar.queue_redraw()
+		await process_frame
+		widths[device] = InputGlyphs.width(&"pause")
+	_check(widths[InputGlyphs.Kind.KEYBOARD] != widths[InputGlyphs.Kind.XBOX] or widths[InputGlyphs.Kind.XBOX] > 0.0, "se dibuja el icono de cada dispositivo")
+
+	# El vigilante cambia de dispositivo con la última entrada recibida.
+	InputGlyphs.kind = InputGlyphs.Kind.KEYBOARD
+	var button := InputEventJoypadButton.new()
+	button.button_index = JOY_BUTTON_Y
+	button.pressed = true
+	root.get_viewport().push_input(button)
+	await process_frame
+	_check(InputGlyphs.kind != InputGlyphs.Kind.KEYBOARD, "pulsar un botón del mando cambia los iconos a los del mando")
+	var typed := InputEventKey.new()
+	typed.keycode = KEY_Z
+	typed.pressed = true
+	root.get_viewport().push_input(typed)
+	await process_frame
+	_check(InputGlyphs.kind == InputGlyphs.Kind.KEYBOARD, "y pulsar una tecla los devuelve al teclado")
+	prompt.queue_free()
+	bar.queue_free()
 
 
 func _test_inscription_is_readable() -> void:

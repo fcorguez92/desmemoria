@@ -11,12 +11,18 @@ const OPTION_UPGRADE := 0
 
 @onready var stats_label: Label = $Root/Panel/Content/Stats
 @onready var menu: MenuList = $Root/Panel/Content/Options
+@onready var hint_bar: InputHintBar = $Root/Panel/Content/Hint
 
 
 func _ready() -> void:
 	super()
 	menu.chosen.connect(_on_chosen)
 	menu.cancelled.connect(close)
+	hint_bar.set_entries([
+		{ hint = InputGlyphs.Hint.UP_DOWN },
+		{ action = &"ui_accept", hint = InputGlyphs.Hint.CHECK },
+		{ action = &"ui_cancel", hint = InputGlyphs.Hint.BACK },
+	])
 
 
 func open() -> void:

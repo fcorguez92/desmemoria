@@ -1,8 +1,9 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://game/ui/pause_menu.gd" id="1_menu"]
 [ext_resource type="Script" path="res://core/ui/menu_list.gd" id="2_list"]
 [ext_resource type="Script" path="res://core/ui/map_view.gd" id="3_map"]
+[ext_resource type="Script" path="res://core/ui/input_hint_bar.gd" id="9_bar"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
 content_margin_left = 24.0
@@ -102,8 +103,7 @@ cell_pixels = 4
 follow_focus = false
 back_color = Color(0.07, 0.07, 0.1, 1)
 
-[node name="Hint" type="Label" parent="Root/Panel/Content"]
+[node name="Hint" type="Control" parent="Root/Panel/Content"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.416, 0.4, 0.44, 1)
-theme_override_font_sizes/font_size = 12
-horizontal_alignment = 1
+script = ExtResource("9_bar")
+
