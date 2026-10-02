@@ -851,7 +851,7 @@ func _test_planks_are_one_way_platforms() -> void:
 
 
 func _test_breakable_props() -> void:
-	print("\n[Los objetos rompibles bloquean, se rompen y no afectan a la partida]")
+	print("\n[Los objetos rompibles se atraviesan, se rompen al golpearlos y no afectan a la partida]")
 	await _load_world()
 	var urn: BreakableProp = null
 	for child in _room.get_children():
@@ -861,17 +861,24 @@ func _test_breakable_props() -> void:
 	_check(urn != null, "hay objetos rompibles colocados por los marcadores R")
 	_check(urn.hits == 1, "por defecto se rompen de un golpe")
 
-	# Hasta romperse, es un obstáculo físico: el jugador no lo atraviesa caminando.
+	# Se atraviesa caminando: no es un obstáculo.
 	_player.global_position = urn.global_position + Vector2(-30.0, -20.0)
 	_player.velocity = Vector2.ZERO
 	Input.action_press("ui_right")
 	await _wait(30)
 	Input.action_release("ui_right")
-	_check(_player.global_position.x < urn.global_position.x, "antes de romperse bloquea el paso")
+	_check(_player.global_position.x > urn.global_position.x, "el jugador atraviesa la urna caminando")
+	_check(urn.z_index <= _player.z_index, "la urna se dibuja detrás del personaje, no encima")
 
 	var ecos_before: int = _player.ecos
 	var health_before: int = _player.health.health
-	urn.take_hit(1, 1)
+	# Un ataque real del jugador la alcanza aunque no bloquee.
+	_player.global_position = urn.global_position + Vector2(-8.0, 0.0)
+	_player.velocity = Vector2.ZERO
+	await _wait(3)
+	Input.action_press("attack")
+	await _wait(2)
+	Input.action_release("attack")
 	await _wait(2)
 	_check(not is_instance_valid(urn), "un golpe lo destruye")
 	_check(_count_sparks(_room) >= 1, "al romperse deja un chispazo")

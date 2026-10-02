@@ -5,8 +5,10 @@ extends StaticBody2D
 ## (1 por defecto). No suelta nada ni afecta a la partida, así que no necesita
 ## reaparecer al reiniciar el mundo (a diferencia de `EntitySpawner`).
 ##
-## Hasta que se rompe, es un obstáculo físico normal (bloquea el paso), como los
-## tarros y cajas de Hollow Knight o Dark Souls.
+## Se atraviesa caminando (como los tarros de Hollow Knight): vive en la capa de
+## física 2 ("rompibles") y no choca con nadie, pero el hitbox de ataque del
+## jugador la incluye en su máscara, así que los golpes sí lo alcanzan. Se dibuja
+## detrás del personaje (las salas se pintan antes que el jugador).
 
 signal broken
 
