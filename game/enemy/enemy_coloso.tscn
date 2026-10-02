@@ -1,0 +1,53 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="PackedScene" path="res://game/enemy/enemy.tscn" id="1_base"]
+[ext_resource type="Texture2D" path="res://game/enemy/coloso_sheet.png" id="2_sheet"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_body"]
+size = Vector2(44, 64)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_attack"]
+size = Vector2(66, 58)
+
+[node name="Coloso" instance=ExtResource("1_base")]
+ecos_reward = 8
+parry_stun_time = 1.6
+
+[node name="CollisionShape2D" parent="." index="0"]
+shape = SubResource("RectangleShape2D_body")
+
+[node name="Visual" parent="." index="1"]
+texture = ExtResource("2_sheet")
+offset = Vector2(0, -16)
+
+[node name="SheetAnimator" parent="." index="2"]
+animations = {"hit": [4, 4, 14.0, false], "idle": [0, 8, 6.0, true], "strike": [3, 6, 24.0, false], "walk": [1, 12, 18.0, true], "windup": [2, 6, 8.0, false]}
+
+[node name="AttackHitbox" parent="." index="3"]
+position = Vector2(36, -2)
+
+[node name="CollisionShape2D" parent="AttackHitbox" index="0"]
+shape = SubResource("RectangleShape2D_attack")
+
+[node name="LedgeProbe" parent="." index="4"]
+position = Vector2(30, 32)
+
+[node name="HealthComponent" parent="." index="5"]
+max_health = 8
+
+[node name="MeleeAttackComponent" parent="." index="7"]
+reach = 36.0
+damage = 2
+
+[node name="KnockbackComponent" parent="." index="8"]
+speed = 140.0
+duration = 0.1
+
+[node name="PatrolChaseAI" parent="." index="9"]
+patrol_speed = 30.0
+chase_speed = 70.0
+detect_range = 220.0
+attack_range = 78.0
+windup_time = 0.9
+recovery_time = 1.3
+ledge_probe_offset = 30.0

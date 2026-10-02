@@ -1,6 +1,6 @@
 # Estado del proyecto (documento vivo)
 
-Última actualización: personaje rehecho (asesino con espada del revés, 54 fotogramas, dash propio).
+Última actualización: cinco enemigos con ataques distintos, Eco nuevo.
 
 ## Dónde estamos en la metodología
 

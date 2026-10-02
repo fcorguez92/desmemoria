@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=3]
+[gd_scene load_steps=11 format=3]
 
 [ext_resource type="Script" path="res://game/enemy/enemy.gd" id="1_enemy"]
 [ext_resource type="Script" path="res://core/components/health_component.gd" id="2_health"]
@@ -24,14 +24,14 @@ shape = SubResource("RectangleShape2D_enemy")
 
 [node name="Visual" type="Sprite2D" parent="."]
 texture = ExtResource("8_sheet")
-offset = Vector2(0, -4)
-hframes = 6
+offset = Vector2(0, -8)
+hframes = 12
 vframes = 5
 
 [node name="SheetAnimator" type="Node" parent="." node_paths=PackedStringArray("sprite")]
 script = ExtResource("9_animator")
 sprite = NodePath("../Visual")
-animations = {"idle": [0, 2, 3.0, true], "hit": [4, 2, 8.0, false], "strike": [3, 2, 12.0, false], "walk": [1, 6, 12.0, true], "windup": [2, 2, 5.0, false]}
+animations = {"hit": [4, 4, 16.0, false], "idle": [0, 8, 8.0, true], "strike": [3, 6, 30.0, false], "walk": [1, 12, 24.0, true], "windup": [2, 6, 10.0, false]}
 
 [node name="AttackHitbox" type="Area2D" parent="."]
 position = Vector2(20, 0)
@@ -68,12 +68,6 @@ duration = 0.12
 script = ExtResource("6_ai")
 ledge_probe = NodePath("../LedgeProbe")
 
-[node name="Slash" type="Polygon2D" parent="."]
-color = Color(1, 0.75, 0.6, 1)
-polygon = PackedVector2Array(12, -26, 32, -18, 42, 0, 32, 18, 12, 26, 26, 0)
-
-[node name="AttackVisualComponent" type="Node" parent="." node_paths=PackedStringArray("animator", "slash")]
+[node name="AttackVisualComponent" type="Node" parent="." node_paths=PackedStringArray("animator")]
 script = ExtResource("7_attack_visual")
 animator = NodePath("../SheetAnimator")
-slash = NodePath("../Slash")
-slash_alpha = 0.22

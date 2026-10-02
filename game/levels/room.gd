@@ -5,7 +5,7 @@ extends Node2D
 ##
 ## El terreno se dibuja como texto en un .map (lo construye TextTileMap, en el
 ## nodo Tiles). Este script pone las entidades del juego en los marcadores:
-##   A = Ancla de Memoria, E = enemigo, R = objeto rompible decorativo (no
+##   A = Ancla de Memoria, E 1 2 3 4 = enemigos (ver ENEMIES), R = objeto rompible decorativo (no
 ##   reaparece: ver core/objects/breakable_prop.gd), I = inscripción legible
 ##   (ver core/objects/readable.gd), d / j / w = habilidad (dash, doble salto,
 ##   salto de pared) que se recuerda al tocarla.
@@ -19,6 +19,10 @@ extends Node2D
 ## marcador numerado (I1, I2...); no hace falta esa complicación todavía.
 
 const EnemyScene := preload("res://game/enemy/enemy.tscn")
+const LanceroScene := preload("res://game/enemy/enemy_lancero.tscn")
+const ArrojadorScene := preload("res://game/enemy/enemy_arrojador.tscn")
+const ColosoScene := preload("res://game/enemy/enemy_coloso.tscn")
+const AcechadorScene := preload("res://game/enemy/enemy_acechador.tscn")
 const AnchorScene := preload("res://game/memory_anchor/memory_anchor.tscn")
 const BreakableUrnScene := preload("res://game/environment/breakable_urn.tscn")
 const BreakableCrateScene := preload("res://game/environment/breakable_crate.tscn")
@@ -29,7 +33,16 @@ const DecorSheet := preload("res://game/environment/decor_sheet.png")
 
 const CELL := 16.0
 ## Mitad de la altura de cada entidad, para apoyar sus pies en la celda.
-const ENEMY_HALF_HEIGHT := 24.0
+## Enemigos: marcador -> [escena, mitad de la altura de su cuerpo]. E = cascarón
+## (tajo), 1 = lancero (estocada larga), 2 = arrojador (a distancia), 3 = coloso
+## (mazazo lento) y 4 = acechador (embestida).
+const ENEMIES := {
+	"E": [EnemyScene, 24.0],
+	"1": [LanceroScene, 24.0],
+	"2": [ArrojadorScene, 24.0],
+	"3": [ColosoScene, 32.0],
+	"4": [AcechadorScene, 18.0],
+}
 const ANCHOR_HALF_HEIGHT := 28.0
 const BREAKABLE_HALF_HEIGHT := 11.0
 const CRATE_HALF_HEIGHT := 7.0
@@ -86,10 +99,11 @@ func _ready() -> void:
 			_place_decor(DECOR[symbol], at)
 	for at in tiles.markers.get("I", []):
 		_place(InscriptionScene.instantiate(), at, INSCRIPTION_HALF_HEIGHT)
-	for at in tiles.markers.get("E", []):
-		var spawner := EntitySpawner.new()
-		spawner.scene = EnemyScene
-		_place(spawner, at, ENEMY_HALF_HEIGHT)
+	for symbol in ENEMIES:
+		for at in tiles.markers.get(symbol, []):
+			var spawner := EntitySpawner.new()
+			spawner.scene = ENEMIES[symbol][0]
+			_place(spawner, at, ENEMIES[symbol][1])
 	for symbol in ABILITY_MARKERS:
 		for at in tiles.markers.get(symbol, []):
 			var pickup := AbilityPickupScene.instantiate()
