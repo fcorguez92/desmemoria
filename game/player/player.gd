@@ -26,7 +26,10 @@ const MESSAGE_SECONDS := 3.0
 ## El pie toca el suelo en estos fotogramas de la carrera (ver tools/rig_caminante.js).
 const STEP_FRAMES := [6, 13]
 ## Velocidad de caída mínima para que el aterrizaje suene.
-const LAND_SOUND_SPEED := 380.0
+const LAND_SOUND_SPEED := 120.0
+## Tras aterrizar, el primer paso de la carrera no suena hasta pasado este tiempo
+## (la animación de correr empieza por el fotograma 0 y su primer paso llega tarde).
+const STEP_AFTER_LAND_SECONDS := 0.25
 ## Para textos que hay que leer (inscripciones): tiempo mínimo y por carácter,
 ## a un ritmo de lectura tranquilo (unos 15 caracteres por segundo).
 const MIN_READING_SECONDS := 4.0
@@ -38,6 +41,7 @@ var active_echo: Node = null
 
 var _message_id: int = 0
 var _was_on_floor: bool = true
+var _last_land_msec: int = -10000
 var _was_dashing: bool = false
 var _peak_fall_speed: float = 0.0
 
@@ -353,7 +357,8 @@ func _on_jumped(kind: StringName) -> void:
 func _play_movement_sounds() -> void:
 	var on_floor := is_on_floor()
 	if on_floor and not _was_on_floor and _peak_fall_speed > LAND_SOUND_SPEED:
-		Sfx.play(StringName("land_%s" % GroundMaterial.under(self)), null, clampf(remap(_peak_fall_speed, LAND_SOUND_SPEED, 1000.0, -15.0, -8.0), -15.0, -8.0))
+		Sfx.play(StringName("land_%s" % GroundMaterial.under(self)), null, clampf(remap(_peak_fall_speed, LAND_SOUND_SPEED, 1000.0, -24.0, -8.0), -24.0, -8.0))
+		_last_land_msec = Time.get_ticks_msec()
 	if on_floor:
 		_peak_fall_speed = 0.0
 	_was_on_floor = on_floor
@@ -364,7 +369,8 @@ func _play_movement_sounds() -> void:
 
 ## Los pasos suenan cuando el pie toca el suelo en la animación de correr.
 func _on_animation_frame(animation: String, frame: int) -> void:
-	if animation == "run" and frame in STEP_FRAMES and is_on_floor():
+	var just_landed := Time.get_ticks_msec() - _last_land_msec < STEP_AFTER_LAND_SECONDS * 1000.0
+	if animation == "run" and frame in STEP_FRAMES and is_on_floor() and not just_landed:
 		Sfx.play(StringName("step_%s" % GroundMaterial.under(self)), null, -14.0)
 
 

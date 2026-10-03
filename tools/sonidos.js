@@ -150,11 +150,13 @@ const STEP = {
 const LAND = {
   stone: (i, r) => { const len = 0.3, o = buf(len);
     mix(o, env(tone(len, t => 52 * Math.exp(-t * 15) + 30), 0.001, 0.09), 1.0);
+    mix(o, env(tone(len, t => 120 * Math.exp(-t * 22) + 75), 0.001, 0.05), 0.55);
     mix(o, env(bp(noise(len, r), 420 + i * 60, 1.0), 0.001, 0.05), 0.4);
     mix(o, env(lp(noise(len, r), 700), 0.001, 0.09), 0.3);
     return snap(lp(o, 1800), r, 0.3); },
   moss: (i, r) => { const len = 0.3, o = buf(len);
     mix(o, env(tone(len, t => 46 * Math.exp(-t * 14) + 30), 0.001, 0.08), 0.9);
+    mix(o, env(tone(len, t => 100 * Math.exp(-t * 22) + 65), 0.001, 0.05), 0.4);
     mix(o, env(lp(noise(len, r), 380), 0.001, 0.1), 0.7);
     return snap(lp(o, 1000), r, 0.14); },
   wood: (i, r) => { const len = 0.34, o = buf(len);

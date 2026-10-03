@@ -14,7 +14,7 @@ ecos_reward = 8
 voice = &"coloso"
 strike_sound = &"enemy_slam"
 step_sound = &"heavy_step"
-step_volume_db = -9.0
+step_volume_db = -13.0
 parry_stun_time = 1.6
 
 [node name="CollisionShape2D" parent="." index="0"]

@@ -62,6 +62,7 @@ func _run() -> void:
 	await _test_enemy_types()
 	await _test_input_glyphs()
 	await _test_sound_effects()
+	await _test_landing_sound_is_in_sync()
 	await _test_inscription_is_readable()
 	await _test_enemy_does_not_jitter_against_a_wall()
 	await _test_map_data()
@@ -1496,6 +1497,36 @@ func _test_sound_effects() -> void:
 	_room.add_child(prop)
 	prop.take_hit(1, 1)
 	_check(playing.call("break") == 1, "romper un objeto suena")
+
+
+## El sonido de la caída empieza en el MISMO fotograma de físicas en que el personaje
+## toca el suelo, tanto en una caída larga como en una corta (un escalón).
+func _test_landing_sound_is_in_sync() -> void:
+	print("
+[El aterrizaje suena justo al tocar el suelo]")
+	await _load_world()
+	await _wait(60)
+	var sfx := root.get_node("Sfx")
+	for drop in [200.0, 40.0, 14.0]:
+		_player.velocity = Vector2.ZERO
+		_player.global_position.y -= drop
+		await _wait(2)
+		for voice in sfx.get_children():
+			voice.stop()
+		var contact_frame := -1
+		var sound_frame := -1
+		for frame in 90:
+			await physics_frame
+			if _player.is_on_floor() and contact_frame < 0:
+				contact_frame = frame
+			for voice in sfx.get_children():
+				if voice.playing and voice.stream.resource_path.get_file().begins_with("land_") and sound_frame < 0:
+					sound_frame = frame
+			if contact_frame >= 0 and frame > contact_frame + 3:
+				break
+		_check(contact_frame >= 0, "cae %d px y toca el suelo" % int(drop))
+		_check(sound_frame == contact_frame, "caída de %d px: el sonido empieza en el fotograma del contacto (contacto %d, sonido %d)" % [int(drop), contact_frame, sound_frame])
+		await _wait(30)
 
 
 func _gd_files(folder: String) -> Array[String]:

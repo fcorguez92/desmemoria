@@ -31,7 +31,7 @@ const ALERT_COOLDOWN := 3.0
 ## Sonido del golpe cuando cae, y de cada paso.
 @export var strike_sound: StringName = &"enemy_swing"
 @export var step_sound: StringName = &"enemy_step"
-@export var step_volume_db: float = -17.0
+@export var step_volume_db: float = -22.0
 
 @export_group("Ataque")
 @export var attack_kind: AttackKind = AttackKind.MELEE
