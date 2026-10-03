@@ -27,7 +27,7 @@ const noise = (sec, r) => gen(sec, () => r() * 2 - 1);
 const val = (f, t) => typeof f === 'function' ? f(t) : f;
 
 function tone(sec, freq, shape) {
-  let ph = 0;
+  let ph = 0.25; // arranca en el pico de la onda: un golpe grave no puede empezar en silencio
   return gen(sec, t => {
     ph += val(freq, t) / SR;
     if (shape === 'saw') return 2 * (ph % 1) - 1;
@@ -169,27 +169,30 @@ const LAND = {
 for (const m of Object.keys(STEP)) { def('step_' + m, 4, STEP[m]); def('land_' + m, 3, LAND[m]); }
 def('jump', 2, (i, r) => {
   const len = 0.2, o = buf(len);
-  mix(o, env(bp(noise(len, r), t => 380 + 800 * t / len, 0.9), 0.03, 0.06), 0.8);
-  mix(o, env(tone(len, 90 + i * 8), 0.002, 0.035), 0.5);
-  return lp(o, 3500);
+  mix(o, env(tone(len, 95 + i * 8), 0.001, 0.035), 0.9);
+  mix(o, env(bp(noise(len, r), t => 1200 - 700 * t / len, 0.9), 0.001, 0.06), 0.7);
+  return snap(lp(o, 3500), r, 0.25);
 });
+
 def('air_jump', 2, (i, r) => {
   const len = 0.3, o = buf(len);
-  mix(o, env(bp(noise(len, r), t => 600 + 1400 * t / len, 1.6), 0.04, 0.08), 0.8);
-  mix(o, env(tone(len, t => 520 + 260 * t / len, 'tri'), 0.04, 0.09), 0.12);
-  return lp(o, 4500);
+  mix(o, env(bp(noise(len, r), t => 2000 - 1300 * t / len, 1.6), 0.001, 0.08), 0.9);
+  mix(o, env(tone(len, t => 780 - 260 * t / len, 'tri'), 0.001, 0.09), 0.12);
+  return snap(lp(o, 4500), r, 0.2);
 });
+
 def('wall_jump', 2, (i, r) => {
   const len = 0.2, o = buf(len);
   const scrape = mul(bp(noise(len, r), 1400, 0.8), t => 0.6 + 0.4 * Math.sign(Math.sin(TAU * 62 * t)));
-  mix(o, env(scrape, 0.005, 0.06), 0.8);
-  mix(o, env(tone(len, 100), 0.002, 0.04), 0.6);
-  return lp(o, 4000);
+  mix(o, env(scrape, 0.001, 0.06), 0.8);
+  mix(o, env(tone(len, 100), 0.001, 0.04), 0.7);
+  return snap(lp(o, 4000), r, 0.2);
 });
+
 def('dash', 2, (i, r) => {
   const len = 0.38, o = buf(len);
-  mix(o, env(bp(noise(len, r), t => 2200 * Math.exp(-t * 9) + 250, 0.8), 0.02, 0.11), 1.0);
-  mix(o, sat(env(tone(len, t => 55 + 90 * Math.exp(-t * 12)), 0.005, 0.13), 1.5), 0.7);
+  mix(o, env(bp(noise(len, r), t => 2200 * Math.exp(-t * 9) + 250, 0.8), 0.001, 0.11), 1.0);
+  mix(o, sat(env(tone(len, t => 55 + 90 * Math.exp(-t * 12)), 0.001, 0.13), 1.5), 0.7);
   return lp(o, 5000);
 });
 
@@ -197,10 +200,11 @@ def('dash', 2, (i, r) => {
 def('swing', 3, (i, r) => {
   const len = 0.26 + i * 0.02, o = buf(len);
   const s = 520 + i * 90;
-  mix(o, env(bp(noise(len, r), t => s + 1900 * Math.sin(Math.PI * Math.min(t / len, 1)), 2.0), 0.035, 0.07), 1.0);
-  mix(o, env(lp(noise(len, r), 700), 0.03, 0.08), 0.35);
+  mix(o, env(bp(noise(len, r), t => s + 1900 * Math.exp(-t * 11), 2.0), 0.001, 0.07), 1.0);
+  mix(o, env(lp(noise(len, r), 700), 0.001, 0.08), 0.35);
   return lp(o, 5500);
 });
+
 def('hit_enemy', 3, (i, r) => {
   const len = 0.28, o = buf(len);
   mix(o, env(lp(noise(len, r), 3500), 0.001, 0.05), 1.0);
@@ -219,10 +223,11 @@ def('parry', 2, (i, r) => {
 });
 def('parry_raise', 1, (i, r) => {
   const len = 0.16, o = buf(len);
-  mix(o, env(bp(noise(len, r), t => 900 + 900 * t / len, 2.5), 0.02, 0.05), 0.6);
-  mix(o, env(tone(len, 300), 0.002, 0.03), 0.2);
+  mix(o, env(bp(noise(len, r), t => 1800 - 900 * t / len, 2.5), 0.001, 0.05), 0.6);
+  mix(o, env(tone(len, 300), 0.001, 0.03), 0.2);
   return lp(o, 4500);
 });
+
 def('player_hurt', 2, (i, r) => {
   const len = 0.5, o = buf(len);
   mix(o, env(tone(len, t => 40 + 60 * Math.exp(-t * 25)), 0.001, 0.09), 1.0);
@@ -301,7 +306,7 @@ def('shard_hit', 2, (i, r) => {
 });
 def('shoot', 2, (i, r) => {
   const len = 0.26, o = buf(len);
-  mix(o, env(bp(noise(len, r), t => 1400 + 2200 * t / len, 3), 0.01, 0.08), 0.9);
+  mix(o, env(bp(noise(len, r), t => 3600 - 2200 * t / len, 3), 0.001, 0.08), 0.9);
   mix(o, env(lp(noise(len, r), 800), 0.002, 0.03), 0.5);
   return lp(o, 6000);
 });
@@ -315,9 +320,9 @@ def('ui_move', 2, (i, r) => {
 });
 def('ui_accept', 1, (i, r) => {
   const len = 0.5, o = buf(len);
-  mix(o, env(tone(len, 196), 0.004, 0.1), 0.8);
-  mix(o, env(tone(len, 294), 0.004, 0.09), 0.5);
-  mix(o, env(tone(len, 588), 0.004, 0.12), 0.12);
+  mix(o, env(tone(len, 196), 0.001, 0.1), 0.8);
+  mix(o, env(tone(len, 294), 0.001, 0.09), 0.5);
+  mix(o, env(tone(len, 588), 0.001, 0.12), 0.12);
   mix(o, env(tone(len, 80), 0.002, 0.05), 0.6);
   return lp(o, 3500);
 });
@@ -327,8 +332,8 @@ def('ui_back', 1, (i, r) => {
 });
 def('ui_open', 1, (i, r) => {
   const len = 0.4, o = buf(len);
-  mix(o, env(bp(noise(len, r), t => 300 + 700 * t / len, 1.0), 0.09, 0.1), 0.7);
-  mix(o, env(tone(len, 110), 0.08, 0.1), 0.3);
+  mix(o, env(bp(noise(len, r), t => 300 + 700 * t / len, 1.0), 0.004, 0.1), 0.7);
+  mix(o, env(tone(len, 110), 0.004, 0.1), 0.3);
   return lp(o, 3500);
 });
 def('ui_close', 1, (i, r) => {
@@ -348,16 +353,18 @@ def('begin', 1, (i, r) => {
 // --- enemigos: armas ---
 def('enemy_swing', 2, (i, r) => {
   const len = 0.34, o = buf(len);
-  mix(o, env(bp(noise(len, r), t => 260 + 700 * Math.sin(Math.PI * Math.min(t / len, 1)), 1.3), 0.05, 0.09), 1.0);
-  mix(o, env(lp(noise(len, r), 500), 0.05, 0.1), 0.4);
+  mix(o, env(bp(noise(len, r), t => 260 + 700 * Math.exp(-t * 8), 1.3), 0.001, 0.09), 1.0);
+  mix(o, env(lp(noise(len, r), 500), 0.001, 0.1), 0.4);
   return lp(o, 3500);
 });
+
 def('enemy_thrust', 2, (i, r) => {
   const len = 0.22, o = buf(len);
-  mix(o, env(bp(noise(len, r), t => 700 + 2200 * Math.min(t / 0.1, 1), 1.8), 0.015, 0.05), 1.0);
-  mix(o, env(tone(len, 150), 0.002, 0.03), 0.3);
+  mix(o, env(bp(noise(len, r), t => 2900 - 2200 * Math.min(t / 0.1, 1), 1.8), 0.001, 0.05), 1.0);
+  mix(o, env(tone(len, 150), 0.001, 0.03), 0.3);
   return lp(o, 5000);
 });
+
 def('enemy_slam', 2, (i, r) => {
   const len = 0.8, o = buf(len);
   mix(o, sat(env(tone(len, t => 30 + 50 * Math.exp(-t * 18)), 0.002, 0.2), 1.8), 1.0);
@@ -367,8 +374,8 @@ def('enemy_slam', 2, (i, r) => {
 });
 def('enemy_lunge', 2, (i, r) => {
   const len = 0.32, o = buf(len);
-  mix(o, env(bp(noise(len, r), t => 1300 * Math.exp(-t * 5) + 300, 1.0), 0.01, 0.1), 0.9);
-  mix(o, env(mul(hp(noise(len, r), 2500), t => 0.5 + 0.5 * Math.sign(Math.sin(TAU * 95 * t))), 0.005, 0.08), 0.35);
+  mix(o, env(bp(noise(len, r), t => 1300 * Math.exp(-t * 5) + 300, 1.0), 0.001, 0.1), 0.9);
+  mix(o, env(mul(hp(noise(len, r), 2500), t => 0.5 + 0.5 * Math.sign(Math.sin(TAU * 95 * t))), 0.001, 0.08), 0.35);
   return lp(o, 5500);
 });
 def('enemy_step', 3, (i, r) => {
@@ -407,19 +414,34 @@ for (const [name, v] of Object.entries(VOICES)) {
   }
 }
 
+// ---------- comprobación de arranque ----------
+// Los sonidos de acción (pasos, saltos, golpes...) tienen que sonar a tope desde el
+// primer instante: si empiezan flojos y suben, se perciben tarde. Se exige que en los
+// primeros 6 ms se alcance al menos el 45 % del pico.
+const INSTANT = /^(step_|land_|jump|air_jump|wall_jump|dash|swing|parry|hit_enemy|player_hurt|enemy_(swing|thrust|slam|lunge|step)|heavy_step|shoot|shard_hit|break|ui_move|ui_accept|ui_back|ui_deny)/;
+function onsetRatio(b) {
+  const n = Math.round(0.006 * SR);
+  let head = 0, peak = 0;
+  for (let i = 0; i < b.length; i++) { peak = Math.max(peak, Math.abs(b[i])); if (i < n) head = Math.max(head, Math.abs(b[i])); }
+  return head / peak;
+}
+
 // ---------- ejecución ----------
 const filters = process.argv.slice(2);
 fs.mkdirSync(OUT, { recursive: true });
 let files = 0, bytes = 0, worst = 0;
+const slow = [];
 for (const [name, s] of Object.entries(sounds)) {
   if (filters.length && !filters.some(f => name.startsWith(f))) continue;
   for (let i = 0; i < s.variants; i++) {
     const r = mulberry(hashStr(name) + i * 7919);
     const b = finish(s.fn(i, r));
     for (const x of b) if (!Number.isFinite(x)) throw new Error('NaN en ' + name);
+    if (INSTANT.test(name) && onsetRatio(b) < 0.45) slow.push(name + '_' + (i + 1) + ' (' + Math.round(onsetRatio(b) * 100) + ' %)');
     const file = path.join(OUT, name + '_' + (i + 1) + '.wav');
     writeWav(file, b);
     files++; bytes += 44 + b.length * 2; worst = Math.max(worst, b.length / SR);
   }
 }
+if (slow.length) { console.log('ARRANQUE LENTO: ' + slow.join(', ')); process.exitCode = 1; }
 console.log(files + ' sonidos, ' + (bytes / 1024 / 1024).toFixed(2) + ' MB, el más largo ' + worst.toFixed(1) + ' s');

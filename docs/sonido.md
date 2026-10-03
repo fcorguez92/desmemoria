@@ -40,3 +40,7 @@ Cada sonido sale en varias variantes (`step_1.wav` … `step_4.wav`) y el juego 
 - Un control de volumen en Opciones (hoy solo hay pantalla completa): se añadirá cuando haya dónde ponerlo útilmente.
 - Ambiente (viento, goteo, zumbido del Ancla) y música: son otra fase.
 - Estos sonidos están sintetizados y **no se han podido escuchar durante el desarrollo**: los niveles y los timbres hay que ajustarlos jugando.
+
+## Regla de arranque (sincronía)
+
+Un sonido de acción (paso, salto, aterrizaje, golpe) tiene que sonar **a tope desde la primera muestra y solo bajar**: si empieza flojo y sube, o es un barrido que sube de tono, el oído lo sitúa tarde aunque el juego lo dispare en el fotograma exacto. Por eso los graves arrancan en el pico de la onda, llevan un chasquido de inicio (`snap`) y los barridos de los saltos y golpes bajan en vez de subir. `tools/sonidos.js` lo comprueba al generar (en los primeros 6 ms debe alcanzar el 45 % del pico) y falla si algún sonido de acción arranca lento. La prueba de humo, además, comprueba que el aterrizaje empieza en el mismo fotograma de físicas que el contacto con el suelo.
