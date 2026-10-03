@@ -121,6 +121,9 @@ dos maneras: empezar con el texto y pasar a retocar a mano cuando compense.
 | Decorado del entorno | 13 piezas: árbol muerto, columna rota, hierba, zarza, huesos, estandarte, cadenas, estatua, mojón, poste, farol, arco ciego, enredaderas | 48×64 | una fila de 13 fotogramas (`game/environment/decor_sheet.png`); lo que se apoya toca la fila de abajo y lo que cuelga la de arriba |
 | Iconos del HUD | 16×16: frasco de curación (lleno y vacío, ámbar) y Eco (gota azul) | 16×16 | una fila de 3 fotogramas (`game/ui/hud_icons.png`) |
 | Eco (recuerdo de tu muerte) | 20×44, silueta del Caminante en azul frío que se deshace por abajo en jirones; flota y su brillo late | 32×56 | flotar (4), `game/echo/echo_sheet.png` |
+| Ancla de Memoria | Monumento de piedra con escalones, musgo, raíces, grietas, una cadena rota y runas grabadas que pulsan; sostiene un cristal azul con una llama ámbar dentro | 64×80 | brillo (8, en bucle a 7 fps), `game/memory_anchor/anchor_sheet.png` |
+
+**El Ancla de Memoria** no se edita a mano: `art/source/anchor.sprite` lo genera `tools/arte_ancla.js` (piedra, musgo, runas y cristal se calculan por código con ruido determinista, y cada fotograma varía la llama, las runas y las brasas). Para cambiarla se edita el generador y se regenera: `node tools/arte_ancla.js`, después `build_sprites.gd` y `godot --headless --path . --import`. La base del dibujo queda 28 px por debajo del origen de la escena (ver `room.gd`). La luz (halo aditivo, charco en el suelo, motas, destello y onda al descansar) no está en el sprite: son nodos de `game/memory_anchor/memory_anchor.tscn` animados por `memory_anchor.gd`.
 
 Son un primer dibujo funcional, no arte final. **Las armas van integradas en el
 sprite**: se dibujan como piezas superpuestas al cuerpo (brazo y arma) en cada pose,

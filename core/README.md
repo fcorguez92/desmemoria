@@ -38,7 +38,7 @@ de cada variable exportada (se ven en el Inspector).
 
 | Objeto | Base | Responsabilidad |
 |---|---|---|
-| `Checkpoint` | `Area2D` (se puede heredar: ver `game/memory_anchor/`; `targets_in_range` es público) | Al pulsar `action_interact` con un cuerpo del grupo objetivo dentro, llama a `rest_at(position)` en él; muestra `prompt` (opcional) mientras hay alguien al alcance |
+| `Checkpoint` | `Area2D` (se puede heredar: ver `game/memory_anchor/`; `targets_in_range` es público) | Al pulsar `action_interact` con un cuerpo del grupo objetivo dentro, llama a `rest_at(position)` en él; emite la señal `activated` (para efectos); muestra `prompt` (opcional) mientras hay alguien al alcance |
 | `AbilityPickup` | `Area2D` | Al entrar un cuerpo del grupo objetivo, llama a `unlock_ability(ability_id)` en él y desaparece. No conoce las habilidades: solo entrega el identificador |
 | `EntitySpawner` | `Node2D` | Crea `scene` al cargar; al recibir `reset()` (vía el grupo `reset_group`) destruye la instancia actual y crea una nueva desde cero. `instance` es la entidad actual |
 | `Projectile` | `Area2D` | Proyectil recto: vuela a `speed` en `direction` hasta herir a algo golpeable del grupo `target_group` (`damage`), chocar con el escenario o agotar `lifetime`. Ignora cuerpos con movimiento que no son su objetivo (quien lo lanzó, otros enemigos). Si el objetivo lo desvía con un parry llama a `on_parried()`: se devuelve y pasa a herir a `reflect_group`. Quien lo crea llama a `launch(dirección)` |
