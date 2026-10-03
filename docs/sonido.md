@@ -24,7 +24,7 @@ Cada sonido sale en varias variantes (`step_1.wav` … `step_4.wav`) y el juego 
 
 | Origen | Sonidos |
 |---|---|
-| Caminante | pasos (sincronizados con los pies de la animación de correr, fotogramas 6 y 13), aterrizaje (más fuerte cuanto más cae), salto, doble salto, salto de pared, dash, tajo, guardia, parry, golpe recibido, curarse, morir |
+| Caminante | pasos (sincronizados con los pies de la animación de correr, fotogramas 6 y 13) y aterrizaje (más fuerte cuanto más cae), ambos distintos según el suelo: piedra, musgo o madera (dato `material` de las baldosas, leído con `GroundMaterial`), salto, doble salto, salto de pared, dash, tajo, guardia, parry, golpe recibido, curarse, morir |
 | Enemigos | pasos (el coloso, más pesados), aviso al empezar a perseguir, grito al preparar el ataque, golpe (tajo, estocada, mazazo, embestida, lanzamiento), queja al ser herido, muerte. Cada tipo tiene su voz: cascarón (ronca y jadeante), lancero (de soldado), arrojador (fina y sibilante), coloso (muy grave), acechador (bestia) |
 | Mundo | romper objetos, impacto de la esquirla, recoger un Eco, recordar una habilidad, descansar en un Ancla, comprar una mejora (o no poder) |
 | Interfaz | mover, aceptar, volver, negado, abrir y cerrar la pausa, empezar partida |

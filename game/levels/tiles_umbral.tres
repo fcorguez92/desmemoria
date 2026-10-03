@@ -6,18 +6,25 @@
 texture = ExtResource("1_tiles")
 texture_region_size = Vector2i(16, 16)
 0:0/0 = 0
+0:0/0/custom_data_0 = "moss"
 0:0/0/physics_layer_0/polygon_0/points = PackedVector2Array(-8, -8, 8, -8, 8, 8, -8, 8)
 1:0/0 = 0
+1:0/0/custom_data_0 = "stone"
 1:0/0/physics_layer_0/polygon_0/points = PackedVector2Array(-8, -8, 8, -8, 8, 8, -8, 8)
 2:0/0 = 0
+2:0/0/custom_data_0 = "stone"
 2:0/0/physics_layer_0/polygon_0/points = PackedVector2Array(-8, -8, 8, -8, 8, 8, -8, 8)
 3:0/0 = 0
+3:0/0/custom_data_0 = "stone"
 3:0/0/physics_layer_0/polygon_0/points = PackedVector2Array(-8, -8, 8, -8, 8, 8, -8, 8)
 4:0/0 = 0
+4:0/0/custom_data_0 = "wood"
 4:0/0/physics_layer_0/polygon_0/points = PackedVector2Array(-8, -8, 8, -8, 8, -4, -8, -4)
 4:0/0/physics_layer_0/polygon_0/one_way = true
 
 [resource]
 tile_size = Vector2i(16, 16)
 physics_layer_0/collision_layer = 1
+custom_data_layer_0/name = "material"
+custom_data_layer_0/type = 4
 sources/0 = SubResource("TileSetAtlasSource_umbral")

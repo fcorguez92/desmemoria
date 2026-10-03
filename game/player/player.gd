@@ -353,7 +353,7 @@ func _on_jumped(kind: StringName) -> void:
 func _play_movement_sounds() -> void:
 	var on_floor := is_on_floor()
 	if on_floor and not _was_on_floor and _peak_fall_speed > LAND_SOUND_SPEED:
-		Sfx.play(&"land", null, clampf(remap(_peak_fall_speed, LAND_SOUND_SPEED, 1000.0, -12.0, -5.0), -12.0, -5.0))
+		Sfx.play(StringName("land_%s" % GroundMaterial.under(self)), null, clampf(remap(_peak_fall_speed, LAND_SOUND_SPEED, 1000.0, -15.0, -8.0), -15.0, -8.0))
 	if on_floor:
 		_peak_fall_speed = 0.0
 	_was_on_floor = on_floor
@@ -365,7 +365,7 @@ func _play_movement_sounds() -> void:
 ## Los pasos suenan cuando el pie toca el suelo en la animación de correr.
 func _on_animation_frame(animation: String, frame: int) -> void:
 	if animation == "run" and frame in STEP_FRAMES and is_on_floor():
-		Sfx.play(&"step", null, -14.0)
+		Sfx.play(StringName("step_%s" % GroundMaterial.under(self)), null, -14.0)
 
 
 func _on_facing_changed(facing: int) -> void:

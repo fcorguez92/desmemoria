@@ -1408,6 +1408,21 @@ func _test_sound_effects() -> void:
 	_check(wanted.size() > 15, "el código pide muchos sonidos distintos (%d)" % wanted.size())
 	_check(missing.is_empty(), "todos los sonidos que pide el código existen %s" % [missing])
 
+	# Pasos y aterrizajes por material: existe el sonido de cada material del TileSet.
+	var tiles: TileSet = load("res://game/levels/tiles_umbral.tres")
+	var source := tiles.get_source(0) as TileSetAtlasSource
+	var materials := {}
+	for index in source.get_tiles_count():
+		materials[source.get_tile_data(source.get_tile_id(index), 0).get_custom_data("material")] = true
+	_check(materials.has("stone") and materials.has("moss") and materials.has("wood"), "el TileSet distingue piedra, musgo y madera %s" % [materials.keys()])
+	var silent := []
+	for material in materials:
+		for kind in ["step", "land"]:
+			if not Sfx.has(StringName("%s_%s" % [kind, material])):
+				silent.append("%s_%s" % [kind, material])
+	_check(silent.is_empty(), "cada material tiene su paso y su aterrizaje %s" % [silent])
+	_check(GroundMaterial.under(_player) in materials, "el jugador sabe sobre qué material pisa (%s)" % GroundMaterial.under(_player))
+
 	# Cada enemigo tiene su voz completa, su golpe y su paso.
 	var incomplete := []
 	for file in ["enemy", "enemy_lancero", "enemy_arrojador", "enemy_coloso", "enemy_acechador"]:

@@ -5,8 +5,8 @@ extends Node
 ##
 ## Uso:
 ##   Sfx.setup(get_tree(), "res://game/audio/sfx")    # una vez; es idempotente
-##   Sfx.play(&"step")                                # sin posición (interfaz)
-##   Sfx.play(&"hit_enemy", global_position)          # en el mundo: suena más bajo
+##   Sfx.play(sonido)                               # sin posición (interfaz)
+##   Sfx.play(sonido, global_position)          # en el mundo: suena más bajo
 ##                                                    # y más a un lado según dónde esté
 ##
 ## Los archivos de la carpeta se llaman `nombre_1.wav`, `nombre_2.wav`...: cada
