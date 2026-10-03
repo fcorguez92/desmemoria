@@ -28,6 +28,10 @@ const HINTS_MAIN := [
 	{ action = &"ui_accept", hint = InputGlyphs.Hint.CHECK },
 	{ action = &"ui_cancel", hint = InputGlyphs.Hint.BACK },
 ]
+const HINTS_CONTROLS := [
+	{ hint = InputGlyphs.Hint.LEFT_RIGHT },
+	{ action = &"ui_cancel", hint = InputGlyphs.Hint.BACK },
+]
 const HINTS_SUBPAGE := [{ action = &"ui_cancel", hint = InputGlyphs.Hint.BACK }]
 const HINTS_MAP := [
 	{ color = Color(0.953, 0.769, 0.416) },
@@ -35,30 +39,13 @@ const HINTS_MAP := [
 	{ color = Color(0.75, 0.55, 0.95) },
 	{ action = &"ui_cancel", hint = InputGlyphs.Hint.BACK },
 ]
-## Tecla, botón del mando (Xbox / PlayStation) y qué hace, una fila por control.
-## Los botones van por posición: el de abajo, el de la izquierda... son los
-## mismos en todos los mandos (ver project.godot, sección [input]).
-const CONTROLS := [
-	["← →", "Palanca / Cruceta", "Moverse"],
-	["Espacio", "A / Cruz", "Saltar (en el aire, otra vez: doble salto)"],
-	["↓ + Espacio", "↓ + A / Cruz", "Bajar de un tablón"],
-	["X", "X / Cuadrado", "Atacar"],
-	["V", "LT / L2", "Guardia: desvía un golpe a tiempo"],
-	["Shift", "RT / R2", "Dash"],
-	["H", "B / Círculo", "Curarse"],
-	["Z", "Y / Triángulo", "Ancla: descansar y abrir su menú"],
-	["↑ ↓", "Palanca ↑ ↓", "Mirar arriba o abajo"],
-	["Esc", "Start", "Pausa"],
-]
-
 var _page: Page = Page.MAIN
 var _character_text: String = ""
 
 @onready var title_label: Label = $Root/Panel/Content/Title
 @onready var info: HBoxContainer = $Root/Panel/Content/Info
 @onready var info_label: Label = $Root/Panel/Content/Info/Left
-@onready var pad_label: Label = $Root/Panel/Content/Info/Pad
-@onready var actions_label: Label = $Root/Panel/Content/Info/Right
+@onready var controls_view: Control = $Root/Panel/Content/Controls
 @onready var menu: MenuList = $Root/Panel/Content/Options
 @onready var hint_bar: InputHintBar = $Root/Panel/Content/Hint
 @onready var map_view: MapView = $Root/Panel/Content/Map
@@ -130,12 +117,10 @@ func _on_chosen(index: int) -> void:
 func _show_page(page: Page) -> void:
 	_page = page
 	menu.visible = page == Page.MAIN
-	info.visible = page == Page.CHARACTER or page == Page.CONTROLS
+	info.visible = page == Page.CHARACTER
+	controls_view.visible = page == Page.CONTROLS
 	map_view.visible = page == Page.MAP
-	actions_label.text = ""
-	pad_label.text = ""
-	info_label.custom_minimum_size.x = 0.0
-	hint_bar.set_entries(HINTS_MAIN if page == Page.MAIN else (HINTS_MAP if page == Page.MAP else HINTS_SUBPAGE))
+	hint_bar.set_entries(HINTS_MAIN if page == Page.MAIN else (HINTS_MAP if page == Page.MAP else (HINTS_CONTROLS if page == Page.CONTROLS else HINTS_SUBPAGE)))
 	match page:
 		Page.MAIN:
 			title_label.text = "Pausa"
@@ -146,18 +131,6 @@ func _show_page(page: Page) -> void:
 			info_label.text = _character_text
 		Page.CONTROLS:
 			title_label.text = "Controles"
-			# Tres columnas: teclas, botones del mando y qué hace cada uno.
-			var keys := PackedStringArray()
-			var pad := PackedStringArray()
-			var actions := PackedStringArray()
-			for line in CONTROLS:
-				keys.append(line[0])
-				pad.append(line[1])
-				actions.append(line[2])
-			info_label.text = "\n".join(keys)
-			pad_label.text = "\n".join(pad)
-			actions_label.text = "\n".join(actions)
-			info_label.custom_minimum_size.x = 90.0
 
 
 ## "Mapa", y el nombre de la sala donde está el jugador si se sabe.

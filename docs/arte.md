@@ -122,8 +122,10 @@ dos maneras: empezar con el texto y pasar a retocar a mano cuando compense.
 | Iconos del HUD | 16×16: frasco de curación (lleno y vacío, ámbar) y Eco (gota azul) | 16×16 | una fila de 3 fotogramas (`game/ui/hud_icons.png`) |
 | Eco (recuerdo de tu muerte) | 20×44, silueta del Caminante en azul frío que se deshace por abajo en jirones; flota y su brillo late | 32×56 | flotar (4), `game/echo/echo_sheet.png` |
 | Ancla de Memoria | Monumento de piedra con escalones, musgo, raíces, grietas, una cadena rota y runas grabadas que pulsan; sostiene un cristal azul con una llama ámbar dentro | 64×80 | brillo (8, en bucle a 7 fps), `game/memory_anchor/anchor_sheet.png` |
+| Objetos de habilidad | Tres reliquias de recuerdo cristalizado, cada una con núcleo luminoso, anillo de runas que gira y chispas: dash = remolino de viento azul con cheurones que avanzan; doble salto = ala de tres plumas de luz con dos ráfagas de chispas que ascienden; salto de pared = mano espectral ámbar-verdosa aferrada a un fragmento de piedra con una runa que late | 48×48 | tres filas (`dash`, `double_jump`, `wall_jump`) de 8 fotogramas en bucle a 8 fps, `game/ability_pickup/ability_sheet.png` |
 
 **El Ancla de Memoria** no se edita a mano: `art/source/anchor.sprite` lo genera `tools/arte_ancla.js` (piedra, musgo, runas y cristal se calculan por código con ruido determinista, y cada fotograma varía la llama, las runas y las brasas). Para cambiarla se edita el generador y se regenera: `node tools/arte_ancla.js`, después `build_sprites.gd` y `godot --headless --path . --import`. La base del dibujo queda 28 px por debajo del origen de la escena (ver `room.gd`). La luz (halo aditivo, charco en el suelo, motas, destello y onda al descansar) no está en el sprite: son nodos de `game/memory_anchor/memory_anchor.tscn` animados por `memory_anchor.gd`.
+**Los objetos de habilidad** tampoco se editan a mano: `art/source/habilidades.sprite` lo genera `tools/arte_habilidades.js`. Para cambiarlos se edita el generador y se regenera: `node tools/arte_habilidades.js`, después `build_sprites.gd` y `godot --headless --path . --import`. La luz (halo aditivo que late, charco bajo el objeto, motas, vaivén y el efecto de recogida) está en `game/ability_pickup/` (`ability_pickup.tscn`, `ability_pickup.gd` y `pickup_burst.gd`), no en el sprite.
 
 Son un primer dibujo funcional, no arte final. **Las armas van integradas en el
 sprite**: se dibujan como piezas superpuestas al cuerpo (brazo y arma) en cada pose,
@@ -175,3 +177,9 @@ godot --headless --path . --import
 ```
 
 Todas las hojas de enemigo tienen las mismas filas (reposo, andar, aviso, golpe, golpe recibido), así que se animan con la misma escena base. `shard.sprite` (la esquirla) sí está dibujada a mano.
+
+### El menú principal
+
+El logotipo (`art/source/title_logo.sprite`, 12 fotogramas de 456×88) lo genera `tools/arte_titulo.js`: la palabra DESMEMORIA en una fuente de píxeles gordos de 5×7, en ámbar con relieve, que se deshace hacia el final (la memoria que se apaga) mientras un brillo azul la recorre. Para cambiarlo se edita el script y se regenera. El fondo del menú (`game/ui/title_backdrop.gd`) no usa imágenes: cielo, estrellas que titilan, la luna incompleta, colinas y ruinas que se desplazan despacio, niebla, árboles muertos y brasas, todo dibujado por código. Sobre un suelo de baldosas del juego (`game/ui/title.map`) están el Caminante en reposo y el Ancla de Memoria.
+
+La pantalla **Controles** (`game/ui/controls_diagram.gd`) dibuja el esquema del teclado y de los mandos de Xbox, PlayStation y Nintendo, con cada botón señalado; izquierda y derecha cambian de dispositivo. Se usa en el menú principal y en la pausa.

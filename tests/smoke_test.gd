@@ -631,7 +631,7 @@ func _test_gamepad_controls() -> void:
 	await _press_action("ui_down")
 	await _press_action("ui_down")
 	await _press_event(_pad_button(JOY_BUTTON_A))
-	_check(pause.title_label.text == "Controles" and "Cuadrado" in pause.pad_label.text, "Controles muestra también los botones del mando")
+	_check(pause.title_label.text == "Controles" and pause.controls_view.visible, "Controles muestra el esquema de teclado y mandos")
 	await _press_event(_pad_button(JOY_BUTTON_START))
 	_check(not pause.is_open(), "Start cierra la pausa desde una subpantalla")
 	await _wait(5)
@@ -1218,7 +1218,11 @@ func _test_pause_menu() -> void:
 	# Controles.
 	await _press_action("ui_down")
 	await _press_action("ui_accept")
-	_check(pause.title_label.text == "Controles" and "Moverse" in pause.actions_label.text and "Espacio" in pause.info_label.text, "Controles muestra las teclas y su acción")
+	_check(pause.title_label.text == "Controles" and pause.controls_view.visible and not pause.info.visible, "Controles muestra el esquema, no la ficha del personaje")
+	var device_before: int = pause.controls_view.device
+	await _press_action("ui_right")
+	_check(pause.controls_view.device == (device_before + 1) % 4 and pause.is_open(), "derecha cambia de dispositivo en el esquema sin cerrar la pausa")
+	await _press_action("ui_left")
 	_check(pause_panel.size == pause_size, "y lo mismo en Controles")
 	await _press_action("ui_accept")
 	_check(pause.is_open() and pause.title_label.text == "Pausa", "Intro en una subpantalla también vuelve")
@@ -1909,6 +1913,18 @@ func _test_title_screen() -> void:
 	await _press_action("ui_accept")
 	await _press_action("ui_cancel")
 	_check(menu.selected == title.MAIN_OPTIONS and not title.fullscreen, "Esc vuelve al menú, con el cursor en Opciones")
+
+	# Controles: el esquema del teclado y los mandos, con otra pestaña por dispositivo.
+	title._show_page(0, title.MAIN_CONTROLS)
+	await _press_action("ui_accept")
+	_check(title.controls_view.visible and not title.menu_panel.visible, "Controles muestra el esquema en lugar del menú")
+	var first_device: int = title.controls_view.device
+	await _press_action("ui_right")
+	_check(title.controls_view.device == (first_device + 1) % 4, "derecha pasa al siguiente dispositivo (teclado, Xbox, PlayStation, Nintendo)")
+	await _press_action("ui_left")
+	_check(title.controls_view.device == first_device, "izquierda vuelve al anterior")
+	await _press_action("ui_cancel")
+	_check(not title.controls_view.visible and title.menu_panel.visible and menu.selected == title.MAIN_CONTROLS, "Esc vuelve al menú, con el cursor en Controles")
 	title.queue_free()
 	_level = null
 	await process_frame

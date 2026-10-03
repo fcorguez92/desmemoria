@@ -1,6 +1,6 @@
 # Estado del proyecto (documento vivo)
 
-Última actualización: Ancla rediseñada, árbol de habilidades, enemigos más rápidos y feedback de daño.
+Última actualización: menú principal rediseñado con esquema de controles y reliquias de habilidad animadas.
 
 ## Dónde estamos en la metodología
 

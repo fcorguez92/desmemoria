@@ -1,8 +1,29 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=16 format=3]
 
 [ext_resource type="Script" path="res://game/ui/title_screen.gd" id="1_title"]
 [ext_resource type="Script" path="res://core/ui/menu_list.gd" id="2_list"]
 [ext_resource type="Script" path="res://core/ui/input_hint_bar.gd" id="9_bar"]
+[ext_resource type="Script" path="res://game/ui/title_backdrop.gd" id="10_backdrop"]
+[ext_resource type="Script" path="res://core/objects/text_tile_map.gd" id="11_tilemap"]
+[ext_resource type="TileSet" path="res://game/levels/tiles_umbral.tres" id="12_tileset"]
+[ext_resource type="PackedScene" path="res://game/memory_anchor/memory_anchor.tscn" id="13_anchor"]
+[ext_resource type="Texture2D" path="res://game/player/player_sheet.png" id="14_hero"]
+[ext_resource type="Script" path="res://core/components/sheet_animator.gd" id="15_animator"]
+[ext_resource type="Texture2D" path="res://game/ui/title_logo.png" id="16_logo"]
+[ext_resource type="Script" path="res://game/ui/controls_diagram.gd" id="17_controls"]
+
+[sub_resource type="Theme" id="Theme_menu"]
+default_font_size = 21
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_menu"]
+content_margin_left = 40.0
+content_margin_top = 14.0
+content_margin_right = 40.0
+content_margin_bottom = 14.0
+bg_color = Color(0.03, 0.03, 0.06, 0.62)
+border_width_top = 1
+border_width_bottom = 1
+border_color = Color(0.953, 0.769, 0.416, 0.45)
 
 [node name="TitleScreen" type="Control"]
 layout_mode = 3
@@ -13,62 +34,111 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_title")
 
-[node name="Background" type="ColorRect" parent="."]
+[node name="Backdrop" type="Node2D" parent="."]
+script = ExtResource("10_backdrop")
+horizon = 390.0
+
+[node name="Ground" type="TileMapLayer" parent="."]
+position = Vector2(0, 390)
+scale = Vector2(2, 2)
+tile_set = ExtResource("12_tileset")
+script = ExtResource("11_tilemap")
+map_file = "res://game/ui/title.map"
+legend = {"B": Vector2i(2, 0), "C": Vector2i(3, 0), "G": Vector2i(1, 0), "S": Vector2i(4, 0), "T": Vector2i(0, 0)}
+
+[node name="Anchor" parent="." instance=ExtResource("13_anchor")]
+z_index = 2
+position = Vector2(742, 334)
+scale = Vector2(2, 2)
+
+[node name="Hero" type="Sprite2D" parent="."]
+position = Vector2(122, 326)
+scale = Vector2(2, 2)
+texture = ExtResource("14_hero")
+hframes = 14
+vframes = 8
+
+[node name="HeroAnimator" type="Node" parent="Hero" node_paths=PackedStringArray("sprite")]
+script = ExtResource("15_animator")
+sprite = NodePath("..")
+animations = {"idle": [0, 10, 10.0, true]}
+
+[node name="Foreground" type="Node2D" parent="."]
+script = ExtResource("10_backdrop")
+layer = 1
+horizon = 390.0
+
+[node name="Logo" type="Sprite2D" parent="."]
+position = Vector2(432, 96)
+texture = ExtResource("16_logo")
+hframes = 12
+
+[node name="LogoAnimator" type="Node" parent="Logo" node_paths=PackedStringArray("sprite")]
+script = ExtResource("15_animator")
+sprite = NodePath("..")
+animations = {"shine": [0, 12, 8.0, true]}
+default_animation = "shine"
+
+[node name="Dim" type="ColorRect" parent="."]
+visible = false
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.07, 0.07, 0.1, 1)
-
-[node name="Silhouettes" type="Node2D" parent="."]
-position = Vector2(0, 130)
-
-[node name="FarHills" type="Polygon2D" parent="Silhouettes"]
-color = Color(0.161, 0.157, 0.184, 1)
-polygon = PackedVector2Array(-400, 360, -400, 300, -180, 240, 60, 270, 300, 210, 560, 260, 820, 200, 1080, 255, 1340, 215, 1600, 270, 1700, 300, 1700, 360)
-
-[node name="MidRuins" type="Polygon2D" parent="Silhouettes"]
-position = Vector2(-120, 20)
-color = Color(0.227, 0.216, 0.259, 1)
-polygon = PackedVector2Array(-400, 360, -400, 320, -300, 320, -300, 260, -260, 260, -260, 320, -150, 320, -150, 280, -120, 280, -120, 230, -90, 230, -90, 320, 120, 320, 120, 300, 160, 300, 160, 340, 400, 340, 400, 280, 440, 280, 440, 240, 470, 240, 470, 320, 700, 320, 700, 300, 900, 300, 900, 250, 940, 250, 940, 300, 1150, 300, 1150, 330, 1400, 330, 1400, 300, 1450, 300, 1450, 320, 1700, 320, 1700, 360)
+mouse_filter = 2
+color = Color(0.02, 0.02, 0.04, 0.78)
 
 [node name="Center" type="CenterContainer" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_bottom = -60.0
+offset_top = 150.0
+offset_bottom = -104.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="Content" type="VBoxContainer" parent="Center"]
-custom_minimum_size = Vector2(420, 0)
+[node name="Panel" type="PanelContainer" parent="Center"]
 layout_mode = 2
-theme_override_constants/separation = 14
+theme = SubResource("Theme_menu")
+theme_override_styles/panel = SubResource("StyleBoxFlat_menu")
 
-[node name="Title" type="Label" parent="Center/Content"]
+[node name="Content" type="VBoxContainer" parent="Center/Panel"]
+custom_minimum_size = Vector2(340, 0)
 layout_mode = 2
-theme_override_colors/font_color = Color(0.953, 0.769, 0.416, 1)
-theme_override_font_sizes/font_size = 44
-text = "Desmemoria"
-horizontal_alignment = 1
+theme_override_constants/separation = 12
 
-[node name="Separator" type="HSeparator" parent="Center/Content"]
-layout_mode = 2
-
-[node name="Info" type="Label" parent="Center/Content"]
+[node name="Info" type="Label" parent="Center/Panel/Content"]
 visible = false
 layout_mode = 2
 theme_override_colors/font_color = Color(0.663, 0.89, 0.949, 1)
+theme_override_font_sizes/font_size = 15
 horizontal_alignment = 1
 
-[node name="Options" type="VBoxContainer" parent="Center/Content"]
+[node name="Options" type="VBoxContainer" parent="Center/Panel/Content"]
 layout_mode = 2
 size_flags_horizontal = 4
 script = ExtResource("2_list")
+selected_color = Color(0.953, 0.769, 0.416, 1)
 accept_actions = Array[StringName]([&"ui_accept", &"interact"])
+
+[node name="Controls" type="Control" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -350.0
+offset_top = -150.0
+offset_right = 350.0
+offset_bottom = 150.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("17_controls")
 
 [node name="Hint" type="Control" parent="."]
 layout_mode = 1
@@ -76,8 +146,7 @@ anchors_preset = 12
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_top = -30.0
+offset_top = -34.0
 grow_horizontal = 2
 grow_vertical = 0
 script = ExtResource("9_bar")
-
