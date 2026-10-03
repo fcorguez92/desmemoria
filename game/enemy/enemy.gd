@@ -102,7 +102,7 @@ func _show_damage(amount: int, stunned: bool) -> void:
 	var shape := $CollisionShape2D.shape as RectangleShape2D
 	var head := global_position + Vector2(0.0, -shape.size.y / 2.0 - 6.0)
 	DamageNumber.spawn(get_parent(), head, amount, Color(1.0, 0.85, 0.3) if stunned else Color(1.0, 0.97, 0.9))
-	HitSpark.spawn(get_parent(), global_position, Color(0.78, 0.18, 0.16))
+	HitSpark.spawn(get_parent(), global_position, Color(0.78, 0.18, 0.16), 0.55)
 
 
 ## Le han desviado el golpe: se queda aturdido, sin poder atacar, y recibe doble
