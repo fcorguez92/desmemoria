@@ -631,7 +631,7 @@ func _test_gamepad_controls() -> void:
 	await _press_action("ui_down")
 	await _press_action("ui_down")
 	await _press_event(_pad_button(JOY_BUTTON_A))
-	_check(pause.title_label.text == "Controles" and "Cuadrado" in pause.pad_label.text, "Controles muestra también los botones del mando")
+	_check(pause.title_label.text == "Controles" and pause.controls_view.visible, "Controles muestra el esquema de teclado y mandos")
 	await _press_event(_pad_button(JOY_BUTTON_START))
 	_check(not pause.is_open(), "Start cierra la pausa desde una subpantalla")
 	await _wait(5)
@@ -1218,7 +1218,11 @@ func _test_pause_menu() -> void:
 	# Controles.
 	await _press_action("ui_down")
 	await _press_action("ui_accept")
-	_check(pause.title_label.text == "Controles" and "Moverse" in pause.actions_label.text and "Espacio" in pause.info_label.text, "Controles muestra las teclas y su acción")
+	_check(pause.title_label.text == "Controles" and pause.controls_view.visible and not pause.info.visible, "Controles muestra el esquema, no la ficha del personaje")
+	var device_before: int = pause.controls_view.device
+	await _press_action("ui_right")
+	_check(pause.controls_view.device == (device_before + 1) % 4 and pause.is_open(), "derecha cambia de dispositivo en el esquema sin cerrar la pausa")
+	await _press_action("ui_left")
 	_check(pause_panel.size == pause_size, "y lo mismo en Controles")
 	await _press_action("ui_accept")
 	_check(pause.is_open() and pause.title_label.text == "Pausa", "Intro en una subpantalla también vuelve")

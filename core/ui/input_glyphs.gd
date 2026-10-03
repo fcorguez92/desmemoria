@@ -121,17 +121,18 @@ static func width(action: StringName) -> float:
 
 
 ## Dibuja el icono de `action` centrado en `center`. Devuelve su ancho.
-static func draw(canvas: CanvasItem, action: StringName, center: Vector2) -> float:
-	var b := binding(action, kind)
+static func draw(canvas: CanvasItem, action: StringName, center: Vector2, for_kind: int = -1) -> float:
+	var k := kind if for_kind < 0 else for_kind
+	var b := binding(action, k)
 	if b.is_empty():
 		return 0.0
 	match b.type:
 		"key":
 			return _draw_key(canvas, b.label, center)
 		"trigger":
-			return _draw_trigger(canvas, b.right, center)
+			return draw_trigger(canvas, b.right, center, k)
 		_:
-			return _draw_button(canvas, b.index, center)
+			return draw_button(canvas, b.index, center, k)
 
 
 static func _draw_key(canvas: CanvasItem, label: String, center: Vector2) -> float:
@@ -146,11 +147,13 @@ static func _draw_key(canvas: CanvasItem, label: String, center: Vector2) -> flo
 	return w
 
 
-static func _draw_trigger(canvas: CanvasItem, right: bool, center: Vector2) -> float:
+## Un gatillo del mando (izquierdo o derecho) con el nombre que lleva en ese mando.
+static func draw_trigger(canvas: CanvasItem, right: bool, center: Vector2, for_kind: int = -1) -> float:
+	var k := kind if for_kind < 0 else for_kind
 	var label := "RT" if right else "LT"
-	if kind == Kind.PLAYSTATION:
+	if k == Kind.PLAYSTATION:
 		label = "R2" if right else "L2"
-	elif kind == Kind.NINTENDO:
+	elif k == Kind.NINTENDO:
 		label = "ZR" if right else "ZL"
 	var w := RADIUS * 2.6
 	var rect := Rect2(center - Vector2(w, RADIUS * 1.7) / 2.0, Vector2(w, RADIUS * 1.7))
@@ -162,15 +165,18 @@ static func _draw_trigger(canvas: CanvasItem, right: bool, center: Vector2) -> f
 
 
 ## Posición en el mando: 0 abajo, 1 derecha, 2 izquierda, 3 arriba (los índices de Godot).
-static func _draw_button(canvas: CanvasItem, index: int, center: Vector2) -> float:
+## Un botón del mando con el aspecto que tiene en ese mando (colores de Xbox, símbolos
+## de PlayStation, letras de Nintendo).
+static func draw_button(canvas: CanvasItem, index: int, center: Vector2, for_kind: int = -1) -> float:
+	var k := kind if for_kind < 0 else for_kind
 	if index == JOY_BUTTON_START:
-		return _draw_menu_button(canvas, center)
+		return draw_menu_button(canvas, center, k)
 	if index < 0 or index > 3:
 		canvas.draw_circle(center, RADIUS, Color(0.2, 0.2, 0.25))
 		canvas.draw_arc(center, RADIUS, 0.0, TAU, 20, Color(0.78, 0.78, 0.84), 1.0)
 		return RADIUS * 2.0
 	var font := ThemeDB.fallback_font
-	match kind:
+	match k:
 		Kind.XBOX:
 			var letters := ["A", "B", "X", "Y"]
 			canvas.draw_circle(center, RADIUS, XBOX_COLORS[index])
@@ -204,12 +210,13 @@ static func _draw_playstation_symbol(canvas: CanvasItem, index: int, center: Vec
 
 
 ## Botón de menú: tres rayas (Xbox y PlayStation) o un más (Nintendo).
-static func _draw_menu_button(canvas: CanvasItem, center: Vector2) -> float:
+static func draw_menu_button(canvas: CanvasItem, center: Vector2, for_kind: int = -1) -> float:
+	var k := kind if for_kind < 0 else for_kind
 	var w := RADIUS * 2.6
 	var rect := Rect2(center - Vector2(w, RADIUS * 1.5) / 2.0, Vector2(w, RADIUS * 1.5))
 	canvas.draw_rect(rect, Color(0.2, 0.2, 0.25))
 	canvas.draw_rect(rect, Color(0.78, 0.78, 0.84), false, 1.0)
-	if kind == Kind.NINTENDO:
+	if k == Kind.NINTENDO:
 		canvas.draw_line(center + Vector2(-3, 0), center + Vector2(3, 0), LIGHT, 1.6)
 		canvas.draw_line(center + Vector2(0, -3), center + Vector2(0, 3), LIGHT, 1.6)
 	else:
