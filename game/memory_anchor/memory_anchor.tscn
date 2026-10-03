@@ -36,6 +36,9 @@ script = ExtResource("1_anchor")
 prompt = NodePath("Prompt")
 
 [node name="Visuals" type="Node2D" parent="."]
+# Sigue animándose con el menú del Ancla abierto (el árbol está en pausa): el
+# destello del descanso se ve detrás del panel.
+process_mode = 3
 z_index = -1
 
 [node name="Halo" type="Sprite2D" parent="Visuals"]

@@ -20,7 +20,7 @@ Tres ramas de tres mejoras; cada una pide tener antes la de encima (al menos niv
 - **Filo**: Filo afilado (+1 daño, 2 niveles: de 1 a 3 como máximo) → Ritmo (menos espera entre golpes, 3) → Alcance (el golpe llega más lejos, 2).
 - **Espíritu**: Guardia (ventana del parry más larga, 3) → Impulso (menos espera entre dashes, 2) → Contragolpe (el enemigo desviado queda aturdido más tiempo, 2).
 
-Los costes (de 5 a 30 Ecos por nivel) suman unos 320 Ecos en total, mucho más de lo que se junta en una vida: hay que elegir qué mejorar. El daño tiene tope en 3, así que el arma deja de acabar con todo de un golpe. Las mejoras son permanentes (morir no las pierde, los Ecos sí) y comprar vida o frascos los rellena. Los valores son de partida y se ajustarán jugando.
+Los costes (de 5 a 30 Ecos por nivel) suman unos 310 Ecos en total, mucho más de lo que se junta en una vida: hay que elegir qué mejorar. El daño tiene tope en 3, así que el arma deja de acabar con todo de un golpe. Las mejoras son permanentes (morir no las pierde, los Ecos sí) y comprar vida o frascos los rellena. Los valores son de partida y se ajustarán jugando.
 
 ### Dificultad
 
@@ -118,7 +118,7 @@ descansó** (o al principio, si aún no se ha descansado en ninguna), con la vid
 y las curaciones completas, no en el sitio exacto donde se dejó: así cada
 sesión empieza en un lugar seguro y conocido, y descansar sigue importando.
 
-Se guarda: habilidades, Ecos, nivel del Filo, lo explorado del mapa (baldosa a
+Se guarda: habilidades, Ecos, mejoras del árbol de habilidades, lo explorado del mapa (baldosa a
 baldosa) y las salas ya visitadas,
 última Ancla y el Eco de la última muerte (dónde está y cuántos Ecos guarda).
 No se guarda: los enemigos (reaparecen, como al descansar) ni las urnas rotas

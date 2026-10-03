@@ -261,6 +261,7 @@ func _skill_menu_data() -> Array:
 			requires = skill.requires, level = level, max = skills.max_level(skill.id),
 			cost = skills.next_cost(skill.id), unlocked = skills.is_unlocked(skill.id),
 			affordable = skills.can_buy(skill.id, ecos),
+			missing = maxi(0, skills.next_cost(skill.id) - ecos),
 			now = Skills.describe(skill.id, level),
 			next = "" if maxed else Skills.describe(skill.id, level + 1),
 		})

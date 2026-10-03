@@ -6,7 +6,7 @@ extends Control
 ## No conoce al jugador ni al árbol: recibe los datos ya preparados con `set_skills()`
 ## (los datos bajan, ver docs/arquitectura.md) y se maneja con `move()`. Cada
 ## elemento es un diccionario con: id, name, text, branch, row, requires, level,
-## max, cost (-1 si está al máximo), unlocked, affordable, now (texto del valor
+## max, cost (-1 si está al máximo), missing (Ecos que faltan), unlocked, affordable, now (texto del valor
 ## actual) y next (texto del valor del siguiente nivel, o "").
 
 const NODE_RADIUS := 19.0
@@ -154,7 +154,7 @@ func _draw_detail(font: Font) -> void:
 		status = "Coste: %d Ecos" % skill.cost
 		status_color = AMBER
 	else:
-		status = "Coste: %d Ecos (te faltan más)" % skill.cost
+		status = "Coste: %d Ecos (te faltan %d)" % [skill.cost, skill.missing]
 		status_color = RED
 	draw_string(font, Vector2(x, DETAIL_TOP + 84.0), status, HORIZONTAL_ALIGNMENT_LEFT, width, 14, status_color)
 

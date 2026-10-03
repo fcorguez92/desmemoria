@@ -65,6 +65,7 @@ func is_tree_open() -> bool:
 
 func _show_tree(on: bool) -> void:
 	_in_tree = on
+	_held.clear()
 	menu.visible = not on
 	tree_view.visible = on
 	hint_bar.set_entries(HINTS_TREE if on else HINTS_MAIN)
