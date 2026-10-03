@@ -10,6 +10,10 @@ extends Node
 ## - Acciones (`play_action`): un ataque, por ejemplo. Mientras dura una acción se
 ##   ignoran las llamadas a `play`, para que el movimiento no la pise.
 
+## Se emite al pasar a otro fotograma de la animación en curso (con su nombre y su
+## número de fotograma), p. ej. para hacer coincidir los pasos con los pies.
+signal frame_changed(animation: String, frame: int)
+
 ## El Sprite2D, con `hframes` (columnas) y `vframes` (filas) ya configurados.
 @export var sprite: Sprite2D
 ## Nombre -> [fila, número de fotogramas, fotogramas por segundo, ¿en bucle?].
@@ -22,6 +26,8 @@ var _time: float = 0.0
 var _action_active: bool = false
 var _action_hold: bool = false
 var _action_duration: float = 0.0
+var _reported_frame: int = -1
+var _reported_animation: String = ""
 
 
 func _ready() -> void:
@@ -91,3 +97,7 @@ func _apply() -> void:
 	var cell := int(data[0]) * sprite.hframes + frame
 	if sprite.frame != cell:
 		sprite.frame = cell
+	if frame != _reported_frame or current != _reported_animation:
+		_reported_frame = frame
+		_reported_animation = current
+		frame_changed.emit(current, frame)

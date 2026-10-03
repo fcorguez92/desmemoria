@@ -22,6 +22,7 @@ process_mode = 2
 layer = 10
 script = ExtResource("1_menu")
 root = NodePath("Root")
+open_sound = &""
 
 [node name="Root" type="Control" parent="."]
 layout_mode = 3

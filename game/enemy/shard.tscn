@@ -11,6 +11,7 @@ size = Vector2(12, 6)
 script = ExtResource("1_projectile")
 speed = 290.0
 reflect_group = &"enemy"
+hit_sound = &"shard_hit"
 
 [node name="Visual" type="Sprite2D" parent="."]
 texture = ExtResource("2_sheet")

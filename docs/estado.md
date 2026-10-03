@@ -1,6 +1,6 @@
 # Estado del proyecto (documento vivo)
 
-Última actualización: menú principal rediseñado con esquema de controles y reliquias de habilidad animadas.
+Última actualización: efectos de sonido (pasos, combate, voces de enemigos, interfaz).
 
 ## Dónde estamos en la metodología
 

@@ -11,6 +11,8 @@ size = Vector2(38, 28)
 
 [node name="Acechador" instance=ExtResource("1_base")]
 ecos_reward = 3
+voice = &"acechador"
+strike_sound = &"enemy_lunge"
 attack_kind = 2
 
 [node name="CollisionShape2D" parent="." index="0"]

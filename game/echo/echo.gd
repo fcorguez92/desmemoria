@@ -63,6 +63,7 @@ func _on_body_exited(body: Node) -> void:
 
 
 func _collect(body: Node) -> void:
+	Sfx.play(&"echo_collect", null, -7.0)
 	body.add_ecos(ecos_held)
 	if body.active_echo == self:
 		body.active_echo = null

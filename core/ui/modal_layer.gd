@@ -16,6 +16,9 @@ signal closed
 
 ## Nodo cuyo `visible` indica si la capa está abierta.
 @export var root: Control
+## Sonidos al abrir y al cerrar (ver core/audio/sfx.gd); vacío = sin sonido.
+@export var open_sound: StringName = &"ui_open"
+@export var close_sound: StringName = &"ui_close"
 
 
 func _ready() -> void:
@@ -31,6 +34,8 @@ func open() -> void:
 		return
 	root.visible = true
 	get_tree().paused = true
+	if open_sound != &"":
+		Sfx.play(open_sound, null, -12.0)
 	opened.emit()
 
 
@@ -38,6 +43,8 @@ func close() -> void:
 	if not root.visible:
 		return
 	root.visible = false
+	if close_sound != &"":
+		Sfx.play(close_sound, null, -14.0)
 	closed.emit()
 	var tree := get_tree()
 	await tree.physics_frame

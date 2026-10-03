@@ -20,6 +20,9 @@ signal hit(at: Vector2)
 @export var target_group: StringName = &"player"
 ## Grupo al que pasa a herir si se le devuelve con un parry. Vacío = se destruye.
 @export var reflect_group: StringName = &""
+## Sonido al impactar (ver core/audio/sfx.gd); vacío = ninguno.
+@export var hit_sound: StringName = &""
+@export var hit_volume_db: float = -8.0
 
 var direction: Vector2 = Vector2.RIGHT
 
@@ -28,6 +31,7 @@ var _age: float = 0.0
 
 func _ready() -> void:
 	body_entered.connect(_on_body_entered)
+	hit.connect(_on_hit_sound)
 
 
 ## Fija la dirección (no hace falta que esté normalizada) y orienta el dibujo.
@@ -43,6 +47,11 @@ func _physics_process(delta: float) -> void:
 	_age += delta
 	if _age >= lifetime:
 		queue_free()
+
+
+func _on_hit_sound(at: Vector2) -> void:
+	if hit_sound != &"":
+		Sfx.play(hit_sound, at, hit_volume_db)
 
 
 ## Contrato de quien recibe: se llama desde el parry del jugador.

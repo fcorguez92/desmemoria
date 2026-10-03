@@ -9,6 +9,8 @@ size = Vector2(28, 48)
 
 [node name="Arrojador" instance=ExtResource("1_base")]
 ecos_reward = 3
+voice = &"arrojador"
+strike_sound = &"shoot"
 attack_kind = 1
 projectile_scene = ExtResource("3_shard")
 muzzle = Vector2(28, -4)

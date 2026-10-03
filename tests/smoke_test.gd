@@ -61,6 +61,7 @@ func _run() -> void:
 	await _test_scenery_is_dense_and_harmless()
 	await _test_enemy_types()
 	await _test_input_glyphs()
+	await _test_sound_effects()
 	await _test_inscription_is_readable()
 	await _test_enemy_does_not_jitter_against_a_wall()
 	await _test_map_data()
@@ -1382,6 +1383,114 @@ func _check(condition: bool, description: String) -> void:
 	else:
 		print("  FALLA %s" % description)
 		_failures += 1
+
+
+func _test_sound_effects() -> void:
+	print("
+[Efectos de sonido]")
+	await _load_world()
+	await _wait(2)
+	var sfx := root.get_node_or_null("Sfx")
+	_check(sfx != null, "el jugador prepara el reproductor de sonidos en la raíz")
+	_check(AudioServer.get_bus_index(&"SFX") != -1, "existe el bus SFX con sus efectos")
+
+	# Todo sonido que el código pide existe en la carpeta (atrapa erratas en los nombres).
+	var wanted := {}
+	var regex := RegEx.create_from_string("Sfx\\.play\\(&\"([a-z_]+)\"")
+	for folder in ["res://core", "res://game"]:
+		for path in _gd_files(folder):
+			for found in regex.search_all(FileAccess.get_file_as_string(path)):
+				wanted[found.get_string(1)] = path
+	var missing := []
+	for sound in wanted:
+		if not Sfx.has(StringName(sound)):
+			missing.append("%s (%s)" % [sound, wanted[sound]])
+	_check(wanted.size() > 15, "el código pide muchos sonidos distintos (%d)" % wanted.size())
+	_check(missing.is_empty(), "todos los sonidos que pide el código existen %s" % [missing])
+
+	# Cada enemigo tiene su voz completa, su golpe y su paso.
+	var incomplete := []
+	for file in ["enemy", "enemy_lancero", "enemy_arrojador", "enemy_coloso", "enemy_acechador"]:
+		var enemy: Node = load("res://game/enemy/%s.tscn" % file).instantiate()
+		for event in ["alert", "attack", "hurt", "die"]:
+			if not Sfx.has(StringName("%s_%s" % [enemy.voice, event])):
+				incomplete.append("%s_%s" % [enemy.voice, event])
+		for sound in [enemy.strike_sound, enemy.step_sound]:
+			if not Sfx.has(sound):
+				incomplete.append(String(sound))
+		enemy.free()
+	_check(incomplete.is_empty(), "las cinco voces de enemigo están completas %s" % [incomplete])
+	var shard: Node = load("res://game/enemy/shard.tscn").instantiate()
+	_check(Sfx.has(shard.hit_sound), "la esquirla tiene sonido de impacto")
+	shard.free()
+
+	# Sonar: una voz queda ocupada, y el mismo sonido no se apila al instante.
+	# Cuántas voces suenan con un sonido concreto (otras cosas del mundo, como los
+	# pasos de un enemigo lejano, pueden sonar a la vez).
+	var playing := func(sound: String) -> int:
+		var count := 0
+		for voice in sfx.get_children():
+			if voice.playing and voice.stream.resource_path.get_file().begins_with(sound + "_"):
+				count += 1
+		return count
+	var silence := func() -> void:
+		for voice in sfx.get_children():
+			voice.stop()
+		await _wait(8)
+	await silence.call()
+	Sfx.play(&"ui_accept")
+	_check(playing.call("ui_accept") == 1, "un sonido de interfaz ocupa una voz")
+	Sfx.play(&"ui_accept")
+	_check(playing.call("ui_accept") == 1, "el mismo sonido pedido dos veces seguidas no se apila")
+	Sfx.play(&"no_existe")
+	_check(playing.call("no_existe") == 0, "un sonido que no existe se ignora sin error")
+
+	# El pie toca el suelo en la carrera: suena un paso (solo si está en el suelo).
+	await silence.call()
+	_check(_player.is_on_floor(), "el jugador está en el suelo para la prueba de pasos")
+	_player.animator.frame_changed.emit("run", 6)
+	_check(playing.call("step") == 1, "un paso al tocar el pie el suelo")
+	await silence.call()
+	_player.animator.frame_changed.emit("run", 3)
+	_check(playing.call("step") == 0, "sin contacto del pie no suena paso")
+
+	# Saltar suena, y el motor avisa del tipo de salto.
+	var kinds := []
+	_player.motor.jumped.connect(func(kind: StringName) -> void: kinds.append(kind))
+	await silence.call()
+	await _press_action("ui_accept")
+	_check(kinds == [&"ground"], "el motor avisa de un salto desde el suelo %s" % [kinds])
+	_check(playing.call("jump") == 1, "saltar suena")
+	await _wait(60)
+
+	# Menús: moverse y elegir suenan.
+	var list := MenuList.new()
+	root.add_child(list)
+	list.set_entries(PackedStringArray(["A", "B"]), [true, false])
+	await silence.call()
+	list.move_selection(1)
+	_check(playing.call("ui_move") == 1, "mover la selección de un menú suena")
+	await silence.call()
+	list.activate()
+	_check(playing.call("ui_deny") == 1, "elegir una opción desactivada suena (negado)")
+	list.queue_free()
+
+	# Romper un objeto suena.
+	await silence.call()
+	var prop := BreakableProp.new()
+	_room.add_child(prop)
+	prop.take_hit(1, 1)
+	_check(playing.call("break") == 1, "romper un objeto suena")
+
+
+func _gd_files(folder: String) -> Array[String]:
+	var found: Array[String] = []
+	for file in DirAccess.get_files_at(folder):
+		if file.ends_with(".gd"):
+			found.append(folder.path_join(file))
+	for sub in DirAccess.get_directories_at(folder):
+		found.append_array(_gd_files(folder.path_join(sub)))
+	return found
 
 
 # --- Mundo de salas y mapa -----------------------------------------------------

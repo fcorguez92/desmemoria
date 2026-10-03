@@ -29,6 +29,12 @@ signal cancelled
 @export var accept_actions: Array[StringName] = [&"ui_accept"]
 ## Ancho fijo (en píxeles) de la columna del cursor.
 @export var cursor_width: int = 18
+@export_group("Sonidos")
+## Nombres de los sonidos (ver core/audio/sfx.gd); vacío = sin sonido.
+@export var move_sound: StringName = &"ui_move"
+@export var accept_sound: StringName = &"ui_accept"
+@export var cancel_sound: StringName = &"ui_back"
+@export var deny_sound: StringName = &"ui_deny"
 
 var selected: int = 0
 
@@ -62,18 +68,29 @@ func move_selection(step: int) -> void:
 		return
 	selected = posmod(selected + step, _texts.size())
 	_rebuild()
+	_play(move_sound, -16.0)
 
 
 ## Elige la opción seleccionada. Devuelve false si estaba desactivada.
 func activate() -> bool:
-	if _texts.is_empty() or not _enabled[selected]:
+	if _texts.is_empty():
 		return false
+	if not _enabled[selected]:
+		_play(deny_sound, -10.0)
+		return false
+	_play(accept_sound, -10.0)
 	chosen.emit(selected)
 	return true
 
 
 func cancel() -> void:
+	_play(cancel_sound, -12.0)
 	cancelled.emit()
+
+
+func _play(sound: StringName, volume_db: float) -> void:
+	if sound != &"":
+		Sfx.play(sound, null, volume_db)
 
 
 func _input(event: InputEvent) -> void:

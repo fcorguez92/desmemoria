@@ -15,11 +15,23 @@ enum AttackKind { MELEE, PROJECTILE, LUNGE }
 
 const TELEGRAPH_COLOR := Color(1.0, 0.85, 0.3)
 const STUN_COLOR := Color(0.7, 0.9, 1.0)
+## Fotogramas de la marcha en los que un pie toca el suelo (ver tools/rig_enemigos.js).
+const STEP_FRAMES := [5, 11]
+## Segundos mínimos entre dos gruñidos de aviso del mismo enemigo.
+const ALERT_COOLDOWN := 3.0
 
 @export var ecos_reward: int = 2
 @export var gravity: float = 2250.0
 ## Segundos de aturdimiento tras un parry, durante los que recibe doble daño.
 @export var parry_stun_time: float = 1.2
+
+@export_group("Sonido")
+## Prefijo de su voz: busca `<voz>_alert`, `_attack`, `_hurt` y `_die` (ver tools/sonidos.js).
+@export var voice: StringName = &"cascaron"
+## Sonido del golpe cuando cae, y de cada paso.
+@export var strike_sound: StringName = &"enemy_swing"
+@export var step_sound: StringName = &"enemy_step"
+@export var step_volume_db: float = -17.0
 
 @export_group("Ataque")
 @export var attack_kind: AttackKind = AttackKind.MELEE
@@ -33,6 +45,8 @@ const STUN_COLOR := Color(0.7, 0.9, 1.0)
 var _stun_timer: float = 0.0
 var _lunge_timer: float = 0.0
 var _lunge_hit: bool = false
+var _alert_cooldown: float = 0.0
+var _was_chasing: bool = false
 
 @onready var health: HealthComponent = $HealthComponent
 @onready var hit_flash: HitFlashComponent = $HitFlashComponent
@@ -52,9 +66,11 @@ func _ready() -> void:
 	ai.attack_started.connect(_on_attack_started)
 	ai.attack_landed.connect(_on_attack_landed)
 	melee.hit_landed.connect(_on_hit_landed)
+	animator.frame_changed.connect(_on_animation_frame)
 
 
 func _physics_process(delta: float) -> void:
+	_alert_cooldown = maxf(_alert_cooldown - delta, 0.0)
 	if _stun_timer > 0.0:
 		_stun_timer -= delta
 		if _stun_timer <= 0.0:
@@ -77,6 +93,7 @@ func _physics_process(delta: float) -> void:
 	if _lunge_timer > 0.0 and is_on_wall():
 		_lunge_timer = 0.0
 	animator.play("walk" if absf(velocity.x) > 5.0 else "idle")
+	_play_alert_sound()
 
 
 ## Contrato "golpeable" (ver docs/arquitectura.md).
@@ -118,10 +135,13 @@ func on_parried(extra_stun: float = 0.0) -> void:
 
 
 func _on_damaged(_amount: int) -> void:
+	if health.health > 0:
+		_speak(&"hurt", -7.0)
 	hit_flash.flash()
 
 
 func _on_died() -> void:
+	_speak(&"die", -6.0)
 	var player := get_tree().get_first_node_in_group("player")
 	if player:
 		player.add_ecos(ecos_reward)
@@ -135,11 +155,13 @@ func _on_facing_changed(facing: int) -> void:
 
 
 func _on_attack_started() -> void:
+	_speak(&"attack", -7.0)
 	visual.modulate = TELEGRAPH_COLOR
 	attack_visual.windup(ai.windup_time)
 
 
 func _on_attack_landed() -> void:
+	Sfx.play(strike_sound, global_position, -8.0)
 	visual.modulate = Color.WHITE
 	attack_visual.strike()
 	match attack_kind:
@@ -150,6 +172,24 @@ func _on_attack_landed() -> void:
 		AttackKind.LUNGE:
 			_lunge_timer = lunge_time
 			_lunge_hit = false
+
+
+## Al empezar a perseguir al jugador gruñe, y no repite hasta pasado un rato.
+func _play_alert_sound() -> void:
+	var chasing := ai.state == PatrolChaseAI.State.CHASE
+	if chasing and not _was_chasing and _alert_cooldown <= 0.0:
+		_speak(&"alert", -8.0)
+		_alert_cooldown = ALERT_COOLDOWN
+	_was_chasing = chasing
+
+
+func _speak(event: StringName, volume_db: float) -> void:
+	Sfx.play(StringName("%s_%s" % [voice, event]), global_position, volume_db)
+
+
+func _on_animation_frame(animation: String, frame: int) -> void:
+	if animation == "walk" and frame in STEP_FRAMES and is_on_floor():
+		Sfx.play(step_sound, global_position, step_volume_db)
 
 
 func _shoot() -> void:
