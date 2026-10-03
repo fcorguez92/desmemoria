@@ -82,7 +82,9 @@ func _physics_process(delta: float) -> void:
 ## Contrato "golpeable" (ver docs/arquitectura.md).
 func take_hit(damage: int, from_direction: int, _attacker: Node = null) -> void:
 	var stunned := _stun_timer > 0.0
-	if health.take_hit(damage * 2 if stunned else damage):
+	var dealt := damage * 2 if stunned else damage
+	if health.take_hit(dealt):
+		_show_damage(dealt, stunned)
 		_lunge_timer = 0.0
 		knockback.apply(from_direction)
 		ai.interrupt(maxf(0.3, _stun_timer))
@@ -94,12 +96,23 @@ func take_hit(damage: int, from_direction: int, _attacker: Node = null) -> void:
 		animator.play_action("hit")
 
 
+## Feedback del golpe recibido: el número de daño sobre la cabeza (amarillo si estaba
+## aturdido y recibe doble) y unas gotas rojas en el punto del golpe.
+func _show_damage(amount: int, stunned: bool) -> void:
+	var shape := $CollisionShape2D.shape as RectangleShape2D
+	var head := global_position + Vector2(0.0, -shape.size.y / 2.0 - 6.0)
+	DamageNumber.spawn(get_parent(), head, amount, Color(1.0, 0.85, 0.3) if stunned else Color(1.0, 0.97, 0.9))
+	HitSpark.spawn(get_parent(), global_position, Color(0.78, 0.18, 0.16))
+
+
 ## Le han desviado el golpe: se queda aturdido, sin poder atacar, y recibe doble
-## daño mientras dure. Lo llama el jugador (ver Player._on_parried).
-func on_parried() -> void:
-	_stun_timer = parry_stun_time
+## daño mientras dure. Lo llama el jugador (ver Player._on_parried), que puede alargar
+## el aturdimiento con `extra_stun` segundos.
+func on_parried(extra_stun: float = 0.0) -> void:
+	var stun := parry_stun_time + extra_stun
+	_stun_timer = stun
 	_lunge_timer = 0.0
-	ai.interrupt(parry_stun_time)
+	ai.interrupt(stun)
 	attack_visual.reset()
 	visual.modulate = STUN_COLOR
 

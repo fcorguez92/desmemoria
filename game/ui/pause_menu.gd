@@ -79,14 +79,12 @@ func open() -> void:
 
 ## `abilities` es nombre -> si está recordada. Las que no lo están salen como ???
 ## para no desvelar qué queda por encontrar.
-func show_character(health: int, max_health: int, ecos: int, weapon_level: int, weapon_damage: int, abilities: Dictionary) -> void:
+func show_character(health: int, max_health: int, flasks: int, max_flasks: int, ecos: int, stats: PackedStringArray, abilities: Dictionary) -> void:
 	var lines: PackedStringArray = [
-		"Vida: %d / %d" % [health, max_health],
-		"Ecos: %d" % ecos,
-		"Filo: nivel %d (daño %d)" % [weapon_level, weapon_damage],
-		"",
-		"Habilidades recordadas",
+		"Vida: %d / %d  ·  Frascos: %d / %d  ·  Ecos: %d" % [health, max_health, flasks, max_flasks, ecos],
 	]
+	lines.append_array(stats)
+	lines.append_array(["", "Habilidades recordadas"])
 	for ability_name in abilities:
 		lines.append("   · " + (ability_name if abilities[ability_name] else "???"))
 	_character_text = "\n".join(lines)

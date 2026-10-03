@@ -14,7 +14,7 @@ extends RefCounted
 
 enum Kind { KEYBOARD, XBOX, PLAYSTATION, NINTENDO }
 ## Símbolos que acompañan a un icono para decir a qué se refiere.
-enum Hint { NONE, POINTER, MENU, UP_DOWN, CHECK, BACK }
+enum Hint { NONE, POINTER, MENU, UP_DOWN, CHECK, BACK, LEFT_RIGHT }
 
 ## Dispositivo en uso ahora mismo (lo actualiza InputGlyphTracker).
 static var kind: int = Kind.KEYBOARD
@@ -227,6 +227,9 @@ static func draw_hint(canvas: CanvasItem, which: int, at: Vector2, color: Color 
 		Hint.UP_DOWN: # dos triángulos, uno arriba y otro abajo
 			canvas.draw_colored_polygon(PackedVector2Array([at + Vector2(0, -6), at + Vector2(4, -1.5), at + Vector2(-4, -1.5)]), color)
 			canvas.draw_colored_polygon(PackedVector2Array([at + Vector2(0, 6), at + Vector2(4, 1.5), at + Vector2(-4, 1.5)]), color)
+		Hint.LEFT_RIGHT: # dos triángulos, uno a la izquierda y otro a la derecha
+			canvas.draw_colored_polygon(PackedVector2Array([at + Vector2(-6, 0), at + Vector2(-1.5, -4), at + Vector2(-1.5, 4)]), color)
+			canvas.draw_colored_polygon(PackedVector2Array([at + Vector2(6, 0), at + Vector2(1.5, -4), at + Vector2(1.5, 4)]), color)
 		Hint.CHECK: # visto bueno
 			canvas.draw_polyline(PackedVector2Array([at + Vector2(-4, 0), at + Vector2(-1, 3.5), at + Vector2(5, -4)]), color, 1.8)
 		Hint.BACK: # flecha de volver

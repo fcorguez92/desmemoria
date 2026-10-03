@@ -6,7 +6,8 @@ extends Control
 ##
 ## Se rellena con `set_entries()`; cada entrada es un diccionario:
 ## - `{ action = &"ui_accept", hint = InputGlyphs.Hint.CHECK }`: icono de la acción y símbolo.
-## - `{ hint = InputGlyphs.Hint.UP_DOWN }`: solo el símbolo (p. ej. elegir con arriba/abajo).
+## - `{ hint = InputGlyphs.Hint.UP_DOWN }`: solo el símbolo (p. ej. elegir con arriba/abajo,
+##   o `LEFT_RIGHT` para izquierda/derecha).
 ## - `{ color = Color(...) }`: un punto de color (leyenda del mapa).
 
 const GAP := 22.0
