@@ -101,6 +101,10 @@ function voice(o, r) {
   return out;
 }
 
+// chasquido de inicio: unos milisegundos de ruido medio que marcan el instante del
+// impacto (los graves de un golpe tardan en notarse y en altavoces pequeños casi no se oyen)
+function snap(b, r, gain, f = 1700) { return mix(b, env(bp(noise(0.03, r), f, 1.2), 0.0003, 0.004), gain); }
+
 function finish(b, peak = 0.9) {
   const fin = Math.round(0.001 * SR), fout = Math.round(0.012 * SR);
   let m = 0;
@@ -129,36 +133,36 @@ const def = (name, variants, fn) => { sounds[name] = { variants, fn }; };
 // (amortiguado) y madera (hueca, como un tablón).
 const STEP = {
   stone: (i, r) => { const len = 0.16, f0 = 66 + i * 8, o = buf(len);
-    mix(o, env(tone(len, t => f0 * Math.exp(-t * 20) + 40), 0.002, 0.04), 1.0);
+    mix(o, env(tone(len, t => f0 * Math.exp(-t * 20) + 40), 0.001, 0.04), 1.0);
     mix(o, env(bp(noise(len, r), 520 + i * 90, 1.0), 0.001, 0.03), 0.5);
     mix(o, env(hp(noise(len, r), 2600), 0.0005, 0.004), 0.07);
-    return lp(o, 2800); },
+    return snap(lp(o, 2800), r, 0.3); },
   moss: (i, r) => { const len = 0.18, o = buf(len);
-    mix(o, env(tone(len, t => 55 * Math.exp(-t * 16) + 36 + i * 4), 0.003, 0.045), 0.8);
-    mix(o, env(lp(noise(len, r), 450 + i * 60), 0.004, 0.06), 0.8);
-    return lp(o, 1500); },
+    mix(o, env(tone(len, t => 55 * Math.exp(-t * 16) + 36 + i * 4), 0.001, 0.045), 0.8);
+    mix(o, env(lp(noise(len, r), 450 + i * 60), 0.001, 0.06), 0.8);
+    return snap(lp(o, 1500), r, 0.14); },
   wood: (i, r) => { const len = 0.2, o = buf(len);
     mix(o, env(tone(len, t => 170 * Math.exp(-t * 22) + 105 + i * 8), 0.001, 0.05), 0.9);
     mix(o, env(bp(noise(len, r), 330 + i * 40, 3), 0.001, 0.07), 0.8);
     mix(o, env(bp(noise(len, r), 1150, 2), 0.0005, 0.008), 0.25);
-    return lp(o, 2600); },
+    return snap(lp(o, 2600), r, 0.3); },
 };
 const LAND = {
   stone: (i, r) => { const len = 0.3, o = buf(len);
-    mix(o, env(tone(len, t => 52 * Math.exp(-t * 15) + 30), 0.002, 0.09), 1.0);
-    mix(o, env(bp(noise(len, r), 420 + i * 60, 1.0), 0.002, 0.05), 0.4);
-    mix(o, env(lp(noise(len, r), 700), 0.004, 0.09), 0.3);
-    return lp(o, 1800); },
+    mix(o, env(tone(len, t => 52 * Math.exp(-t * 15) + 30), 0.001, 0.09), 1.0);
+    mix(o, env(bp(noise(len, r), 420 + i * 60, 1.0), 0.001, 0.05), 0.4);
+    mix(o, env(lp(noise(len, r), 700), 0.001, 0.09), 0.3);
+    return snap(lp(o, 1800), r, 0.3); },
   moss: (i, r) => { const len = 0.3, o = buf(len);
-    mix(o, env(tone(len, t => 46 * Math.exp(-t * 14) + 30), 0.004, 0.08), 0.9);
-    mix(o, env(lp(noise(len, r), 380), 0.006, 0.1), 0.7);
-    return lp(o, 1000); },
+    mix(o, env(tone(len, t => 46 * Math.exp(-t * 14) + 30), 0.001, 0.08), 0.9);
+    mix(o, env(lp(noise(len, r), 380), 0.001, 0.1), 0.7);
+    return snap(lp(o, 1000), r, 0.14); },
   wood: (i, r) => { const len = 0.34, o = buf(len);
     mix(o, env(tone(len, t => 150 * Math.exp(-t * 18) + 85 + i * 6), 0.001, 0.07), 1.0);
     mix(o, env(bp(noise(len, r), 300 + i * 30, 3), 0.001, 0.1), 0.9);
     mix(o, env(bp(noise(len, r), 1000, 2), 0.0005, 0.01), 0.2);
     mix(o, env(bp(noise(len, r), 520, 5), 0.02, 0.08), 0.25, 0.03);
-    return lp(o, 2200); },
+    return snap(lp(o, 2200), r, 0.3); },
 };
 for (const m of Object.keys(STEP)) { def('step_' + m, 4, STEP[m]); def('land_' + m, 3, LAND[m]); }
 def('jump', 2, (i, r) => {
@@ -357,7 +361,7 @@ def('enemy_slam', 2, (i, r) => {
   mix(o, sat(env(tone(len, t => 30 + 50 * Math.exp(-t * 18)), 0.002, 0.2), 1.8), 1.0);
   mix(o, env(lp(noise(len, r), 1300), 0.002, 0.16), 0.8);
   for (let k = 0; k < 9; k++) mix(o, env(bp(noise(0.06, r), 700 + r() * 1800, 3), 0.0005, 0.015), 0.28, 0.03 + r() * 0.45);
-  return lp(o, 3500);
+  return snap(lp(o, 3500), r, 0.3, 1200);
 });
 def('enemy_lunge', 2, (i, r) => {
   const len = 0.32, o = buf(len);
@@ -369,13 +373,13 @@ def('enemy_step', 3, (i, r) => {
   const len = 0.14, o = buf(len);
   mix(o, env(tone(len, t => 55 * Math.exp(-t * 20) + 38 + i * 4), 0.002, 0.035), 1.0);
   mix(o, env(bp(noise(len, r), 500 + i * 100, 1.0), 0.001, 0.03), 0.6);
-  return lp(o, 2800);
+  return snap(lp(o, 2800), r, 0.25);
 });
 def('heavy_step', 3, (i, r) => {
   const len = 0.3, o = buf(len);
   mix(o, sat(env(tone(len, t => 48 * Math.exp(-t * 14) + 26 + i * 3), 0.002, 0.08), 1.4), 1.0);
   mix(o, env(lp(noise(len, r), 900), 0.002, 0.09), 0.6);
-  return lp(o, 2000);
+  return snap(lp(o, 2000), r, 0.25, 1200);
 });
 
 // --- enemigos: voces ---
