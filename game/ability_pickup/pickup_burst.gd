@@ -55,6 +55,7 @@ func _ready() -> void:
 	ramp.offsets = PackedFloat32Array([0.0, 0.3, 1.0])
 	ramp.colors = PackedColorArray([Color(1, 1, 1, 1), Color(_color, 0.9), Color(_color, 0.0)])
 	sparks.color_ramp = ramp
+	sparks.use_parent_material = true
 	add_child(sparks)
 	sparks.emitting = true
 	# Motas que vuelan hacia el jugador.
@@ -71,6 +72,7 @@ func _sprite(texture: Texture2D, tint: Color, start_scale: float) -> Sprite2D:
 	sprite.texture = texture
 	sprite.modulate = tint
 	sprite.scale = Vector2.ONE * start_scale
+	sprite.use_parent_material = true
 	add_child(sprite)
 	return sprite
 

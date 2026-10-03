@@ -22,6 +22,9 @@ const POSITION_OF_FACE_BUTTON := { south = 0, east = 1, west = 2, north = 3 }
 ## Dispositivo que se muestra (InputGlyphs.Kind).
 var device: int = InputGlyphs.Kind.KEYBOARD
 
+## Hacia dónde está inclinada la palanca del mando (-1 izquierda, 1 derecha, 0 en reposo).
+var _stick_step: int = 0
+
 
 func _ready() -> void:
 	# Funciona también con el juego en pausa (la pausa del menú).
@@ -48,12 +51,25 @@ func cycle(step: int) -> void:
 func _input(event: InputEvent) -> void:
 	if not is_visible_in_tree():
 		return
-	if event.is_action_pressed(&"ui_left") and not event.is_echo():
+	var step := 0
+	if event.is_action_pressed(&"ui_left"):
+		step = -1
+	elif event.is_action_pressed(&"ui_right"):
+		step = 1
+	# La palanca manda un evento por cada pequeño movimiento: solo cuenta el primero
+	# que pasa la zona muerta (hay que soltarla para volver a cambiar de pestaña).
+	if event is InputEventJoypadMotion:
+		if not (event.is_action(&"ui_left") or event.is_action(&"ui_right")):
+			return
+		var previous := _stick_step
+		_stick_step = step
+		if step == 0 or step == previous:
+			return
+	elif event.is_echo():
+		return
+	if step != 0:
 		get_viewport().set_input_as_handled()
-		cycle(-1)
-	elif event.is_action_pressed(&"ui_right") and not event.is_echo():
-		get_viewport().set_input_as_handled()
-		cycle(1)
+		cycle(step)
 
 
 func _draw() -> void:
@@ -92,25 +108,10 @@ func _draw_gamepad(font: Font, c: Vector2) -> void:
 	for grip in [Vector2(-96.0, 52.0), Vector2(96.0, 52.0)]:
 		draw_circle(c + grip, 44.0, BODY)
 	draw_rect(Rect2(c + Vector2(-116.0, -50.0), Vector2(232.0, 104.0)), BODY)
-	# Hombros: gatillos y gatillos superiores.
 	var left_trigger := c + Vector2(-82.0, -66.0)
 	var right_trigger := c + Vector2(82.0, -66.0)
-	InputGlyphs.draw_trigger(self, false, left_trigger, device)
-	InputGlyphs.draw_trigger(self, true, right_trigger, device)
-	# Palanca izquierda y cruceta.
 	var stick := c + Vector2(-62.0, -14.0)
-	draw_circle(stick, 19.0, Color(0.06, 0.06, 0.08))
-	draw_circle(stick, 12.0, Color(0.3, 0.3, 0.36))
-	draw_arc(stick, 19.0, 0.0, TAU, 28, BODY_EDGE, 1.0)
 	var dpad := c + Vector2(-36.0, 30.0)
-	draw_rect(Rect2(dpad + Vector2(-4.0, -13.0), Vector2(8.0, 26.0)), Color(0.3, 0.3, 0.36))
-	draw_rect(Rect2(dpad + Vector2(-13.0, -4.0), Vector2(26.0, 8.0)), Color(0.3, 0.3, 0.36))
-	# Palanca derecha.
-	var right_stick := c + Vector2(34.0, 30.0)
-	draw_circle(right_stick, 15.0, Color(0.06, 0.06, 0.08))
-	draw_circle(right_stick, 9.0, Color(0.22, 0.22, 0.27))
-	draw_arc(right_stick, 15.0, 0.0, TAU, 24, DIM, 1.0)
-	# Botones de acción, por posición.
 	var face := c + Vector2(70.0, -14.0)
 	var places := {
 		POSITION_OF_FACE_BUTTON.north: face + Vector2(0.0, -20.0),
@@ -118,12 +119,7 @@ func _draw_gamepad(font: Font, c: Vector2) -> void:
 		POSITION_OF_FACE_BUTTON.west: face + Vector2(-20.0, 0.0),
 		POSITION_OF_FACE_BUTTON.east: face + Vector2(20.0, 0.0),
 	}
-	for index in places:
-		InputGlyphs.draw_button(self, index, places[index], device)
-	# Menú.
 	var menu_button := c + Vector2(2.0, -14.0)
-	InputGlyphs.draw_menu_button(self, menu_button, device)
-
 	# Rótulos: a la izquierda lo del lado izquierdo, a la derecha lo del derecho.
 	_callout(font, stick + Vector2(-20.0, 0.0), c + Vector2(-190.0, -14.0), "Moverse · mirar (↑ ↓)", true, AMBER)
 	_callout(font, dpad + Vector2(-14.0, 6.0), c + Vector2(-190.0, 36.0), "Cruceta: igual que la palanca", true, GREY)
@@ -134,6 +130,28 @@ func _draw_gamepad(font: Font, c: Vector2) -> void:
 	_callout(font, places[POSITION_OF_FACE_BUTTON.east] + Vector2(9.0, 2.0), c + Vector2(190.0, 22.0), "Curarse", false, AMBER)
 	_callout(font, places[POSITION_OF_FACE_BUTTON.south] + Vector2(9.0, 3.0), c + Vector2(190.0, 52.0), "Saltar · doble salto", false, AMBER)
 	_callout(font, menu_button + Vector2(0.0, -10.0), c + Vector2(0.0, -96.0), "Pausa", true, GREY, true)
+
+
+	# Hombros: gatillos y gatillos superiores.
+	InputGlyphs.draw_trigger(self, false, left_trigger, device)
+	InputGlyphs.draw_trigger(self, true, right_trigger, device)
+	# Palanca izquierda y cruceta.
+	draw_circle(stick, 19.0, Color(0.06, 0.06, 0.08))
+	draw_circle(stick, 12.0, Color(0.3, 0.3, 0.36))
+	draw_arc(stick, 19.0, 0.0, TAU, 28, BODY_EDGE, 1.0)
+	draw_rect(Rect2(dpad + Vector2(-4.0, -13.0), Vector2(8.0, 26.0)), Color(0.3, 0.3, 0.36))
+	draw_rect(Rect2(dpad + Vector2(-13.0, -4.0), Vector2(26.0, 8.0)), Color(0.3, 0.3, 0.36))
+	# Palanca derecha.
+	var right_stick := c + Vector2(34.0, 30.0)
+	draw_circle(right_stick, 15.0, Color(0.06, 0.06, 0.08))
+	draw_circle(right_stick, 9.0, Color(0.22, 0.22, 0.27))
+	draw_arc(right_stick, 15.0, 0.0, TAU, 24, DIM, 1.0)
+	# Botones de acción, por posición.
+	for index in places:
+		InputGlyphs.draw_button(self, index, places[index], device)
+	# Menú.
+	InputGlyphs.draw_menu_button(self, menu_button, device)
+
 
 
 # --------------------------------------------------------------- teclado
@@ -165,11 +183,12 @@ func _draw_keyboard(font: Font, c: Vector2) -> void:
 		draw_rect(rect, DIM if color == null else color, false, 1.5)
 		draw_string(font, Vector2(rect.position.x, rect.position.y + 20.0), key[0], HORIZONTAL_ALIGNMENT_CENTER, rect.size.x, 13, DIM if color == null else Color(0.97, 0.96, 0.98))
 	# Rótulos.
-	_callout(font, rects["Esc"].get_center() + Vector2(0, -15.0), c + Vector2(-216.0, -112.0), "Pausa", true, GREY, true)
-	_callout(font, rects["H"].get_center() + Vector2(0, -15.0), c + Vector2(34.0, -112.0), "Curarse", true, AMBER, true)
-	_callout(font, rects["Z"].get_center() + Vector2(0, -15.0), c + Vector2(-100.0, -84.0), "Interactuar (Ancla, Eco)", true, AMBER, true)
-	_callout(font, rects["X"].get_center() + Vector2(0, -15.0), c + Vector2(-66.0, -56.0), "Atacar", true, AMBER, true)
-	_callout(font, rects["V"].get_center() + Vector2(0, -15.0), c + Vector2(-26.0, -28.0), "Guardia (parry)", true, BLUE, true)
+	_callout(font, rects["Esc"].get_center() + Vector2(0, -15.0), c + Vector2(-216.0, -102.0), "Pausa", true, GREY, true)
+	_callout(font, rects["H"].get_center() + Vector2(0, -15.0), c + Vector2(34.0, -102.0), "Curarse", true, AMBER, true)
+	_callout(font, rects["Z"].get_center() + Vector2(0, -15.0), c + Vector2(-100.0, -78.0), "Interactuar (Ancla, Eco)", true, AMBER, true)
+	_callout(font, rects["X"].get_center() + Vector2(0, -15.0), c + Vector2(-66.0, -52.0), "Atacar", true, AMBER, true)
+	var v_edge: Vector2 = rects["V"].get_center() + Vector2(15.0, 0.0)
+	_callout(font, v_edge, v_edge + Vector2(4.0, 0.0), "Guardia (parry)", false, BLUE)
 	_callout(font, rects["Shift"].get_center() + Vector2(0, 15.0), c + Vector2(-216.0, 96.0), "Dash", true, BLUE, true)
 	_callout(font, rects["Espacio"].get_center() + Vector2(0, 15.0), c + Vector2(-110.0, 108.0), "Saltar · doble salto", true, AMBER, true)
 	_callout(font, rects["←"].get_center() + Vector2(0, 15.0), c + Vector2(150.0, 108.0), "← → Moverse", true, AMBER, true)
