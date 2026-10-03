@@ -60,6 +60,7 @@ func _run() -> void:
 	await _test_breakable_props()
 	await _test_scenery_is_dense_and_harmless()
 	await _test_enemy_types()
+	await _test_player_cannot_stand_on_enemies()
 	await _test_input_glyphs()
 	await _test_sound_effects()
 	await _test_landing_sound_is_in_sync()
@@ -1539,6 +1540,22 @@ func _gd_files(folder: String) -> Array[String]:
 	return found
 
 
+## Caer encima de un enemigo no deja al jugador subido a él: resbala hasta el suelo.
+func _test_player_cannot_stand_on_enemies() -> void:
+	print("
+[No se puede quedar uno encima de un enemigo]")
+	for scene in ["enemy", "enemy_coloso"]:
+		await _load_world()
+		var enemy := await _spawn_enemy_next_to_player("res://game/enemy/%s.tscn" % scene, 120.0)
+		await _wait(5)
+		enemy.set_physics_process(false)
+		var top: float = enemy.global_position.y - enemy.get_node("CollisionShape2D").shape.size.y / 2.0
+		_player.global_position = Vector2(enemy.global_position.x, top - 70.0)
+		_player.velocity = Vector2.ZERO
+		await _wait(120)
+		_check(_player.is_on_floor() and absf(_player.global_position.y - 296.0) < 3.0, "tras caer sobre %s, el jugador acaba en el suelo y no encima (y=%d)" % [scene, int(_player.global_position.y)])
+		_check(absf(_player.global_position.x - enemy.global_position.x) > 10.0, "y a un lado del enemigo")
+
 # --- Mundo de salas y mapa -----------------------------------------------------
 
 ## Carga el mundo entero (todas las salas) desde cero, sin partida guardada
@@ -1800,7 +1817,9 @@ func _test_climbing_back_out_of_the_cistern() -> void:
 		var target_y: float = _standing_on("Cisterna", step[3], step[4]).y
 		_check(landed and absf(_player.global_position.y - target_y) < 4.0, "de la fila %d se sube al tablón de la fila %d" % [step[1], step[4]])
 	var out: bool = await _hop(_standing_on("Cisterna", 31, 2), -1, _cell("TerrazasSecas", 27, 0).x)
-	_check(out and _level.current_room.name == "TerrazasSecas" and _player.global_position.y < 320.0, "del último tablón se sale al suelo de las Terrazas")
+	# (Si cae sobre un enemigo, resbala hasta el suelo: se espera a que se asiente.)
+	await _wait(40)
+	_check(_player.is_on_floor() and _level.current_room.name == "TerrazasSecas" and _player.global_position.y < 320.0, "del último tablón se sale al suelo de las Terrazas (suelo=%s sala=%s pos=%s)" % [_player.is_on_floor(), _level.current_room.name, _player.global_position])
 
 
 func _test_tower_needs_double_jump() -> void:

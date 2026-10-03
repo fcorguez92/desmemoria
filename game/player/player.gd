@@ -30,6 +30,10 @@ const LAND_SOUND_SPEED := 120.0
 ## Tras aterrizar, el primer paso de la carrera no suena hasta pasado este tiempo
 ## (la animación de correr empieza por el fotograma 0 y su primer paso llega tarde).
 const STEP_AFTER_LAND_SECONDS := 0.25
+## Hasta dónde mira el jugador, a cada lado, si hay suelo al resbalar de un enemigo.
+const SLIDE_PROBE_DISTANCE := 56.0
+## Y cuánto por debajo cuenta como "suelo" (más allá es un foso).
+const SLIDE_PROBE_DEPTH := 100.0
 ## Para textos que hay que leer (inscripciones): tiempo mínimo y por carácter,
 ## a un ritmo de lectura tranquilo (unos 15 caracteres por segundo).
 const MIN_READING_SECONDS := 4.0
@@ -106,6 +110,7 @@ func _physics_process(delta: float) -> void:
 
 	_peak_fall_speed = maxf(_peak_fall_speed, velocity.y)
 	move_and_slide()
+	_slide_off_enemies()
 	_play_movement_sounds()
 	_update_animation()
 
@@ -328,6 +333,28 @@ func _spawn_echo(at: Vector2, ecos_held: int) -> void:
 ## inicial. Ver EntitySpawner en core/objects/.
 func _reset_world() -> void:
 	get_tree().call_group(&"resettable", &"reset")
+
+
+## Un enemigo no es un suelo: si se cae encima de uno, el jugador resbala hacia un
+## lado (el mismo retroceso de un golpe, sin daño) y no puede quedarse subido. Prefiere
+## el lado contrario al centro del enemigo, pero no el que acabe en el vacío.
+func _slide_off_enemies() -> void:
+	for i in get_slide_collision_count():
+		var hit := get_slide_collision(i)
+		var other := hit.get_collider() as Node2D
+		if other != null and other.is_in_group("enemy") and hit.get_normal().y < -0.5:
+			var side := 1 if hit.get_position().x >= other.global_position.x else -1
+			if not _has_ground_beside(side) and _has_ground_beside(-side):
+				side = -side
+			knockback.apply(side)
+			return
+
+
+## ¿Hay suelo del mundo a ~56 px a un lado, por debajo de los pies?
+func _has_ground_beside(side: int) -> bool:
+	var from := global_position + Vector2(side * SLIDE_PROBE_DISTANCE, 0.0)
+	var query := PhysicsRayQueryParameters2D.create(from, from + Vector2(0.0, SLIDE_PROBE_DEPTH), 1, [get_rid()])
+	return not get_world_2d().direct_space_state.intersect_ray(query).is_empty()
 
 
 func _update_animation() -> void:
