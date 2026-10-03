@@ -177,3 +177,9 @@ godot --headless --path . --import
 ```
 
 Todas las hojas de enemigo tienen las mismas filas (reposo, andar, aviso, golpe, golpe recibido), así que se animan con la misma escena base. `shard.sprite` (la esquirla) sí está dibujada a mano.
+
+### El menú principal
+
+El logotipo (`art/source/title_logo.sprite`, 12 fotogramas de 456×88) lo genera `tools/arte_titulo.js`: la palabra DESMEMORIA en una fuente de píxeles gordos de 5×7, en ámbar con relieve, que se deshace hacia el final (la memoria que se apaga) mientras un brillo azul la recorre. Para cambiarlo se edita el script y se regenera. El fondo del menú (`game/ui/title_backdrop.gd`) no usa imágenes: cielo, estrellas que titilan, la luna incompleta, colinas y ruinas que se desplazan despacio, niebla, árboles muertos y brasas, todo dibujado por código. Sobre un suelo de baldosas del juego (`game/ui/title.map`) están el Caminante en reposo y el Ancla de Memoria.
+
+La pantalla **Controles** (`game/ui/controls_diagram.gd`) dibuja el esquema del teclado y de los mandos de Xbox, PlayStation y Nintendo, con cada botón señalado; izquierda y derecha cambian de dispositivo. Se usa en el menú principal y en la pausa.

@@ -1913,6 +1913,18 @@ func _test_title_screen() -> void:
 	await _press_action("ui_accept")
 	await _press_action("ui_cancel")
 	_check(menu.selected == title.MAIN_OPTIONS and not title.fullscreen, "Esc vuelve al menú, con el cursor en Opciones")
+
+	# Controles: el esquema del teclado y los mandos, con otra pestaña por dispositivo.
+	title._show_page(0, title.MAIN_CONTROLS)
+	await _press_action("ui_accept")
+	_check(title.controls_view.visible and not title.menu_panel.visible, "Controles muestra el esquema en lugar del menú")
+	var first_device: int = title.controls_view.device
+	await _press_action("ui_right")
+	_check(title.controls_view.device == (first_device + 1) % 4, "derecha pasa al siguiente dispositivo (teclado, Xbox, PlayStation, Nintendo)")
+	await _press_action("ui_left")
+	_check(title.controls_view.device == first_device, "izquierda vuelve al anterior")
+	await _press_action("ui_cancel")
+	_check(not title.controls_view.visible and title.menu_panel.visible and menu.selected == title.MAIN_CONTROLS, "Esc vuelve al menú, con el cursor en Controles")
 	title.queue_free()
 	_level = null
 	await process_frame
