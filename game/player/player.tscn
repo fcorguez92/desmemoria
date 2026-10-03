@@ -8,7 +8,7 @@
 [ext_resource type="Script" path="res://core/components/camera_look_component.gd" id="6_camera_look"]
 [ext_resource type="Script" path="res://core/components/respawn_component.gd" id="7_respawn"]
 [ext_resource type="Script" path="res://core/components/hit_flash_component.gd" id="8_flash"]
-[ext_resource type="Script" path="res://core/components/tiered_upgrade.gd" id="9_upgrade"]
+[ext_resource type="Script" path="res://core/components/skill_tree.gd" id="9_skills"]
 [ext_resource type="Script" path="res://core/components/knockback_component.gd" id="10_knockback"]
 [ext_resource type="Script" path="res://core/components/attack_visual_component.gd" id="11_attack_visual"]
 [ext_resource type="Script" path="res://core/components/screen_shake_component.gd" id="12_shake"]
@@ -34,14 +34,14 @@ shape = SubResource("CapsuleShape2D_1")
 
 [node name="Visual" type="Sprite2D" parent="."]
 texture = ExtResource("13_sheet")
-offset = Vector2(0, -4)
-hframes = 6
-vframes = 7
+offset = Vector2(0, -8)
+hframes = 14
+vframes = 8
 
 [node name="SheetAnimator" type="Node" parent="." node_paths=PackedStringArray("sprite")]
 script = ExtResource("14_animator")
 sprite = NodePath("../Visual")
-animations = {"attack": [4, 6, 24.0, false], "hit": [6, 2, 8.0, false], "parry": [5, 2, 10.0, false], "fall": [3, 1, 1.0, false], "idle": [0, 2, 4.0, true], "jump": [2, 1, 1.0, false], "run": [1, 6, 18.0, true]}
+animations = {"attack": [4, 12, 40.0, false], "dash": [7, 6, 40.0, false], "fall": [3, 4, 16.0, true], "hit": [6, 4, 16.0, false], "idle": [0, 10, 10.0, true], "jump": [2, 4, 24.0, false], "parry": [5, 4, 20.0, false], "run": [1, 14, 40.0, true]}
 
 [node name="Camera2D" type="Camera2D" parent="."]
 position_smoothing_enabled = true
@@ -70,6 +70,7 @@ max_heal_charges = 3
 [node name="MeleeAttackComponent" type="Node" parent="." node_paths=PackedStringArray("hitbox")]
 script = ExtResource("5_melee")
 hitbox = NodePath("../AttackHitbox")
+cooldown = 0.3
 
 [node name="CameraLookComponent" type="Node" parent="." node_paths=PackedStringArray("camera")]
 script = ExtResource("6_camera_look")
@@ -85,20 +86,12 @@ target = NodePath("../Visual")
 [node name="KnockbackComponent" type="Node" parent="."]
 script = ExtResource("10_knockback")
 
-[node name="WeaponUpgrade" type="Node" parent="."]
-script = ExtResource("9_upgrade")
-values = PackedInt32Array(1, 2, 3, 4, 5)
-costs = PackedInt32Array(4, 8, 14, 22)
+[node name="SkillTree" type="Node" parent="."]
+script = ExtResource("9_skills")
 
-[node name="Slash" type="Polygon2D" parent="."]
-color = Color(1, 1, 1, 1)
-polygon = PackedVector2Array(10, -24, 30, -16, 40, 0, 30, 16, 10, 24, 24, 0)
-
-[node name="AttackVisualComponent" type="Node" parent="." node_paths=PackedStringArray("animator", "slash")]
+[node name="AttackVisualComponent" type="Node" parent="." node_paths=PackedStringArray("animator")]
 script = ExtResource("11_attack_visual")
 animator = NodePath("../SheetAnimator")
-slash = NodePath("../Slash")
-slash_alpha = 0.22
 
 [node name="ScreenShakeComponent" type="Node" parent="." node_paths=PackedStringArray("camera")]
 script = ExtResource("12_shake")

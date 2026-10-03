@@ -14,6 +14,9 @@ signal broken
 
 @export var hits: int = 1
 @export var spark_color: Color = Color(0.8, 0.72, 0.6)
+## Sonido al romperse (ver core/audio/sfx.gd); vacío = ninguno.
+@export var break_sound: StringName = &"break"
+@export var break_volume_db: float = -8.0
 
 var _remaining_hits: int
 
@@ -31,5 +34,7 @@ func take_hit(_damage: int, _from_direction: int, _attacker: Node = null) -> voi
 
 func _break() -> void:
 	HitSpark.spawn(get_parent(), global_position, spark_color)
+	if break_sound != &"":
+		Sfx.play(break_sound, global_position, break_volume_db)
 	broken.emit()
 	queue_free()

@@ -1,6 +1,6 @@
 # Estado del proyecto (documento vivo)
 
-Última actualización: entorno recargado (decorado, cajas y barriles, fondo en capas).
+Última actualización: efectos de sonido (pasos, combate, voces de enemigos, interfaz).
 
 ## Dónde estamos en la metodología
 

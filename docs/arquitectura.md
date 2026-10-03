@@ -49,7 +49,7 @@ game/  ──usa──▶  core/  ──usa──▶  Godot
 │   └── effects/               Efectos visuales autodestructivos (chispazo de impacto)
 ├── game/                      ESPECÍFICO DE ESTE JUEGO
 │   ├── player/                Orquesta los componentes + Ecos + HUD
-│   ├── enemy/                 Enemigo de prueba
+│   ├── enemy/                 Los cinco enemigos (escena base + variantes) y su proyectil
 │   ├── echo/                  Marcador de la última muerte
 │   ├── memory_anchor/         Punto de control (usa core/objects/checkpoint.gd)
 │   ├── environment/           Objetos de ambientación (urna rompible, inscripción)

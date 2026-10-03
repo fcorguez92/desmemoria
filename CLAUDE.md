@@ -81,6 +81,7 @@ Además hay que **jugarlo**: los tests miden reglas, no sensaciones.
 - `docs/mundo.md` — estructura geográfica, biomas, conexiones.
 - `docs/nucleo-jugable.md` — movimiento, combate, habilidades, economía, muerte/curación.
 - `docs/arte.md` — dirección artística (pixel art oscuro), resolución, paleta, tamaños de sprite y pipeline (sprites como texto, `tools/build_sprites.gd`).
+- `docs/sonido.md` — efectos de sonido: sintetizados por código (`tools/sonidos.js`), cómo suenan en el juego y cómo añadir uno.
 - `docs/vertical-slice.md` — diseño de El Último Umbral, la primera zona: recorrido, leyenda del mapa de texto y lo que queda fuera.
 - `docs/flujo-git.md` — ramas, commits y pull requests: cómo se trabaja con el repositorio.
 - `docs/estado.md` — en qué fase estamos, qué está validado, qué falta.

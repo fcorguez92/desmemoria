@@ -1,0 +1,48 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="PackedScene" path="res://game/enemy/enemy.tscn" id="1_base"]
+[ext_resource type="Texture2D" path="res://game/enemy/lancero_sheet.png" id="2_sheet"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_body"]
+size = Vector2(28, 48)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_attack"]
+size = Vector2(54, 22)
+
+[node name="Lancero" instance=ExtResource("1_base")]
+ecos_reward = 3
+voice = &"lancero"
+strike_sound = &"enemy_thrust"
+
+[node name="CollisionShape2D" parent="." index="0"]
+shape = SubResource("RectangleShape2D_body")
+
+[node name="Visual" parent="." index="1"]
+texture = ExtResource("2_sheet")
+
+[node name="AttackHitbox" parent="." index="3"]
+position = Vector2(46, -8)
+
+[node name="CollisionShape2D" parent="AttackHitbox" index="0"]
+shape = SubResource("RectangleShape2D_attack")
+
+[node name="LedgeProbe" parent="." index="4"]
+position = Vector2(20, 20)
+
+[node name="HealthComponent" parent="." index="5"]
+max_health = 4
+
+[node name="MeleeAttackComponent" parent="." index="7"]
+reach = 46.0
+
+[node name="PatrolChaseAI" parent="." index="9"]
+patrol_speed = 50.0
+chase_speed = 125.0
+detect_range = 250.0
+attack_range = 84.0
+windup_time = 0.42
+recovery_time = 0.6
+ledge_probe_offset = 20.0
+
+[node name="HealthBar" parent="." index="11"]
+position = Vector2(0, -34)

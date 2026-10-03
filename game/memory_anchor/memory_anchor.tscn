@@ -1,34 +1,111 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=11 format=3]
 
-[ext_resource type="Script" path="res://core/objects/checkpoint.gd" id="1_checkpoint"]
+[ext_resource type="Script" path="res://game/memory_anchor/memory_anchor.gd" id="1_anchor"]
+[ext_resource type="Texture2D" path="res://game/memory_anchor/anchor_sheet.png" id="2_sheet"]
+[ext_resource type="Script" path="res://core/components/sheet_animator.gd" id="3_animator"]
+[ext_resource type="Script" path="res://core/ui/input_prompt.gd" id="4_prompt"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_anchor"]
 size = Vector2(48, 56)
 
+[sub_resource type="CanvasItemMaterial" id="CanvasItemMaterial_add"]
+blend_mode = 1
+
+[sub_resource type="Gradient" id="Gradient_halo"]
+offsets = PackedFloat32Array(0, 0.3, 0.65, 1)
+colors = PackedColorArray(1, 0.78, 0.45, 0.7, 0.45, 0.7, 0.9, 0.32, 0.2, 0.4, 0.6, 0.08, 0.1, 0.2, 0.3, 0)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_halo"]
+gradient = SubResource("Gradient_halo")
+width = 128
+height = 128
+fill = 1
+fill_from = Vector2(0.5, 0.5)
+fill_to = Vector2(1, 0.5)
+
+[sub_resource type="Gradient" id="Gradient_mote"]
+offsets = PackedFloat32Array(0, 0.25, 1)
+colors = PackedColorArray(1, 0.9, 0.55, 0, 0.95, 0.7, 0.3, 1, 0.5, 0.75, 0.9, 0)
+
+[sub_resource type="Gradient" id="Gradient_burst"]
+offsets = PackedFloat32Array(0, 0.2, 1)
+colors = PackedColorArray(1, 0.95, 0.7, 1, 0.95, 0.7, 0.3, 0.9, 0.5, 0.75, 0.9, 0)
+
 [node name="MemoryAnchor" type="Area2D" node_paths=PackedStringArray("prompt")]
-script = ExtResource("1_checkpoint")
+script = ExtResource("1_anchor")
 prompt = NodePath("Prompt")
 
-[node name="StoneBase" type="Polygon2D" parent="."]
-color = Color(0.45, 0.43, 0.42, 1)
-polygon = PackedVector2Array(-18, 28, 18, 28, 14, 10, -14, 10)
+[node name="Visuals" type="Node2D" parent="."]
+# Sigue animándose con el menú del Ancla abierto (el árbol está en pausa): el
+# destello del descanso se ve detrás del panel.
+process_mode = 3
+z_index = -1
 
-[node name="StoneMiddle" type="Polygon2D" parent="."]
-color = Color(0.55, 0.53, 0.5, 1)
-polygon = PackedVector2Array(-13, 10, 13, 10, 10, -6, -10, -6)
+[node name="Halo" type="Sprite2D" parent="Visuals"]
+self_modulate = Color(1, 1, 1, 0.5)
+material = SubResource("CanvasItemMaterial_add")
+position = Vector2(0, -34)
+scale = Vector2(1.25, 1.25)
+texture = SubResource("GradientTexture2D_halo")
 
-[node name="StoneTop" type="Polygon2D" parent="."]
-color = Color(0.65, 0.62, 0.58, 1)
-polygon = PackedVector2Array(-8, -6, 8, -6, 5, -18, -5, -18)
+[node name="Pool" type="Sprite2D" parent="Visuals"]
+self_modulate = Color(1, 0.85, 0.55, 0.4)
+material = SubResource("CanvasItemMaterial_add")
+position = Vector2(0, 26)
+scale = Vector2(1.1, 0.2)
+texture = SubResource("GradientTexture2D_halo")
+
+[node name="Sprite" type="Sprite2D" parent="Visuals"]
+position = Vector2(0, -12)
+texture = ExtResource("2_sheet")
+hframes = 8
+
+[node name="SheetAnimator" type="Node" parent="Visuals" node_paths=PackedStringArray("sprite")]
+script = ExtResource("3_animator")
+sprite = NodePath("../Sprite")
+animations = {"glow": [0, 8, 7.0, true]}
+default_animation = "glow"
+
+[node name="Motes" type="CPUParticles2D" parent="Visuals"]
+material = SubResource("CanvasItemMaterial_add")
+position = Vector2(0, -24)
+amount = 8
+lifetime = 3.6
+preprocess = 3.6
+emission_shape = 1
+emission_sphere_radius = 16.0
+direction = Vector2(0, -1)
+spread = 20.0
+gravity = Vector2(0, 0)
+initial_velocity_min = 6.0
+initial_velocity_max = 13.0
+scale_amount_min = 1.0
+scale_amount_max = 2.0
+color_ramp = SubResource("Gradient_mote")
+
+[node name="Burst" type="CPUParticles2D" parent="Visuals"]
+material = SubResource("CanvasItemMaterial_add")
+position = Vector2(0, -30)
+emitting = false
+amount = 28
+lifetime = 1.3
+one_shot = true
+explosiveness = 1.0
+direction = Vector2(0, -1)
+spread = 180.0
+gravity = Vector2(0, -14)
+initial_velocity_min = 30.0
+initial_velocity_max = 80.0
+damping_min = 20.0
+damping_max = 40.0
+scale_amount_min = 1.0
+scale_amount_max = 2.5
+color_ramp = SubResource("Gradient_burst")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("RectangleShape2D_anchor")
 
-[node name="Prompt" type="Label" parent="."]
+[node name="Prompt" type="Node2D" parent="."]
 visible = false
-offset_left = -90.0
-offset_top = -84.0
-offset_right = 90.0
-offset_bottom = -28.0
-text = "Z: Recordar"
-horizontal_alignment = 1
+position = Vector2(0, -62)
+script = ExtResource("4_prompt")

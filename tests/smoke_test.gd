@@ -45,7 +45,8 @@ func _run() -> void:
 	await _test_parry()
 	await _test_sprites_and_animations()
 	await _test_enemies_respawn_on_rest_and_death()
-	await _test_weapon_upgrade_at_anchor()
+	await _test_skill_tree_at_anchor()
+	await _test_enemy_damage_feedback()
 	await _test_anchor_menu_keyboard_and_pause()
 	await _test_pause_menu()
 	await _test_gamepad_controls()
@@ -58,6 +59,11 @@ func _run() -> void:
 	await _test_planks_are_one_way_platforms()
 	await _test_breakable_props()
 	await _test_scenery_is_dense_and_harmless()
+	await _test_enemy_types()
+	await _test_player_cannot_stand_on_enemies()
+	await _test_input_glyphs()
+	await _test_sound_effects()
+	await _test_landing_sound_is_in_sync()
 	await _test_inscription_is_readable()
 	await _test_enemy_does_not_jitter_against_a_wall()
 	await _test_map_data()
@@ -134,7 +140,13 @@ func _test_echo_pickup_returns_ecos() -> void:
 	_check(is_instance_valid(echo), "el Eco no se recoge solo al aparecer")
 	_player.global_position = echo.global_position
 	await _wait(30)
-	_check(_player.ecos == 5, "tocar el Eco devuelve los Ecos")
+	_check(_player.ecos == 0 and is_instance_valid(echo), "tocar el Eco no basta: hay que interactuar")
+	_check(echo.get_node("Prompt").visible, "al estar al alcance aparece el icono del botón")
+	Input.action_press("interact")
+	await _wait(2)
+	Input.action_release("interact")
+	await _wait(2)
+	_check(_player.ecos == 5, "interactuar con el Eco devuelve los Ecos")
 	_check(_player.active_echo == null, "el Eco desaparece al recogerlo")
 
 
@@ -220,7 +232,7 @@ func _test_enemy_chases_telegraphs_and_hits() -> void:
 	_check(_player.animator.current == "hit", "el jugador reproduce su animación de recibir un golpe")
 	await _wait(3)
 	_check(saw_windup, "el enemigo avisa antes de atacar")
-	_check(windup_frames >= 20, "el aviso dura lo bastante para reaccionar")
+	_check(windup_frames >= 14, "el aviso dura lo bastante para reaccionar")
 	_check(_player.health.health == 4, "el ataque acaba dañando al jugador")
 	_check(_player.global_position.x < start_x, "el golpe empuja al jugador lejos del enemigo")
 
@@ -365,8 +377,8 @@ func _test_sprites_and_animations() -> void:
 	var enemy: Node2D = _level.get_node("EnemySpawn1").instance
 	var player_sprite: Sprite2D = _player.visual
 	var enemy_sprite: Sprite2D = enemy.visual
-	_check(player_sprite.texture.get_size() == Vector2(player_sprite.hframes * 64, player_sprite.vframes * 56), "la hoja del jugador cuadra con su cuadrícula de 64x56")
-	_check(enemy_sprite.texture.get_size() == Vector2(enemy_sprite.hframes * 64, enemy_sprite.vframes * 56), "la hoja del enemigo cuadra con su cuadrícula de 64x56")
+	_check(player_sprite.texture.get_size() == Vector2(player_sprite.hframes * 112, player_sprite.vframes * 64), "la hoja del jugador cuadra con su cuadrícula de 112x64")
+	_check(enemy_sprite.texture.get_size() == Vector2(enemy_sprite.hframes * 96, enemy_sprite.vframes * 64), "la hoja del enemigo cuadra con su cuadrícula de 96x64")
 
 	await _wait(15)
 	_check(_player.animator.current == "idle", "quieto en el suelo usa la animación de reposo")
@@ -418,42 +430,62 @@ func _test_enemies_respawn_on_rest_and_death() -> void:
 	_check(count == 3, "los tres generadores tienen un enemigo vivo")
 
 
-func _test_weapon_upgrade_at_anchor() -> void:
-	await _fresh_level("Mejora del Filo con Ecos")
-	var weapon: TieredUpgrade = _player.weapon
-	_check(weapon.level == 0 and _player.melee.damage == 1, "el Filo empieza en el nivel 1 con daño 1")
+func _test_skill_tree_at_anchor() -> void:
+	await _fresh_level("Árbol de habilidades en el Ancla")
+	var skills: SkillTree = _player.skills
+	_check(_player.melee.damage == 1 and _player.health.max_health == 5, "sin mejoras: daño 1 y 5 de vida")
+	_check(skills.is_unlocked(&"vitalidad") and not skills.is_unlocked(&"frascos"), "la rama empieza por su primera mejora; las siguientes están bloqueadas")
 
 	_player.add_ecos(3)
-	_check(not _player.try_upgrade_weapon(), "no se puede mejorar sin Ecos suficientes")
-	_check(_player.ecos == 3 and weapon.level == 0, "una mejora fallida no cobra nada")
+	_check(not _player.try_buy_skill(&"vitalidad"), "no se compra sin Ecos suficientes")
+	_check(_player.ecos == 3 and skills.level(&"vitalidad") == 0, "una compra fallida no cobra nada")
+	_player.add_ecos(2)
+	_check(_player.try_buy_skill(&"vitalidad"), "se compra con Ecos suficientes")
+	_check(_player.ecos == 0 and skills.level(&"vitalidad") == 1, "comprar cobra el coste y sube un nivel")
+	_check(_player.health.max_health == 6 and _player.health.health == 6, "Vitalidad sube la vida máxima y cura esa vida")
 
-	_player.add_ecos(1)
-	_check(_player.try_upgrade_weapon(), "se puede mejorar con Ecos suficientes")
-	_check(_player.ecos == 0 and weapon.level == 1, "mejorar cobra el coste y sube un nivel")
-	_check(_player.melee.damage == 2, "el ataque usa el daño del nuevo nivel")
+	_player.add_ecos(100)
+	_check(not _player.try_buy_skill(&"ritmo"), "una mejora bloqueada no se puede comprar aunque sobren Ecos")
+	_check(_player.try_buy_skill(&"frascos") and _player.health.max_heal_charges == 4 and _player.health.heal_charges == 4, "Frascos da una carga más, llena")
+	_check(_player.try_buy_skill(&"filo") and _player.melee.damage == 2, "Filo afilado sube el daño")
+	_check(_player.try_buy_skill(&"ritmo") and is_equal_approx(_player.melee.cooldown, 0.26), "Ritmo acorta la espera entre golpes")
+	_check(_player.try_buy_skill(&"alcance") and _player.melee.reach > 20.0, "Alcance alarga el golpe")
+	_check(_player.try_buy_skill(&"guardia") and _player.parry.window > 0.2, "Guardia alarga la ventana del parry")
+	_check(_player.try_buy_skill(&"impulso") and _player.dash.cooldown < 0.4, "Impulso acorta la espera del dash")
+	_check(_player.try_buy_skill(&"temple") and _player.health.invulnerability_time > 0.6, "Temple alarga la invulnerabilidad")
+	_check(_player.try_buy_skill(&"contragolpe"), "Contragolpe se compra al tener la anterior")
 
+	# Los niveles máximos no se pasan, y morir no pierde las mejoras (los Ecos sí).
+	while not skills.is_max(&"filo"):
+		skills.advance(&"filo")
+	_player.add_ecos(500)
+	_check(not _player.try_buy_skill(&"filo"), "no se puede pasar del nivel máximo")
+	_check(_player.melee.damage == 3, "el máximo del Filo es daño 3: el arma ya no escala sin límite")
 	_player.health.take_hit(99)
 	await _wait(2)
-	_check(weapon.level == 1 and _player.melee.damage == 2, "morir no pierde las mejoras")
+	_check(_player.melee.damage == 3 and skills.level(&"vitalidad") == 1, "morir no pierde las mejoras")
 
-	# Desde el menú del Ancla: la primera opción mejora el Filo y cobra.
-	var options: MenuList = _player.anchor_menu.menu
-	_player.add_ecos(8)
+	# Desde el menú del Ancla: abrir el árbol, moverse, comprar y volver.
+	await _fresh_level("Árbol de habilidades en el menú")
+	var menu = _player.anchor_menu
+	_player.add_ecos(30)
 	_player.rest_at(_player.global_position)
-	_check(options.activate(), "la opción de mejorar está activa con Ecos suficientes")
-	_check(weapon.level == 2 and _player.ecos == 0, "elegir mejorar en el menú sube el Filo y cobra")
-	_check(not options.activate(), "sin Ecos la opción de mejora queda desactivada")
-	_player.anchor_menu.close()
-
-	while not weapon.is_max():
-		weapon.advance()
-	_player.add_ecos(100)
-	_check(not _player.try_upgrade_weapon(), "no se puede pasar del nivel máximo")
-	_check(_player.melee.damage == 5, "el nivel máximo da el daño máximo")
-	_player.rest_at(_player.global_position)
-	options.selected = 0
-	_check(not options.activate(), "al máximo la opción de mejora queda desactivada")
-	_player.anchor_menu.close()
+	_check(menu.is_open() and not menu.is_tree_open(), "descansar abre el menú principal del Ancla")
+	_check(menu.menu.activate() and menu.is_tree_open(), "la primera opción abre el árbol")
+	_check(menu.tree_view.selected().id == &"vitalidad", "el árbol empieza en la primera mejora")
+	await _press_action("ui_down")
+	_check(menu.tree_view.selected().id == &"frascos", "abajo baja por la rama")
+	await _press_action("ui_right")
+	_check(menu.tree_view.selected().branch == 1, "derecha cambia de rama")
+	await _press_action("ui_left")
+	await _press_action("ui_up")
+	await _press_action("ui_accept")
+	_check(_player.skills.level(&"vitalidad") == 1 and _player.ecos == 25, "aceptar compra la mejora seleccionada, sin cerrar el menú")
+	_check(menu.is_open() and menu.is_tree_open() and paused, "el menú sigue abierto en el árbol")
+	await _press_action("ui_cancel")
+	_check(menu.is_open() and not menu.is_tree_open(), "Esc en el árbol vuelve al menú del Ancla")
+	await _press_action("ui_cancel")
+	_check(not menu.is_open(), "y otro Esc lo cierra")
 
 
 func _test_anchor_menu_keyboard_and_pause() -> void:
@@ -480,11 +512,11 @@ func _test_anchor_menu_keyboard_and_pause() -> void:
 	await _press_action("ui_cancel")
 	_check(not menu.is_open() and not paused, "Esc cierra el menú y reanuda el juego")
 
-	# Z también es aceptar: compra la mejora seleccionada sin cerrar el menú...
+	# Z también es aceptar: abre el árbol sin cerrar el menú...
 	_player.rest_at(_player.global_position)
-	var level_before: int = _player.weapon.level
 	await _press_action("interact")
-	_check(menu.is_open() and paused and _player.weapon.level == level_before + 1, "Z sobre Mejorar el Filo lo compra sin cerrar el menú")
+	_check(menu.is_open() and paused and menu.is_tree_open(), "Z sobre el árbol de habilidades lo abre sin cerrar el menú")
+	await _press_action("ui_cancel")
 	# ...y sobre Salir, cierra.
 	await _press_action("ui_down")
 	await _press_action("interact")
@@ -504,7 +536,7 @@ func _test_anchor_menu_keyboard_and_pause() -> void:
 	_check(highest_y > standing_y - 5.0, "aceptar Salir no hace saltar al personaje")
 
 	# Lo mismo con Z estando junto al Ancla: abrir y cerrar con Z no debe reabrir el
-	# menú. Sin Ecos, el cursor empieza en Salir y Z lo elige.
+	# menú (se baja a Salir y Z lo elige).
 	_player.ecos = 0
 	var anchor: Node2D = _level.get_node("MemoryAnchor2")
 	_player.global_position = anchor.global_position
@@ -513,15 +545,19 @@ func _test_anchor_menu_keyboard_and_pause() -> void:
 	await _press_action("interact")
 	await _wait(5)
 	_check(menu.is_open(), "Z junto al Ancla abre el menú")
+	await _press_action("ui_down")
 	await _press_action("interact")
 	await _wait(15)
 	_check(not menu.is_open() and not paused, "cerrar con Z cierra el menú y no lo reabre")
-	# Sin Ecos suficientes, la mejora sale atenuada y el cursor empieza en Salir.
+	# El árbol está siempre disponible: el cursor empieza en él, aunque no haya Ecos.
 	_player.ecos = 0
 	_player.rest_at(_player.global_position)
-	_check(menu.menu.selected == 1, "sin Ecos el cursor empieza en la primera opción disponible")
+	_check(menu.menu.selected == 0, "el cursor empieza en la primera opción")
 	await _press_action("ui_accept")
-	_check(not menu.is_open() and not paused, "Intro sobre la opción disponible funciona a la primera")
+	_check(menu.is_open() and menu.is_tree_open(), "Intro sobre el árbol lo abre a la primera")
+	await _press_action("ui_cancel")
+	await _press_action("ui_cancel")
+	_check(not menu.is_open() and not paused, "y Esc dos veces cierra el menú")
 
 
 func _test_dash_gates_the_far_platform() -> void:
@@ -582,6 +618,8 @@ func _test_gamepad_controls() -> void:
 	_player.unlock_ability(&"dash")
 	await _press_event(_pad_axis(JOY_AXIS_TRIGGER_RIGHT))
 	_check(_player.dash.is_dashing, "RT / R2 hace el dash")
+	await _wait(2)
+	_check(_player.animator.current == "dash", "el dash tiene su propia animación")
 	await _wait(30)
 
 	# Start abre y cierra la pausa, también desde una subpantalla.
@@ -596,7 +634,7 @@ func _test_gamepad_controls() -> void:
 	await _press_action("ui_down")
 	await _press_action("ui_down")
 	await _press_event(_pad_button(JOY_BUTTON_A))
-	_check(pause.title_label.text == "Controles" and "Cuadrado" in pause.pad_label.text, "Controles muestra también los botones del mando")
+	_check(pause.title_label.text == "Controles" and pause.controls_view.visible, "Controles muestra el esquema de teclado y mandos")
 	await _press_event(_pad_button(JOY_BUTTON_START))
 	_check(not pause.is_open(), "Start cierra la pausa desde una subpantalla")
 	await _wait(5)
@@ -928,6 +966,174 @@ func _test_scenery_is_dense_and_harmless() -> void:
 	_check(not is_instance_valid(barrel), "y se rompe con el segundo")
 
 
+## Pone un enemigo de `scene_path` en el suelo plano de El Último Umbral, a `distance`
+## píxeles a la derecha del jugador (que se coloca en x = 60: a su izquierda hay un
+## muro y a la derecha, más allá de x = 250, la cabaña, que pararía los proyectiles).
+func _spawn_enemy_next_to_player(scene_path: String, distance: float) -> Node2D:
+	_player.global_position = Vector2(60.0, 296.0)
+	_player.velocity = Vector2.ZERO
+	var enemy: Node2D = load(scene_path).instantiate()
+	_room.add_child(enemy)
+	var half_height: float = enemy.get_node("CollisionShape2D").shape.size.y / 2.0
+	enemy.global_position = Vector2(60.0 + distance, 320.0 - half_height)
+	enemy.ai._home_x = enemy.global_position.x
+	return enemy
+
+
+func _test_enemy_types() -> void:
+	print("
+[Enemigos distintos, ataques distintos]")
+
+	# Lancero: la estocada llega mucho más lejos que un tajo.
+	await _load_world()
+	var lancero := await _spawn_enemy_next_to_player("res://game/enemy/enemy_lancero.tscn", 78.0)
+	var hp_before: int = _player.health.health
+	await _wait(150)
+	_check(_player.health.health < hp_before, "el lancero alcanza al jugador desde lejos (78 px) con la lanza")
+	var melee_reach: float = lancero.melee.reach
+	_check(melee_reach > 40.0, "su alcance es mayor que el del cascarón")
+
+	# Cascarón a la misma distancia: ni siquiera inicia el ataque.
+	await _load_world()
+	var casc := await _spawn_enemy_next_to_player("res://game/enemy/enemy.tscn", 78.0)
+	await _wait(3)
+	_check(casc.ai.state == PatrolChaseAI.State.CHASE, "el cascarón a 78 px aún no ataca: tiene que acercarse (su alcance es corto)")
+
+	# Arrojador: lanza una esquirla que hiere al jugador.
+	await _load_world()
+	var thrower := await _spawn_enemy_next_to_player("res://game/enemy/enemy_arrojador.tscn", 130.0)
+	var shot: Projectile = null
+	for i in 150:
+		await _wait(1)
+		for child in _room.get_children():
+			if child is Projectile:
+				shot = child
+				break
+		if shot:
+			break
+	_check(shot != null, "el arrojador lanza un proyectil")
+	_check(shot != null and shot.direction.x < 0.0, "el proyectil viaja hacia el jugador")
+	hp_before = _player.health.health
+	await _wait(60)
+	_check(_player.health.health < hp_before, "el proyectil hiere al jugador")
+	_check(thrower.health.max_health == 2, "el arrojador es frágil (2 de vida)")
+
+	# Un proyectil desviado con parry vuelve hacia quien lo lanzó y hiere a los enemigos.
+	await _load_world()
+	var shard: Projectile = load("res://game/enemy/shard.tscn").instantiate()
+	_room.add_child(shard)
+	shard.global_position = Vector2(300.0, 296.0)
+	shard.launch(Vector2.LEFT)
+	shard.on_parried()
+	_check(shard.direction.x > 0.0 and shard.target_group == &"enemy", "un proyectil desviado se devuelve y pasa a herir a los enemigos")
+	shard.queue_free()
+
+	# Acechador: la embestida lo lleva hacia el jugador a gran velocidad.
+	await _load_world()
+	var stalker := await _spawn_enemy_next_to_player("res://game/enemy/enemy_acechador.tscn", 120.0)
+	var x_at_windup := 0.0
+	var lunged_far := false
+	hp_before = _player.health.health
+	for i in 200:
+		await _wait(1)
+		if stalker.ai.state == PatrolChaseAI.State.WINDUP:
+			x_at_windup = stalker.global_position.x
+		if x_at_windup > 0.0 and x_at_windup - stalker.global_position.x > 70.0:
+			lunged_far = true
+			break
+	_check(lunged_far, "el acechador se lanza hacia delante más de 70 px en un instante")
+	await _wait(30)
+	_check(_player.health.health < hp_before, "y la embestida hiere al jugador")
+
+	# Coloso: aguanta mucho y su mazazo hace doble daño.
+	await _load_world()
+	var colossus := await _spawn_enemy_next_to_player("res://game/enemy/enemy_coloso.tscn", 70.0)
+	_check(colossus.health.max_health == 10, "el coloso tiene 10 de vida")
+	hp_before = _player.health.health
+	await _wait(240)
+	_check(hp_before - _player.health.health >= 2, "su mazazo quita 2 de vida de una vez")
+	_check(colossus.ai.windup_time >= 0.7, "y avisa el golpe durante más de medio segundo")
+
+
+func _test_input_glyphs() -> void:
+	print("
+[Los iconos de botones se adaptan al dispositivo]")
+	_check(InputGlyphs.kind_from_name("Xbox 360 Controller") == InputGlyphs.Kind.XBOX, "un mando de Xbox se reconoce")
+	_check(InputGlyphs.kind_from_name("PS5 Controller") == InputGlyphs.Kind.PLAYSTATION, "un mando de PlayStation se reconoce")
+	_check(InputGlyphs.kind_from_name("Nintendo Switch Pro Controller") == InputGlyphs.Kind.NINTENDO, "un mando de Nintendo se reconoce")
+	_check(InputGlyphs.kind_from_name("Mando raro") == InputGlyphs.Kind.XBOX, "uno desconocido usa la disposición de Xbox")
+
+	var key := InputGlyphs.binding(&"interact", InputGlyphs.Kind.KEYBOARD)
+	_check(key.get("type") == "key" and key.get("label") == "Z", "en teclado, interactuar es la tecla Z")
+	var pad := InputGlyphs.binding(&"interact", InputGlyphs.Kind.PLAYSTATION)
+	_check(pad.get("type") == "button" and pad.get("index") == JOY_BUTTON_Y, "en el mando, interactuar es el botón de arriba (Y / Triángulo / X)")
+	var trigger := InputGlyphs.binding(&"dash", InputGlyphs.Kind.XBOX)
+	_check(trigger.get("type") == "trigger" and trigger.get("right") == true, "el dash es el gatillo derecho")
+	_check(InputGlyphs.binding(&"no_existe", InputGlyphs.Kind.KEYBOARD).is_empty(), "una acción que no existe no da icono")
+
+	# Dibujar un indicador y una fila de ayuda con cada dispositivo no da errores.
+	var prompt := InputPrompt.new()
+	prompt.action = &"interact"
+	root.add_child(prompt)
+	var bar := InputHintBar.new()
+	bar.size = Vector2(300, 22)
+	bar.set_entries([{ hint = InputGlyphs.Hint.UP_DOWN }, { action = &"ui_accept", hint = InputGlyphs.Hint.CHECK }, { action = &"pause", hint = InputGlyphs.Hint.MENU }, { color = Color.RED }])
+	root.add_child(bar)
+	var widths := {}
+	for device in [InputGlyphs.Kind.KEYBOARD, InputGlyphs.Kind.XBOX, InputGlyphs.Kind.PLAYSTATION, InputGlyphs.Kind.NINTENDO]:
+		InputGlyphs.kind = device
+		prompt.queue_redraw()
+		bar.queue_redraw()
+		await process_frame
+		widths[device] = InputGlyphs.width(&"pause")
+	_check(widths[InputGlyphs.Kind.KEYBOARD] != widths[InputGlyphs.Kind.XBOX] or widths[InputGlyphs.Kind.XBOX] > 0.0, "se dibuja el icono de cada dispositivo")
+
+	# El vigilante cambia de dispositivo con la última entrada recibida.
+	InputGlyphs.kind = InputGlyphs.Kind.KEYBOARD
+	var button := InputEventJoypadButton.new()
+	button.button_index = JOY_BUTTON_Y
+	button.pressed = true
+	root.get_viewport().push_input(button)
+	await process_frame
+	_check(InputGlyphs.kind != InputGlyphs.Kind.KEYBOARD, "pulsar un botón del mando cambia los iconos a los del mando")
+	var typed := InputEventKey.new()
+	typed.keycode = KEY_Z
+	typed.pressed = true
+	root.get_viewport().push_input(typed)
+	await process_frame
+	_check(InputGlyphs.kind == InputGlyphs.Kind.KEYBOARD, "y pulsar una tecla los devuelve al teclado")
+	prompt.queue_free()
+	bar.queue_free()
+
+
+func _test_enemy_damage_feedback() -> void:
+	print("\n[Golpear a un enemigo se nota: número de daño, barra de vida y mayor dificultad]")
+	await _load_world()
+	var enemy := await _spawn_enemy_next_to_player("res://game/enemy/enemy_lancero.tscn", 60.0)
+	var bar: OverheadBar = enemy.get_node("HealthBar")
+	_check(not bar.visible, "la barra de vida del enemigo está oculta mientras no le hacen daño")
+	enemy.take_hit(1, 1)
+	_check(bar.visible, "al herirlo aparece su barra de vida")
+	var numbers := 0
+	for child in _room.get_children():
+		if child is DamageNumber:
+			numbers += 1
+	_check(numbers == 1, "y sale un número de daño sobre su cabeza")
+	await _wait(220)
+	_check(not bar.visible, "la barra se oculta sola unos segundos después")
+
+	# Más difícil: los ataques enemigos se preparan más rápido que antes.
+	var casc: Node = load("res://game/enemy/enemy.tscn").instantiate()
+	_check(casc.get_node("PatrolChaseAI").windup_time <= 0.3 and casc.get_node("PatrolChaseAI").recovery_time <= 0.5, "el cascarón ataca más rápido (aviso 0,3 s, recuperación 0,5 s)")
+	casc.free()
+
+	# Contragolpe: el parry aturde más tiempo al enemigo.
+	await _load_world()
+	var target := await _spawn_enemy_next_to_player("res://game/enemy/enemy.tscn", 60.0)
+	target.on_parried(0.5)
+	_check(is_equal_approx(target._stun_timer, target.parry_stun_time + 0.5), "un enemigo desviado queda aturdido el tiempo extra que da el Contragolpe")
+
+
 func _test_inscription_is_readable() -> void:
 	print("\n[La inscripción se lee con Z, sin afectar a la partida]")
 	await _load_world()
@@ -1006,7 +1212,7 @@ func _test_pause_menu() -> void:
 	await _press_action("ui_accept")
 	_check(pause.title_label.text == "Personaje" and pause.info.visible, "Personaje abre su pantalla")
 	_check("Vida: 5 / 5" in pause.info_label.text and "Ecos: 7" in pause.info_label.text, "muestra vida y Ecos")
-	_check("Filo: nivel 1 (daño 1)" in pause.info_label.text, "muestra el Filo")
+	_check("Daño: 1" in pause.info_label.text and "Frascos: 3 / 3" in pause.info_label.text, "muestra el daño y los frascos")
 	_check(pause_panel.size == pause_size, "el panel mide lo mismo en Personaje que en el menú principal")
 	_check("Dash" not in pause.info_label.text and "???" in pause.info_label.text, "las habilidades sin recordar salen como ???")
 	await _press_action("ui_cancel")
@@ -1015,7 +1221,11 @@ func _test_pause_menu() -> void:
 	# Controles.
 	await _press_action("ui_down")
 	await _press_action("ui_accept")
-	_check(pause.title_label.text == "Controles" and "Moverse" in pause.actions_label.text and "Espacio" in pause.info_label.text, "Controles muestra las teclas y su acción")
+	_check(pause.title_label.text == "Controles" and pause.controls_view.visible and not pause.info.visible, "Controles muestra el esquema, no la ficha del personaje")
+	var device_before: int = pause.controls_view.device
+	await _press_action("ui_right")
+	_check(pause.controls_view.device == (device_before + 1) % 4 and pause.is_open(), "derecha cambia de dispositivo en el esquema sin cerrar la pausa")
+	await _press_action("ui_left")
 	_check(pause_panel.size == pause_size, "y lo mismo en Controles")
 	await _press_action("ui_accept")
 	_check(pause.is_open() and pause.title_label.text == "Pausa", "Intro en una subpantalla también vuelve")
@@ -1065,7 +1275,7 @@ func _test_ultimo_umbral_builds_from_text_map() -> void:
 	for child in _room.get_children():
 		if child is EntitySpawner:
 			spawners += 1
-	_check(spawners == 2, "dos enemigos colocados por los marcadores E")
+	_check(spawners == 3, "tres enemigos colocados por los marcadores (dos cascarones E y un arrojador 2)")
 	var anchors := 0
 	for child in _room.get_children():
 		if child is Checkpoint:
@@ -1176,6 +1386,175 @@ func _check(condition: bool, description: String) -> void:
 		print("  FALLA %s" % description)
 		_failures += 1
 
+
+func _test_sound_effects() -> void:
+	print("
+[Efectos de sonido]")
+	await _load_world()
+	await _wait(2)
+	var sfx := root.get_node_or_null("Sfx")
+	_check(sfx != null, "el jugador prepara el reproductor de sonidos en la raíz")
+	_check(AudioServer.get_bus_index(&"SFX") != -1, "existe el bus SFX con sus efectos")
+
+	# Todo sonido que el código pide existe en la carpeta (atrapa erratas en los nombres).
+	var wanted := {}
+	var regex := RegEx.create_from_string("Sfx\\.play\\(&\"([a-z_]+)\"")
+	for folder in ["res://core", "res://game"]:
+		for path in _gd_files(folder):
+			for found in regex.search_all(FileAccess.get_file_as_string(path)):
+				wanted[found.get_string(1)] = path
+	var missing := []
+	for sound in wanted:
+		if not Sfx.has(StringName(sound)):
+			missing.append("%s (%s)" % [sound, wanted[sound]])
+	_check(wanted.size() > 15, "el código pide muchos sonidos distintos (%d)" % wanted.size())
+	_check(missing.is_empty(), "todos los sonidos que pide el código existen %s" % [missing])
+
+	# Pasos y aterrizajes por material: existe el sonido de cada material del TileSet.
+	var tiles: TileSet = load("res://game/levels/tiles_umbral.tres")
+	var source := tiles.get_source(0) as TileSetAtlasSource
+	var materials := {}
+	for index in source.get_tiles_count():
+		materials[source.get_tile_data(source.get_tile_id(index), 0).get_custom_data("material")] = true
+	_check(materials.has("stone") and materials.has("moss") and materials.has("wood"), "el TileSet distingue piedra, musgo y madera %s" % [materials.keys()])
+	var silent := []
+	for material in materials:
+		for kind in ["step", "land"]:
+			if not Sfx.has(StringName("%s_%s" % [kind, material])):
+				silent.append("%s_%s" % [kind, material])
+	_check(silent.is_empty(), "cada material tiene su paso y su aterrizaje %s" % [silent])
+	_check(GroundMaterial.under(_player) in materials, "el jugador sabe sobre qué material pisa (%s)" % GroundMaterial.under(_player))
+
+	# Cada enemigo tiene su voz completa, su golpe y su paso.
+	var incomplete := []
+	for file in ["enemy", "enemy_lancero", "enemy_arrojador", "enemy_coloso", "enemy_acechador"]:
+		var enemy: Node = load("res://game/enemy/%s.tscn" % file).instantiate()
+		for event in ["alert", "attack", "hurt", "die"]:
+			if not Sfx.has(StringName("%s_%s" % [enemy.voice, event])):
+				incomplete.append("%s_%s" % [enemy.voice, event])
+		for sound in [enemy.strike_sound, enemy.step_sound]:
+			if not Sfx.has(sound):
+				incomplete.append(String(sound))
+		enemy.free()
+	_check(incomplete.is_empty(), "las cinco voces de enemigo están completas %s" % [incomplete])
+	var shard: Node = load("res://game/enemy/shard.tscn").instantiate()
+	_check(Sfx.has(shard.hit_sound), "la esquirla tiene sonido de impacto")
+	shard.free()
+
+	# Sonar: una voz queda ocupada, y el mismo sonido no se apila al instante.
+	# Cuántas voces suenan con un sonido concreto (otras cosas del mundo, como los
+	# pasos de un enemigo lejano, pueden sonar a la vez).
+	var playing := func(sound: String) -> int:
+		var count := 0
+		for voice in sfx.get_children():
+			if voice.playing and voice.stream.resource_path.get_file().begins_with(sound + "_"):
+				count += 1
+		return count
+	var silence := func() -> void:
+		for voice in sfx.get_children():
+			voice.stop()
+		await _wait(8)
+	await silence.call()
+	Sfx.play(&"ui_accept")
+	_check(playing.call("ui_accept") == 1, "un sonido de interfaz ocupa una voz")
+	Sfx.play(&"ui_accept")
+	_check(playing.call("ui_accept") == 1, "el mismo sonido pedido dos veces seguidas no se apila")
+	Sfx.play(&"no_existe")
+	_check(playing.call("no_existe") == 0, "un sonido que no existe se ignora sin error")
+
+	# El pie toca el suelo en la carrera: suena un paso (solo si está en el suelo).
+	await silence.call()
+	_check(_player.is_on_floor(), "el jugador está en el suelo para la prueba de pasos")
+	_player.animator.frame_changed.emit("run", 6)
+	_check(playing.call("step") == 1, "un paso al tocar el pie el suelo")
+	await silence.call()
+	_player.animator.frame_changed.emit("run", 3)
+	_check(playing.call("step") == 0, "sin contacto del pie no suena paso")
+
+	# Saltar suena, y el motor avisa del tipo de salto.
+	var kinds := []
+	_player.motor.jumped.connect(func(kind: StringName) -> void: kinds.append(kind))
+	await silence.call()
+	await _press_action("ui_accept")
+	_check(kinds == [&"ground"], "el motor avisa de un salto desde el suelo %s" % [kinds])
+	_check(playing.call("jump") == 1, "saltar suena")
+	await _wait(60)
+
+	# Menús: moverse y elegir suenan.
+	var list := MenuList.new()
+	root.add_child(list)
+	list.set_entries(PackedStringArray(["A", "B"]), [true, false])
+	await silence.call()
+	list.move_selection(1)
+	_check(playing.call("ui_move") == 1, "mover la selección de un menú suena")
+	await silence.call()
+	list.activate()
+	_check(playing.call("ui_deny") == 1, "elegir una opción desactivada suena (negado)")
+	list.queue_free()
+
+	# Romper un objeto suena.
+	await silence.call()
+	var prop := BreakableProp.new()
+	_room.add_child(prop)
+	prop.take_hit(1, 1)
+	_check(playing.call("break") == 1, "romper un objeto suena")
+
+
+## El sonido de la caída empieza en el MISMO fotograma de físicas en que el personaje
+## toca el suelo, tanto en una caída larga como en una corta (un escalón).
+func _test_landing_sound_is_in_sync() -> void:
+	print("
+[El aterrizaje suena justo al tocar el suelo]")
+	await _load_world()
+	await _wait(60)
+	var sfx := root.get_node("Sfx")
+	for drop in [200.0, 40.0, 14.0]:
+		_player.velocity = Vector2.ZERO
+		_player.global_position.y -= drop
+		await _wait(2)
+		for voice in sfx.get_children():
+			voice.stop()
+		var contact_frame := -1
+		var sound_frame := -1
+		for frame in 90:
+			await physics_frame
+			if _player.is_on_floor() and contact_frame < 0:
+				contact_frame = frame
+			for voice in sfx.get_children():
+				if voice.playing and voice.stream.resource_path.get_file().begins_with("land_") and sound_frame < 0:
+					sound_frame = frame
+			if contact_frame >= 0 and frame > contact_frame + 3:
+				break
+		_check(contact_frame >= 0, "cae %d px y toca el suelo" % int(drop))
+		_check(sound_frame == contact_frame, "caída de %d px: el sonido empieza en el fotograma del contacto (contacto %d, sonido %d)" % [int(drop), contact_frame, sound_frame])
+		await _wait(30)
+
+
+func _gd_files(folder: String) -> Array[String]:
+	var found: Array[String] = []
+	for file in DirAccess.get_files_at(folder):
+		if file.ends_with(".gd"):
+			found.append(folder.path_join(file))
+	for sub in DirAccess.get_directories_at(folder):
+		found.append_array(_gd_files(folder.path_join(sub)))
+	return found
+
+
+## Caer encima de un enemigo no deja al jugador subido a él: resbala hasta el suelo.
+func _test_player_cannot_stand_on_enemies() -> void:
+	print("
+[No se puede quedar uno encima de un enemigo]")
+	for scene in ["enemy", "enemy_coloso"]:
+		await _load_world()
+		var enemy := await _spawn_enemy_next_to_player("res://game/enemy/%s.tscn" % scene, 120.0)
+		await _wait(5)
+		enemy.set_physics_process(false)
+		var top: float = enemy.global_position.y - enemy.get_node("CollisionShape2D").shape.size.y / 2.0
+		_player.global_position = Vector2(enemy.global_position.x, top - 70.0)
+		_player.velocity = Vector2.ZERO
+		await _wait(120)
+		_check(_player.is_on_floor() and absf(_player.global_position.y - 296.0) < 3.0, "tras caer sobre %s, el jugador acaba en el suelo y no encima (y=%d)" % [scene, int(_player.global_position.y)])
+		_check(absf(_player.global_position.x - enemy.global_position.x) > 10.0, "y a un lado del enemigo")
 
 # --- Mundo de salas y mapa -----------------------------------------------------
 
@@ -1438,7 +1817,9 @@ func _test_climbing_back_out_of_the_cistern() -> void:
 		var target_y: float = _standing_on("Cisterna", step[3], step[4]).y
 		_check(landed and absf(_player.global_position.y - target_y) < 4.0, "de la fila %d se sube al tablón de la fila %d" % [step[1], step[4]])
 	var out: bool = await _hop(_standing_on("Cisterna", 31, 2), -1, _cell("TerrazasSecas", 27, 0).x)
-	_check(out and _level.current_room.name == "TerrazasSecas" and _player.global_position.y < 320.0, "del último tablón se sale al suelo de las Terrazas")
+	# (Si cae sobre un enemigo, resbala hasta el suelo: se espera a que se asiente.)
+	await _wait(40)
+	_check(_player.is_on_floor() and _level.current_room.name == "TerrazasSecas" and _player.global_position.y < 320.0, "del último tablón se sale al suelo de las Terrazas (suelo=%s sala=%s pos=%s)" % [_player.is_on_floor(), _level.current_room.name, _player.global_position])
 
 
 func _test_tower_needs_double_jump() -> void:
@@ -1573,7 +1954,8 @@ func _test_loading_restores_progress() -> void:
 	print("\n[Al abrir el juego se carga la partida y se aparece en la última Ancla]")
 	await _load_world()
 	_player.unlock_ability(&"dash")
-	_player.weapon.set_level(2)
+	_player.skills.set_level(&"filo", 2)
+	_player.skills.set_level(&"vitalidad", 3)
 	_level.map_data.visit(&"TerrazasSecas")
 	_level.map_data.visit(&"Cisterna")
 	# Un trozo explorado lejos de donde se va a reaparecer (en la Torre).
@@ -1594,7 +1976,8 @@ func _test_loading_restores_progress() -> void:
 	_check(_player.global_position.distance_to(anchor_at) < 8.0, "se aparece en la última Ancla en la que se descansó")
 	_check(_level.current_room.name == "Cisterna", "y la cámara y la sala son las de esa Ancla")
 	_check(_player.has_ability(&"dash") and not _player.has_ability(&"double_jump"), "se conservan las habilidades conseguidas, y solo esas")
-	_check(_player.weapon.level == 2 and _player.melee.damage == _player.weapon.current_value(), "se conserva el nivel del Filo, y su daño")
+	_check(_player.skills.level(&"filo") == 2 and _player.melee.damage == 3 and _player.skills.level(&"vitalidad") == 3, "se conservan las mejoras del árbol, y sus efectos")
+	_check(_player.health.max_health == 8 and _player.health.health == 8, "la vida máxima mejorada se conserva y se rellena")
 	_check(_player.ecos == 0 and is_instance_valid(_player.active_echo) and _player.active_echo.ecos_held == 7, "el Eco de la última muerte sigue esperando con sus Ecos")
 	_check(_player.active_echo.global_position.distance_to(echo_at) < 1.0, "en el mismo sitio")
 	_check(_player.health.health == _player.health.max_health, "con la vida completa")
@@ -1704,6 +2087,18 @@ func _test_title_screen() -> void:
 	await _press_action("ui_accept")
 	await _press_action("ui_cancel")
 	_check(menu.selected == title.MAIN_OPTIONS and not title.fullscreen, "Esc vuelve al menú, con el cursor en Opciones")
+
+	# Controles: el esquema del teclado y los mandos, con otra pestaña por dispositivo.
+	title._show_page(0, title.MAIN_CONTROLS)
+	await _press_action("ui_accept")
+	_check(title.controls_view.visible and not title.menu_panel.visible, "Controles muestra el esquema en lugar del menú")
+	var first_device: int = title.controls_view.device
+	await _press_action("ui_right")
+	_check(title.controls_view.device == (first_device + 1) % 4, "derecha pasa al siguiente dispositivo (teclado, Xbox, PlayStation, Nintendo)")
+	await _press_action("ui_left")
+	_check(title.controls_view.device == first_device, "izquierda vuelve al anterior")
+	await _press_action("ui_cancel")
+	_check(not title.controls_view.visible and title.menu_panel.visible and menu.selected == title.MAIN_CONTROLS, "Esc vuelve al menú, con el cursor en Controles")
 	title.queue_free()
 	_level = null
 	await process_frame

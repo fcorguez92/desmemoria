@@ -9,6 +9,7 @@
 [ext_resource type="Script" path="res://core/components/attack_visual_component.gd" id="7_attack_visual"]
 [ext_resource type="Texture2D" path="res://game/enemy/enemy_sheet.png" id="8_sheet"]
 [ext_resource type="Script" path="res://core/components/sheet_animator.gd" id="9_animator"]
+[ext_resource type="Script" path="res://core/ui/overhead_bar.gd" id="10_bar"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_enemy"]
 size = Vector2(32, 48)
@@ -24,14 +25,14 @@ shape = SubResource("RectangleShape2D_enemy")
 
 [node name="Visual" type="Sprite2D" parent="."]
 texture = ExtResource("8_sheet")
-offset = Vector2(0, -4)
-hframes = 6
+offset = Vector2(0, -8)
+hframes = 12
 vframes = 5
 
 [node name="SheetAnimator" type="Node" parent="." node_paths=PackedStringArray("sprite")]
 script = ExtResource("9_animator")
 sprite = NodePath("../Visual")
-animations = {"idle": [0, 2, 3.0, true], "hit": [4, 2, 8.0, false], "strike": [3, 2, 12.0, false], "walk": [1, 6, 12.0, true], "windup": [2, 2, 5.0, false]}
+animations = {"hit": [4, 4, 16.0, false], "idle": [0, 8, 8.0, true], "strike": [3, 6, 30.0, false], "walk": [1, 12, 24.0, true], "windup": [2, 6, 10.0, false]}
 
 [node name="AttackHitbox" type="Area2D" parent="."]
 position = Vector2(20, 0)
@@ -67,13 +68,15 @@ duration = 0.12
 [node name="PatrolChaseAI" type="Node" parent="." node_paths=PackedStringArray("ledge_probe")]
 script = ExtResource("6_ai")
 ledge_probe = NodePath("../LedgeProbe")
+chase_speed = 150.0
+windup_time = 0.3
+recovery_time = 0.5
 
-[node name="Slash" type="Polygon2D" parent="."]
-color = Color(1, 0.75, 0.6, 1)
-polygon = PackedVector2Array(12, -26, 32, -18, 42, 0, 32, 18, 12, 26, 26, 0)
-
-[node name="AttackVisualComponent" type="Node" parent="." node_paths=PackedStringArray("animator", "slash")]
+[node name="AttackVisualComponent" type="Node" parent="." node_paths=PackedStringArray("animator")]
 script = ExtResource("7_attack_visual")
 animator = NodePath("../SheetAnimator")
-slash = NodePath("../Slash")
-slash_alpha = 0.22
+
+[node name="HealthBar" type="Node2D" parent="." node_paths=PackedStringArray("health")]
+position = Vector2(0, -32)
+script = ExtResource("10_bar")
+health = NodePath("../HealthComponent")

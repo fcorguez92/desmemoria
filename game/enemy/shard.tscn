@@ -1,0 +1,28 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://core/objects/projectile.gd" id="1_projectile"]
+[ext_resource type="Texture2D" path="res://game/enemy/shard_sheet.png" id="2_sheet"]
+[ext_resource type="Script" path="res://core/components/sheet_animator.gd" id="3_animator"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_shard"]
+size = Vector2(12, 6)
+
+[node name="Shard" type="Area2D"]
+script = ExtResource("1_projectile")
+speed = 290.0
+reflect_group = &"enemy"
+hit_sound = &"shard_hit"
+
+[node name="Visual" type="Sprite2D" parent="."]
+texture = ExtResource("2_sheet")
+hframes = 2
+
+[node name="SheetAnimator" type="Node" parent="." node_paths=PackedStringArray("sprite")]
+script = ExtResource("3_animator")
+sprite = NodePath("../Visual")
+animations = {"fly": [0, 2, 16.0, true]}
+default_animation = "fly"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(2, 0)
+shape = SubResource("RectangleShape2D_shard")

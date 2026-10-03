@@ -15,12 +15,25 @@ const EchoScene := preload("res://game/echo/echo.tscn")
 const Hud := preload("res://game/ui/hud.gd")
 const AnchorMenu := preload("res://game/ui/anchor_menu.gd")
 const PauseMenu := preload("res://game/ui/pause_menu.gd")
+const Skills := preload("res://game/player/skills.gd")
+const GameAudio := preload("res://game/audio/game_audio.gd")
 const ABILITY_NAMES := {
 	&"dash": "Dash",
 	&"double_jump": "Doble salto",
 	&"wall_jump": "Salto de pared",
 }
 const MESSAGE_SECONDS := 3.0
+## El pie toca el suelo en estos fotogramas de la carrera (ver tools/rig_caminante.js).
+const STEP_FRAMES := [6, 13]
+## Velocidad de caída mínima para que el aterrizaje suene.
+const LAND_SOUND_SPEED := 120.0
+## Tras aterrizar, el primer paso de la carrera no suena hasta pasado este tiempo
+## (la animación de correr empieza por el fotograma 0 y su primer paso llega tarde).
+const STEP_AFTER_LAND_SECONDS := 0.25
+## Hasta dónde mira el jugador, a cada lado, si hay suelo al resbalar de un enemigo.
+const SLIDE_PROBE_DISTANCE := 56.0
+## Y cuánto por debajo cuenta como "suelo" (más allá es un foso).
+const SLIDE_PROBE_DEPTH := 100.0
 ## Para textos que hay que leer (inscripciones): tiempo mínimo y por carácter,
 ## a un ritmo de lectura tranquilo (unos 15 caracteres por segundo).
 const MIN_READING_SECONDS := 4.0
@@ -31,6 +44,10 @@ var ecos: int = 0
 var active_echo: Node = null
 
 var _message_id: int = 0
+var _was_on_floor: bool = true
+var _last_land_msec: int = -10000
+var _was_dashing: bool = false
+var _peak_fall_speed: float = 0.0
 
 @onready var motor: PlatformerMotor = $PlatformerMotor
 @onready var dash: DashComponent = $DashComponent
@@ -43,7 +60,7 @@ var _message_id: int = 0
 @onready var screen_shake: ScreenShakeComponent = $ScreenShakeComponent
 @onready var parry: ParryComponent = $ParryComponent
 @onready var parry_flash: HitFlashComponent = $ParryFlash
-@onready var weapon: TieredUpgrade = $WeaponUpgrade
+@onready var skills: SkillTree = $SkillTree
 @onready var visual: Sprite2D = $Visual
 @onready var animator: SheetAnimator = $SheetAnimator
 @onready var hud: Hud = $HUD
@@ -53,16 +70,22 @@ var _message_id: int = 0
 
 func _ready() -> void:
 	add_to_group("player")
+	GameAudio.setup(get_tree())
 	motor.facing_changed.connect(_on_facing_changed)
+	motor.jumped.connect(_on_jumped)
 	health.changed.connect(_update_hud)
 	health.damaged.connect(_on_damaged)
 	health.died.connect(die)
 	melee.hit_landed.connect(_on_hit_landed)
 	parry.parried.connect(_on_parried)
-	weapon.changed.connect(_on_weapon_changed)
-	anchor_menu.upgrade_requested.connect(_on_upgrade_requested)
+	parry.started.connect(Sfx.play.bind(&"parry_raise", null, -12.0))
+	animator.frame_changed.connect(_on_animation_frame)
+	for skill in Skills.LIST:
+		skills.define(skill.id, PackedInt32Array(skill.costs), skill.requires)
+	skills.changed.connect(_apply_skills)
+	anchor_menu.skill_requested.connect(_on_skill_requested)
 	pause_menu.title_requested.connect(title_requested.emit)
-	_on_weapon_changed()
+	_apply_skills()
 
 
 func _physics_process(delta: float) -> void:
@@ -72,10 +95,12 @@ func _physics_process(delta: float) -> void:
 	# Con la guardia alzada no se puede atacar.
 	if Input.is_action_just_pressed("attack") and not parry.is_active and melee.try_attack(self, motor.facing):
 		attack_visual.swing()
+		Sfx.play(&"swing", null, -9.0)
 	if Input.is_action_just_pressed("parry") and parry.try_start():
 		animator.play_action("parry")
 	if Input.is_action_just_pressed("heal"):
-		health.use_heal_charge()
+		if health.use_heal_charge():
+			Sfx.play(&"heal", null, -8.0)
 
 	# El dash pisa la velocity, así que va después del movimiento normal.
 	dash.step(self, motor.facing, delta)
@@ -83,7 +108,10 @@ func _physics_process(delta: float) -> void:
 	# El retroceso al recibir un golpe manda sobre todo lo demás.
 	knockback.step(self, delta)
 
+	_peak_fall_speed = maxf(_peak_fall_speed, velocity.y)
 	move_and_slide()
+	_slide_off_enemies()
+	_play_movement_sounds()
 	_update_animation()
 
 	if respawn.is_out_of_bounds(self):
@@ -131,7 +159,7 @@ func get_save_data() -> Dictionary:
 	var data := {
 		spawn = [respawn.spawn_position.x, respawn.spawn_position.y],
 		ecos = ecos,
-		weapon_level = weapon.level,
+		skills = skills.get_save_data(),
 		abilities = abilities,
 	}
 	if is_instance_valid(active_echo):
@@ -154,7 +182,8 @@ func load_save_data(data: Dictionary) -> void:
 		global_position = spawn
 		velocity = Vector2.ZERO
 	ecos = maxi(0, _int_from(data.get("ecos")))
-	weapon.set_level(_int_from(data.get("weapon_level")))
+	skills.load_save_data(data.get("skills"))
+	health.restore()
 	var abilities: Variant = data.get("abilities")
 	if abilities is Array:
 		for id in abilities:
@@ -211,6 +240,7 @@ func has_ability(id: StringName) -> bool:
 ## habilidades son permanentes: morir no las pierde.
 func unlock_ability(id: StringName) -> void:
 	if _grant_ability(id):
+		Sfx.play(&"ability_get", null, -5.0)
 		_show_message("Has recordado: %s" % ABILITY_NAMES[id])
 
 
@@ -228,29 +258,52 @@ func _grant_ability(id: StringName) -> bool:
 	return true
 
 
-## Gasta Ecos en subir un nivel el Filo. Devuelve false si no se pudo
-## (sin Ecos suficientes o ya al máximo). Lo llama el Ancla de Memoria.
-func try_upgrade_weapon() -> bool:
-	if weapon.is_max() or ecos < weapon.next_cost():
+## Gasta Ecos en subir un nivel de una mejora del árbol de habilidades. Devuelve
+## false si no se pudo (sin Ecos suficientes, bloqueada o al máximo). Lo llama el
+## menú del Ancla.
+func try_buy_skill(id: StringName) -> bool:
+	if not skills.can_buy(id, ecos):
 		return false
-	ecos -= weapon.next_cost()
-	weapon.advance()
+	ecos -= skills.next_cost(id)
+	skills.advance(id)
 	_update_hud()
 	return true
 
 
-func _on_upgrade_requested() -> void:
-	if try_upgrade_weapon():
+func _on_skill_requested(id: StringName) -> void:
+	if try_buy_skill(id):
+		Sfx.play(&"skill_buy", null, -7.0)
 		save_requested.emit()
+	else:
+		Sfx.play(&"ui_deny", null, -10.0)
 	_refresh_anchor_menu()
 
 
+## Los datos del árbol para el menú: una entrada por mejora, con su nivel, coste y textos.
+func _skill_menu_data() -> Array:
+	var data := []
+	for skill in Skills.LIST:
+		var level: int = skills.level(skill.id)
+		var maxed: bool = skills.is_max(skill.id)
+		data.append({
+			id = skill.id, name = skill.name, text = skill.text, branch = skill.branch, row = skill.row,
+			requires = skill.requires, level = level, max = skills.max_level(skill.id),
+			cost = skills.next_cost(skill.id), unlocked = skills.is_unlocked(skill.id),
+			affordable = skills.can_buy(skill.id, ecos),
+			missing = maxi(0, skills.next_cost(skill.id) - ecos),
+			now = Skills.describe(skill.id, level),
+			next = "" if maxed else Skills.describe(skill.id, level + 1),
+		})
+	return data
+
+
 func _refresh_anchor_menu() -> void:
-	var next_cost := -1 if weapon.is_max() else weapon.next_cost()
-	anchor_menu.show_state(ecos, weapon.level + 1, weapon.current_value(), next_cost)
+	anchor_menu.show_state(ecos, _skill_menu_data(), PackedStringArray(Skills.BRANCHES))
 
 
 func die() -> void:
+	Sfx.play(&"player_die", null, -4.0)
+	_peak_fall_speed = 0.0
 	# El Eco de una muerte anterior que no se recuperó se pierde para siempre.
 	if is_instance_valid(active_echo):
 		active_echo.queue_free()
@@ -282,13 +335,70 @@ func _reset_world() -> void:
 	get_tree().call_group(&"resettable", &"reset")
 
 
+## Un enemigo no es un suelo: si se cae encima de uno, el jugador resbala hacia un
+## lado (el mismo retroceso de un golpe, sin daño) y no puede quedarse subido. Prefiere
+## el lado contrario al centro del enemigo, pero no el que acabe en el vacío.
+func _slide_off_enemies() -> void:
+	for i in get_slide_collision_count():
+		var hit := get_slide_collision(i)
+		var other := hit.get_collider() as Node2D
+		if other != null and other.is_in_group("enemy") and hit.get_normal().y < -0.5:
+			var side := 1 if hit.get_position().x >= other.global_position.x else -1
+			if not _has_ground_beside(side) and _has_ground_beside(-side):
+				side = -side
+			knockback.apply(side)
+			return
+
+
+## ¿Hay suelo del mundo a ~56 px a un lado, por debajo de los pies?
+func _has_ground_beside(side: int) -> bool:
+	var from := global_position + Vector2(side * SLIDE_PROBE_DISTANCE, 0.0)
+	var query := PhysicsRayQueryParameters2D.create(from, from + Vector2(0.0, SLIDE_PROBE_DEPTH), 1, [get_rid()])
+	return not get_world_2d().direct_space_state.intersect_ray(query).is_empty()
+
+
 func _update_animation() -> void:
+	if dash.is_dashing:
+		animator.play("dash")
+		return
 	if not is_on_floor():
 		animator.play("jump" if velocity.y < 0.0 else "fall")
 	elif absf(velocity.x) > 10.0:
 		animator.play("run")
 	else:
 		animator.play("idle")
+
+
+## El motor avisa de cada salto y de su tipo (suelo, pared o aire).
+func _on_jumped(kind: StringName) -> void:
+	match kind:
+		&"wall":
+			Sfx.play(&"wall_jump", null, -11.0)
+		&"air":
+			Sfx.play(&"air_jump", null, -12.0)
+		_:
+			Sfx.play(&"jump", null, -13.0)
+
+
+## Aterrizaje y dash: se detectan al cambiar de estado, después de moverse.
+func _play_movement_sounds() -> void:
+	var on_floor := is_on_floor()
+	if on_floor and not _was_on_floor and _peak_fall_speed > LAND_SOUND_SPEED:
+		Sfx.play(StringName("land_%s" % GroundMaterial.under(self)), null, clampf(remap(_peak_fall_speed, LAND_SOUND_SPEED, 1000.0, -24.0, -8.0), -24.0, -8.0))
+		_last_land_msec = Time.get_ticks_msec()
+	if on_floor:
+		_peak_fall_speed = 0.0
+	_was_on_floor = on_floor
+	if dash.is_dashing and not _was_dashing:
+		Sfx.play(&"dash", null, -8.0)
+	_was_dashing = dash.is_dashing
+
+
+## Los pasos suenan cuando el pie toca el suelo en la animación de correr.
+func _on_animation_frame(animation: String, frame: int) -> void:
+	var just_landed := Time.get_ticks_msec() - _last_land_msec < STEP_AFTER_LAND_SECONDS * 1000.0
+	if animation == "run" and frame in STEP_FRAMES and is_on_floor() and not just_landed:
+		Sfx.play(StringName("step_%s" % GroundMaterial.under(self)), null, -14.0)
 
 
 func _on_facing_changed(facing: int) -> void:
@@ -298,6 +408,8 @@ func _on_facing_changed(facing: int) -> void:
 
 
 func _on_damaged(_amount: int) -> void:
+	if health.health > 0:
+		Sfx.play(&"player_hurt", null, -3.0)
 	hit_flash.flash()
 	screen_shake.shake(7.0, 0.18)
 	# Si el golpe llega a mitad de un ataque propio, se corta (arco y animación)
@@ -310,6 +422,8 @@ func _on_damaged(_amount: int) -> void:
 
 ## Feedback de un golpe propio que alcanza algo: chispazo y un temblor leve.
 func _on_hit_landed(body: Node) -> void:
+	if body.is_in_group("enemy"):
+		Sfx.play(&"hit_enemy", (body as Node2D).global_position, -6.0)
 	HitSpark.spawn(get_parent(), (body as Node2D).global_position)
 	screen_shake.shake(3.0, 0.08)
 	HitStop.trigger(self)
@@ -333,16 +447,35 @@ func read_text(text: String) -> void:
 
 ## Golpe desviado: sin daño, con efectos azules, y el atacante queda aturdido.
 func _on_parried(attacker: Node) -> void:
+	Sfx.play(&"parry", null, -4.0)
 	parry_flash.flash()
 	screen_shake.shake(5.0, 0.12)
 	if attacker is Node2D:
 		HitSpark.spawn(get_parent(), (global_position + attacker.global_position) / 2.0, Color(0.66, 0.89, 0.95))
 	if attacker and attacker.has_method("on_parried"):
-		attacker.on_parried()
+		attacker.on_parried(Skills.stat(&"contragolpe", skills.level(&"contragolpe")))
 
 
-func _on_weapon_changed() -> void:
-	melee.damage = weapon.current_value()
+## Aplica a las estadísticas del personaje los niveles actuales del árbol. Si sube la
+## vida máxima o los frascos, también se llenan en esa cantidad (comprar vida cura).
+func _apply_skills() -> void:
+	var old_health := health.max_health
+	var old_flasks := health.max_heal_charges
+	health.max_health = int(Skills.stat(&"vitalidad", skills.level(&"vitalidad")))
+	health.max_heal_charges = int(Skills.stat(&"frascos", skills.level(&"frascos")))
+	health.invulnerability_time = Skills.stat(&"temple", skills.level(&"temple"))
+	if health.max_health > old_health:
+		health.health += health.max_health - old_health
+	health.health = mini(health.health, health.max_health)
+	if health.max_heal_charges > old_flasks:
+		health.heal_charges += health.max_heal_charges - old_flasks
+	health.heal_charges = mini(health.heal_charges, health.max_heal_charges)
+	melee.damage = int(Skills.stat(&"filo", skills.level(&"filo")))
+	melee.cooldown = Skills.stat(&"ritmo", skills.level(&"ritmo"))
+	melee.reach = Skills.stat(&"alcance", skills.level(&"alcance"))
+	melee.set_facing(motor.facing)
+	parry.window = Skills.stat(&"guardia", skills.level(&"guardia"))
+	dash.cooldown = Skills.stat(&"impulso", skills.level(&"impulso"))
 	_update_hud()
 
 
@@ -356,4 +489,8 @@ func _refresh_pause_menu() -> void:
 	var abilities := {}
 	for id in ABILITY_NAMES:
 		abilities[ABILITY_NAMES[id]] = has_ability(id)
-	pause_menu.show_character(health.health, health.max_health, ecos, weapon.level + 1, weapon.current_value(), abilities)
+	var stats := PackedStringArray([
+		"%s  ·  %s" % [Skills.describe(&"filo", skills.level(&"filo")), Skills.describe(&"alcance", skills.level(&"alcance"))],
+		Skills.describe(&"ritmo", skills.level(&"ritmo")),
+	])
+	pause_menu.show_character(health.health, health.max_health, health.heal_charges, health.max_heal_charges, ecos, stats, abilities)

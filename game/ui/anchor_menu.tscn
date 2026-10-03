@@ -1,7 +1,9 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://game/ui/anchor_menu.gd" id="1_menu"]
 [ext_resource type="Script" path="res://core/ui/menu_list.gd" id="2_list"]
+[ext_resource type="Script" path="res://core/ui/input_hint_bar.gd" id="9_bar"]
+[ext_resource type="Script" path="res://game/ui/skill_tree_view.gd" id="10_tree"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
 content_margin_left = 24.0
@@ -20,6 +22,7 @@ process_mode = 2
 layer = 10
 script = ExtResource("1_menu")
 root = NodePath("Root")
+open_sound = &""
 
 [node name="Root" type="Control" parent="."]
 layout_mode = 3
@@ -51,7 +54,7 @@ grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
 
 [node name="Content" type="VBoxContainer" parent="Root/Panel"]
-custom_minimum_size = Vector2(340, 0)
+custom_minimum_size = Vector2(500, 0)
 layout_mode = 2
 theme_override_constants/separation = 10
 
@@ -75,9 +78,12 @@ layout_mode = 2
 script = ExtResource("2_list")
 accept_actions = Array[StringName]([&"ui_accept", &"interact"])
 
-[node name="Hint" type="Label" parent="Root/Panel/Content"]
+[node name="SkillTree" type="Control" parent="Root/Panel/Content"]
+visible = false
 layout_mode = 2
-theme_override_colors/font_color = Color(0.416, 0.4, 0.44, 1)
-theme_override_font_sizes/font_size = 12
-text = "↑ ↓ elegir · Intro o Z confirmar · Esc cerrar"
-horizontal_alignment = 1
+script = ExtResource("10_tree")
+
+[node name="Hint" type="Control" parent="Root/Panel/Content"]
+layout_mode = 2
+script = ExtResource("9_bar")
+
