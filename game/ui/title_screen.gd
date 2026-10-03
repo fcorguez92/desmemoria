@@ -22,6 +22,7 @@ enum Page { MAIN, CONFIRM_NEW_GAME, OPTIONS, CONTROLS }
 
 const World := preload("res://game/levels/world.gd")
 const WORLD_SCENE := "res://game/levels/world.tscn"
+const GameAudio := preload("res://game/audio/game_audio.gd")
 
 const MAIN_CONTINUE := 0
 const MAIN_NEW_GAME := 1
@@ -66,6 +67,7 @@ var _page: Page = Page.MAIN
 
 
 func _ready() -> void:
+	GameAudio.setup(get_tree())
 	# Al volver desde la pausa, el mundo deja el árbol en pausa hasta el cambio de
 	# escena (para que no siga jugándose ni guardándose a medias): se quita aquí.
 	get_tree().paused = false
@@ -166,6 +168,7 @@ func _show_page(page: Page, selected: int = -1) -> void:
 
 
 func _start(new_game: bool) -> void:
+	Sfx.play(&"begin", null, -4.0)
 	if new_game:
 		SaveSlot.new(save_path).erase()
 	game_started.emit(new_game)

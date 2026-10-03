@@ -45,6 +45,7 @@ func _start_breathing() -> void:
 
 
 func _on_activated() -> void:
+	Sfx.play(&"anchor_rest", global_position, -5.0)
 	if _flash and _flash.is_valid():
 		_flash.kill()
 	_flash = create_tween().set_parallel(true)

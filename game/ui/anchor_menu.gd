@@ -97,6 +97,7 @@ func _input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 			var step: Vector2i = DIRECTIONS[action]
 			tree_view.move(step.x, step.y)
+			Sfx.play(&"ui_move", null, -16.0)
 		return
 	if event.is_action_pressed(&"ui_accept") or event.is_action_pressed(&"interact"):
 		get_viewport().set_input_as_handled()
@@ -105,4 +106,5 @@ func _input(event: InputEvent) -> void:
 			skill_requested.emit(skill.id)
 	elif event.is_action_pressed(&"ui_cancel"):
 		get_viewport().set_input_as_handled()
+		Sfx.play(&"ui_back", null, -12.0)
 		_show_tree(false)

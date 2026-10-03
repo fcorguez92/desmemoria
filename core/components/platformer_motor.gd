@@ -12,6 +12,8 @@ extends Node
 
 ## Se emite cuando cambia la dirección a la que mira el cuerpo (-1 o 1).
 signal facing_changed(facing: int)
+## Se emite al saltar, con el tipo: &"ground" (suelo o coyote), &"wall" o &"air" (salto extra).
+signal jumped(kind: StringName)
 
 @export var speed: float = 300.0
 @export var jump_velocity: float = -900.0
@@ -112,17 +114,20 @@ func step(body: CharacterBody2D, delta: float) -> void:
 		body.velocity.y = jump_velocity
 		_jump_buffer_timer = 0.0
 		_coyote_timer = 0.0
+		jumped.emit(&"ground")
 	elif jump_pressed and can_wall_jump and not on_floor and _wall_timer > 0.0:
 		body.velocity = Vector2(_wall_normal_x * wall_jump_push, wall_jump_velocity)
 		_wall_lock_timer = wall_jump_lock_time
 		_wall_timer = 0.0
 		_jump_buffer_timer = 0.0
 		_set_facing(_wall_normal_x)
+		jumped.emit(&"wall")
 	elif jump_pressed and not on_floor and _air_jumps_left > 0:
 		# Solo si ni el suelo (ni su margen de coyote) ni una pared sirvieron.
 		body.velocity.y = air_jump_velocity
 		_air_jumps_left -= 1
 		_jump_buffer_timer = 0.0
+		jumped.emit(&"air")
 
 	if Input.is_action_just_released(action_jump) and body.velocity.y < 0.0:
 		body.velocity.y *= jump_cut_factor

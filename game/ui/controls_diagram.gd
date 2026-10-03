@@ -45,6 +45,7 @@ func _on_visibility_changed() -> void:
 
 func cycle(step: int) -> void:
 	device = posmod(device + step, TAB_NAMES.size())
+	Sfx.play(&"ui_move", null, -16.0)
 	queue_redraw()
 
 

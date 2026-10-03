@@ -11,6 +11,8 @@ size = Vector2(54, 22)
 
 [node name="Lancero" instance=ExtResource("1_base")]
 ecos_reward = 3
+voice = &"lancero"
+strike_sound = &"enemy_thrust"
 
 [node name="CollisionShape2D" parent="." index="0"]
 shape = SubResource("RectangleShape2D_body")
