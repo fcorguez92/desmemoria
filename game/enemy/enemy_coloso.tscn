@@ -33,7 +33,7 @@ shape = SubResource("RectangleShape2D_attack")
 position = Vector2(30, 32)
 
 [node name="HealthComponent" parent="." index="5"]
-max_health = 8
+max_health = 10
 
 [node name="MeleeAttackComponent" parent="." index="7"]
 reach = 36.0
@@ -45,9 +45,12 @@ duration = 0.1
 
 [node name="PatrolChaseAI" parent="." index="9"]
 patrol_speed = 30.0
-chase_speed = 70.0
+chase_speed = 78.0
 detect_range = 220.0
 attack_range = 78.0
-windup_time = 0.9
-recovery_time = 1.3
+windup_time = 0.72
+recovery_time = 1.0
 ledge_probe_offset = 30.0
+
+[node name="HealthBar" parent="." index="11"]
+position = Vector2(0, -44)

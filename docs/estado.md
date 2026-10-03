@@ -1,6 +1,6 @@
 # Estado del proyecto (documento vivo)
 
-Última actualización: iconos de botones según el dispositivo y Eco que se recoge con el botón de interactuar.
+Última actualización: Ancla rediseñada, árbol de habilidades, enemigos más rápidos y feedback de daño.
 
 ## Dónde estamos en la metodología
 

@@ -28,7 +28,7 @@ no se mueven solos: el dueño llama a su `step()` en un orden explícito.
 | `SheetAnimator` | Anima un `Sprite2D` con hoja de sprites: cada animación es una fila y cada fotograma una columna. Distingue animaciones normales (`play`) y acciones (`play_action`, p. ej. un ataque) que no pisa el movimiento. Solo presentación | `play(animation)`, `play_action(animation, hold, duration)`, `release_action()`, `current`; exporta `sprite` y `animations` (nombre → `[fila, nº de fotogramas, fps, bucle]`) |
 | `AttackVisualComponent` | Presentación de un ataque: pide al `SheetAnimator` las animaciones de aviso y golpe (con el arma dibujada en el sprite) y hace destellar opcionalmente el arco del golpe | `windup(duration)`, `strike()`, `swing()` (ataque sin aviso), `reset()`, `set_facing(facing)`; exporta `animator`, `slash` y los nombres de las animaciones |
 | `ScreenShakeComponent` | Temblor breve de la cámara. Mueve `camera.position`, independiente del `offset` de `CameraLookComponent` | `shake(strength, duration)`; exporta `camera` |
-| `TieredUpgrade` | Mejora por niveles con coste y valor por nivel (daño de un arma, vida máxima...). No gestiona la moneda: el dueño comprueba el saldo y cobra | `current_value()`, `is_max()`, `next_cost()`, `advance()`, `set_level(n)` (sin coste, p. ej. al cargar partida), `level`; señal `changed`; exports `values` y `costs` |
+| `SkillTree` | Árbol de habilidades: mejoras por niveles (`define(id, costs, requires)`) con coste por nivel y una mejora previa opcional. No gestiona la moneda ni aplica efectos: el dueño comprueba el saldo (`can_buy`), cobra, llama a `advance()` y aplica los niveles a sus estadísticas al oír `changed` | `level(id)`, `max_level(id)`, `next_cost(id)`, `is_unlocked(id)`, `can_buy(id, saldo)`, `advance(id)`, `set_level(id, n)` (sin coste), `get_save_data()` / `load_save_data(datos)` (desconfía de lo guardado); señal `changed` |
 | `HitFlashComponent` | Parpadeo de color al recibir un golpe | `flash()`; exporta `target` (cualquier `CanvasItem`) |
 
 Valores por defecto y su significado están documentados en los comentarios `##`
@@ -38,7 +38,7 @@ de cada variable exportada (se ven en el Inspector).
 
 | Objeto | Base | Responsabilidad |
 |---|---|---|
-| `Checkpoint` | `Area2D` (se puede heredar: ver `game/memory_anchor/`; `targets_in_range` es público) | Al pulsar `action_interact` con un cuerpo del grupo objetivo dentro, llama a `rest_at(position)` en él; muestra `prompt` (opcional) mientras hay alguien al alcance |
+| `Checkpoint` | `Area2D` (se puede heredar: ver `game/memory_anchor/`; `targets_in_range` es público) | Al pulsar `action_interact` con un cuerpo del grupo objetivo dentro, llama a `rest_at(position)` en él; emite la señal `activated` (para efectos); muestra `prompt` (opcional) mientras hay alguien al alcance |
 | `AbilityPickup` | `Area2D` | Al entrar un cuerpo del grupo objetivo, llama a `unlock_ability(ability_id)` en él y desaparece. No conoce las habilidades: solo entrega el identificador |
 | `EntitySpawner` | `Node2D` | Crea `scene` al cargar; al recibir `reset()` (vía el grupo `reset_group`) destruye la instancia actual y crea una nueva desde cero. `instance` es la entidad actual |
 | `Projectile` | `Area2D` | Proyectil recto: vuela a `speed` en `direction` hasta herir a algo golpeable del grupo `target_group` (`damage`), chocar con el escenario o agotar `lifetime`. Ignora cuerpos con movimiento que no son su objetivo (quien lo lanzó, otros enemigos). Si el objetivo lo desvía con un parry llama a `on_parried()`: se devuelve y pasa a herir a `reflect_group`. Quien lo crea llama a `launch(dirección)` |
@@ -52,6 +52,7 @@ Controles genéricos para el HUD y los menús. No saben de dónde vienen los nú
 
 | Control | Base | Responsabilidad |
 |---|---|---|
+| `OverheadBar` | `Node2D` | Barra de vida flotante sobre una entidad: oculta hasta que recibe daño, entonces aparece unos segundos y un trozo claro se encoge tras el golpe. Escucha el `HealthComponent` de `health` (necesita `node_paths`) |
 | `InputGlyphs` | `RefCounted` (estático) | Iconos de botones que se adaptan al dispositivo en uso (teclado, Xbox, PlayStation, Nintendo): dada una *acción* del Mapa de entrada, dibuja la tecla o el botón con el aspecto del mando (colores de Xbox, símbolos de PlayStation, letras de Nintendo), sin texto explicativo. `InputGlyphs.draw(canvas, acción, centro)` dentro de un `_draw()`; `ensure_tracker()` crea el `InputGlyphTracker` que detecta el dispositivo por la última entrada |
 | `InputPrompt` | `Node2D` | Aviso de botón en el mundo: el icono de `action` y una flecha que señala a lo que se refiere (`hint`). Es un `CanvasItem`: el `prompt` de Checkpoint y Readable lo muestra y oculta con `visible`. Solo gasta tiempo mientras se ve |
 | `InputHintBar` | `Control` | Fila centrada de iconos de botón con un símbolo que dice qué hacen (aceptar, volver, elegir, menú) y puntos de color para leyendas, para los pies de los menús. `set_entries([{ action, hint }, { color }])` |

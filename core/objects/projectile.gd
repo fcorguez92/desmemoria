@@ -46,7 +46,7 @@ func _physics_process(delta: float) -> void:
 
 
 ## Contrato de quien recibe: se llama desde el parry del jugador.
-func on_parried() -> void:
+func on_parried(_extra_stun: float = 0.0) -> void:
 	if reflect_group == &"":
 		hit.emit(global_position)
 		queue_free()

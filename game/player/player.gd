@@ -15,6 +15,7 @@ const EchoScene := preload("res://game/echo/echo.tscn")
 const Hud := preload("res://game/ui/hud.gd")
 const AnchorMenu := preload("res://game/ui/anchor_menu.gd")
 const PauseMenu := preload("res://game/ui/pause_menu.gd")
+const Skills := preload("res://game/player/skills.gd")
 const ABILITY_NAMES := {
 	&"dash": "Dash",
 	&"double_jump": "Doble salto",
@@ -43,7 +44,7 @@ var _message_id: int = 0
 @onready var screen_shake: ScreenShakeComponent = $ScreenShakeComponent
 @onready var parry: ParryComponent = $ParryComponent
 @onready var parry_flash: HitFlashComponent = $ParryFlash
-@onready var weapon: TieredUpgrade = $WeaponUpgrade
+@onready var skills: SkillTree = $SkillTree
 @onready var visual: Sprite2D = $Visual
 @onready var animator: SheetAnimator = $SheetAnimator
 @onready var hud: Hud = $HUD
@@ -59,10 +60,12 @@ func _ready() -> void:
 	health.died.connect(die)
 	melee.hit_landed.connect(_on_hit_landed)
 	parry.parried.connect(_on_parried)
-	weapon.changed.connect(_on_weapon_changed)
-	anchor_menu.upgrade_requested.connect(_on_upgrade_requested)
+	for skill in Skills.LIST:
+		skills.define(skill.id, PackedInt32Array(skill.costs), skill.requires)
+	skills.changed.connect(_apply_skills)
+	anchor_menu.skill_requested.connect(_on_skill_requested)
 	pause_menu.title_requested.connect(title_requested.emit)
-	_on_weapon_changed()
+	_apply_skills()
 
 
 func _physics_process(delta: float) -> void:
@@ -131,7 +134,7 @@ func get_save_data() -> Dictionary:
 	var data := {
 		spawn = [respawn.spawn_position.x, respawn.spawn_position.y],
 		ecos = ecos,
-		weapon_level = weapon.level,
+		skills = skills.get_save_data(),
 		abilities = abilities,
 	}
 	if is_instance_valid(active_echo):
@@ -154,7 +157,8 @@ func load_save_data(data: Dictionary) -> void:
 		global_position = spawn
 		velocity = Vector2.ZERO
 	ecos = maxi(0, _int_from(data.get("ecos")))
-	weapon.set_level(_int_from(data.get("weapon_level")))
+	skills.load_save_data(data.get("skills"))
+	health.restore()
 	var abilities: Variant = data.get("abilities")
 	if abilities is Array:
 		for id in abilities:
@@ -228,26 +232,44 @@ func _grant_ability(id: StringName) -> bool:
 	return true
 
 
-## Gasta Ecos en subir un nivel el Filo. Devuelve false si no se pudo
-## (sin Ecos suficientes o ya al máximo). Lo llama el Ancla de Memoria.
-func try_upgrade_weapon() -> bool:
-	if weapon.is_max() or ecos < weapon.next_cost():
+## Gasta Ecos en subir un nivel de una mejora del árbol de habilidades. Devuelve
+## false si no se pudo (sin Ecos suficientes, bloqueada o al máximo). Lo llama el
+## menú del Ancla.
+func try_buy_skill(id: StringName) -> bool:
+	if not skills.can_buy(id, ecos):
 		return false
-	ecos -= weapon.next_cost()
-	weapon.advance()
+	ecos -= skills.next_cost(id)
+	skills.advance(id)
 	_update_hud()
 	return true
 
 
-func _on_upgrade_requested() -> void:
-	if try_upgrade_weapon():
+func _on_skill_requested(id: StringName) -> void:
+	if try_buy_skill(id):
 		save_requested.emit()
 	_refresh_anchor_menu()
 
 
+## Los datos del árbol para el menú: una entrada por mejora, con su nivel, coste y textos.
+func _skill_menu_data() -> Array:
+	var data := []
+	for skill in Skills.LIST:
+		var level: int = skills.level(skill.id)
+		var maxed: bool = skills.is_max(skill.id)
+		data.append({
+			id = skill.id, name = skill.name, text = skill.text, branch = skill.branch, row = skill.row,
+			requires = skill.requires, level = level, max = skills.max_level(skill.id),
+			cost = skills.next_cost(skill.id), unlocked = skills.is_unlocked(skill.id),
+			affordable = skills.can_buy(skill.id, ecos),
+			missing = maxi(0, skills.next_cost(skill.id) - ecos),
+			now = Skills.describe(skill.id, level),
+			next = "" if maxed else Skills.describe(skill.id, level + 1),
+		})
+	return data
+
+
 func _refresh_anchor_menu() -> void:
-	var next_cost := -1 if weapon.is_max() else weapon.next_cost()
-	anchor_menu.show_state(ecos, weapon.level + 1, weapon.current_value(), next_cost)
+	anchor_menu.show_state(ecos, _skill_menu_data(), PackedStringArray(Skills.BRANCHES))
 
 
 func die() -> void:
@@ -341,11 +363,29 @@ func _on_parried(attacker: Node) -> void:
 	if attacker is Node2D:
 		HitSpark.spawn(get_parent(), (global_position + attacker.global_position) / 2.0, Color(0.66, 0.89, 0.95))
 	if attacker and attacker.has_method("on_parried"):
-		attacker.on_parried()
+		attacker.on_parried(Skills.stat(&"contragolpe", skills.level(&"contragolpe")))
 
 
-func _on_weapon_changed() -> void:
-	melee.damage = weapon.current_value()
+## Aplica a las estadísticas del personaje los niveles actuales del árbol. Si sube la
+## vida máxima o los frascos, también se llenan en esa cantidad (comprar vida cura).
+func _apply_skills() -> void:
+	var old_health := health.max_health
+	var old_flasks := health.max_heal_charges
+	health.max_health = int(Skills.stat(&"vitalidad", skills.level(&"vitalidad")))
+	health.max_heal_charges = int(Skills.stat(&"frascos", skills.level(&"frascos")))
+	health.invulnerability_time = Skills.stat(&"temple", skills.level(&"temple"))
+	if health.max_health > old_health:
+		health.health += health.max_health - old_health
+	health.health = mini(health.health, health.max_health)
+	if health.max_heal_charges > old_flasks:
+		health.heal_charges += health.max_heal_charges - old_flasks
+	health.heal_charges = mini(health.heal_charges, health.max_heal_charges)
+	melee.damage = int(Skills.stat(&"filo", skills.level(&"filo")))
+	melee.cooldown = Skills.stat(&"ritmo", skills.level(&"ritmo"))
+	melee.reach = Skills.stat(&"alcance", skills.level(&"alcance"))
+	melee.set_facing(motor.facing)
+	parry.window = Skills.stat(&"guardia", skills.level(&"guardia"))
+	dash.cooldown = Skills.stat(&"impulso", skills.level(&"impulso"))
 	_update_hud()
 
 
@@ -359,4 +399,8 @@ func _refresh_pause_menu() -> void:
 	var abilities := {}
 	for id in ABILITY_NAMES:
 		abilities[ABILITY_NAMES[id]] = has_ability(id)
-	pause_menu.show_character(health.health, health.max_health, ecos, weapon.level + 1, weapon.current_value(), abilities)
+	var stats := PackedStringArray([
+		"%s  ·  %s" % [Skills.describe(&"filo", skills.level(&"filo")), Skills.describe(&"alcance", skills.level(&"alcance"))],
+		Skills.describe(&"ritmo", skills.level(&"ritmo")),
+	])
+	pause_menu.show_character(health.health, health.max_health, health.heal_charges, health.max_heal_charges, ecos, stats, abilities)

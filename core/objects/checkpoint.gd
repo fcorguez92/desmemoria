@@ -8,6 +8,11 @@ extends Area2D
 
 @export var target_group: StringName = &"player"
 @export var action_interact: StringName = &"interact"
+## Se emite cuando un cuerpo descansa aquí (al pulsar la acción de interacción
+## con algún objetivo al alcance). Sirve para que efectos y sonidos reaccionen
+## sin tocar la lógica del descanso.
+signal activated
+
 ## Elemento opcional (p. ej. un Label) que se muestra mientras hay un objetivo
 ## al alcance, para indicar que se puede interactuar.
 @export var prompt: CanvasItem
@@ -28,6 +33,7 @@ func _physics_process(_delta: float) -> void:
 		return
 	for body in targets_in_range:
 		body.rest_at(global_position)
+	activated.emit()
 
 
 func _on_body_entered(body: Node) -> void:

@@ -45,7 +45,8 @@ func _run() -> void:
 	await _test_parry()
 	await _test_sprites_and_animations()
 	await _test_enemies_respawn_on_rest_and_death()
-	await _test_weapon_upgrade_at_anchor()
+	await _test_skill_tree_at_anchor()
+	await _test_enemy_damage_feedback()
 	await _test_anchor_menu_keyboard_and_pause()
 	await _test_pause_menu()
 	await _test_gamepad_controls()
@@ -228,7 +229,7 @@ func _test_enemy_chases_telegraphs_and_hits() -> void:
 	_check(_player.animator.current == "hit", "el jugador reproduce su animación de recibir un golpe")
 	await _wait(3)
 	_check(saw_windup, "el enemigo avisa antes de atacar")
-	_check(windup_frames >= 20, "el aviso dura lo bastante para reaccionar")
+	_check(windup_frames >= 14, "el aviso dura lo bastante para reaccionar")
 	_check(_player.health.health == 4, "el ataque acaba dañando al jugador")
 	_check(_player.global_position.x < start_x, "el golpe empuja al jugador lejos del enemigo")
 
@@ -426,42 +427,62 @@ func _test_enemies_respawn_on_rest_and_death() -> void:
 	_check(count == 3, "los tres generadores tienen un enemigo vivo")
 
 
-func _test_weapon_upgrade_at_anchor() -> void:
-	await _fresh_level("Mejora del Filo con Ecos")
-	var weapon: TieredUpgrade = _player.weapon
-	_check(weapon.level == 0 and _player.melee.damage == 1, "el Filo empieza en el nivel 1 con daño 1")
+func _test_skill_tree_at_anchor() -> void:
+	await _fresh_level("Árbol de habilidades en el Ancla")
+	var skills: SkillTree = _player.skills
+	_check(_player.melee.damage == 1 and _player.health.max_health == 5, "sin mejoras: daño 1 y 5 de vida")
+	_check(skills.is_unlocked(&"vitalidad") and not skills.is_unlocked(&"frascos"), "la rama empieza por su primera mejora; las siguientes están bloqueadas")
 
 	_player.add_ecos(3)
-	_check(not _player.try_upgrade_weapon(), "no se puede mejorar sin Ecos suficientes")
-	_check(_player.ecos == 3 and weapon.level == 0, "una mejora fallida no cobra nada")
+	_check(not _player.try_buy_skill(&"vitalidad"), "no se compra sin Ecos suficientes")
+	_check(_player.ecos == 3 and skills.level(&"vitalidad") == 0, "una compra fallida no cobra nada")
+	_player.add_ecos(2)
+	_check(_player.try_buy_skill(&"vitalidad"), "se compra con Ecos suficientes")
+	_check(_player.ecos == 0 and skills.level(&"vitalidad") == 1, "comprar cobra el coste y sube un nivel")
+	_check(_player.health.max_health == 6 and _player.health.health == 6, "Vitalidad sube la vida máxima y cura esa vida")
 
-	_player.add_ecos(1)
-	_check(_player.try_upgrade_weapon(), "se puede mejorar con Ecos suficientes")
-	_check(_player.ecos == 0 and weapon.level == 1, "mejorar cobra el coste y sube un nivel")
-	_check(_player.melee.damage == 2, "el ataque usa el daño del nuevo nivel")
+	_player.add_ecos(100)
+	_check(not _player.try_buy_skill(&"ritmo"), "una mejora bloqueada no se puede comprar aunque sobren Ecos")
+	_check(_player.try_buy_skill(&"frascos") and _player.health.max_heal_charges == 4 and _player.health.heal_charges == 4, "Frascos da una carga más, llena")
+	_check(_player.try_buy_skill(&"filo") and _player.melee.damage == 2, "Filo afilado sube el daño")
+	_check(_player.try_buy_skill(&"ritmo") and is_equal_approx(_player.melee.cooldown, 0.26), "Ritmo acorta la espera entre golpes")
+	_check(_player.try_buy_skill(&"alcance") and _player.melee.reach > 20.0, "Alcance alarga el golpe")
+	_check(_player.try_buy_skill(&"guardia") and _player.parry.window > 0.2, "Guardia alarga la ventana del parry")
+	_check(_player.try_buy_skill(&"impulso") and _player.dash.cooldown < 0.4, "Impulso acorta la espera del dash")
+	_check(_player.try_buy_skill(&"temple") and _player.health.invulnerability_time > 0.6, "Temple alarga la invulnerabilidad")
+	_check(_player.try_buy_skill(&"contragolpe"), "Contragolpe se compra al tener la anterior")
 
+	# Los niveles máximos no se pasan, y morir no pierde las mejoras (los Ecos sí).
+	while not skills.is_max(&"filo"):
+		skills.advance(&"filo")
+	_player.add_ecos(500)
+	_check(not _player.try_buy_skill(&"filo"), "no se puede pasar del nivel máximo")
+	_check(_player.melee.damage == 3, "el máximo del Filo es daño 3: el arma ya no escala sin límite")
 	_player.health.take_hit(99)
 	await _wait(2)
-	_check(weapon.level == 1 and _player.melee.damage == 2, "morir no pierde las mejoras")
+	_check(_player.melee.damage == 3 and skills.level(&"vitalidad") == 1, "morir no pierde las mejoras")
 
-	# Desde el menú del Ancla: la primera opción mejora el Filo y cobra.
-	var options: MenuList = _player.anchor_menu.menu
-	_player.add_ecos(8)
+	# Desde el menú del Ancla: abrir el árbol, moverse, comprar y volver.
+	await _fresh_level("Árbol de habilidades en el menú")
+	var menu = _player.anchor_menu
+	_player.add_ecos(30)
 	_player.rest_at(_player.global_position)
-	_check(options.activate(), "la opción de mejorar está activa con Ecos suficientes")
-	_check(weapon.level == 2 and _player.ecos == 0, "elegir mejorar en el menú sube el Filo y cobra")
-	_check(not options.activate(), "sin Ecos la opción de mejora queda desactivada")
-	_player.anchor_menu.close()
-
-	while not weapon.is_max():
-		weapon.advance()
-	_player.add_ecos(100)
-	_check(not _player.try_upgrade_weapon(), "no se puede pasar del nivel máximo")
-	_check(_player.melee.damage == 5, "el nivel máximo da el daño máximo")
-	_player.rest_at(_player.global_position)
-	options.selected = 0
-	_check(not options.activate(), "al máximo la opción de mejora queda desactivada")
-	_player.anchor_menu.close()
+	_check(menu.is_open() and not menu.is_tree_open(), "descansar abre el menú principal del Ancla")
+	_check(menu.menu.activate() and menu.is_tree_open(), "la primera opción abre el árbol")
+	_check(menu.tree_view.selected().id == &"vitalidad", "el árbol empieza en la primera mejora")
+	await _press_action("ui_down")
+	_check(menu.tree_view.selected().id == &"frascos", "abajo baja por la rama")
+	await _press_action("ui_right")
+	_check(menu.tree_view.selected().branch == 1, "derecha cambia de rama")
+	await _press_action("ui_left")
+	await _press_action("ui_up")
+	await _press_action("ui_accept")
+	_check(_player.skills.level(&"vitalidad") == 1 and _player.ecos == 25, "aceptar compra la mejora seleccionada, sin cerrar el menú")
+	_check(menu.is_open() and menu.is_tree_open() and paused, "el menú sigue abierto en el árbol")
+	await _press_action("ui_cancel")
+	_check(menu.is_open() and not menu.is_tree_open(), "Esc en el árbol vuelve al menú del Ancla")
+	await _press_action("ui_cancel")
+	_check(not menu.is_open(), "y otro Esc lo cierra")
 
 
 func _test_anchor_menu_keyboard_and_pause() -> void:
@@ -488,11 +509,11 @@ func _test_anchor_menu_keyboard_and_pause() -> void:
 	await _press_action("ui_cancel")
 	_check(not menu.is_open() and not paused, "Esc cierra el menú y reanuda el juego")
 
-	# Z también es aceptar: compra la mejora seleccionada sin cerrar el menú...
+	# Z también es aceptar: abre el árbol sin cerrar el menú...
 	_player.rest_at(_player.global_position)
-	var level_before: int = _player.weapon.level
 	await _press_action("interact")
-	_check(menu.is_open() and paused and _player.weapon.level == level_before + 1, "Z sobre Mejorar el Filo lo compra sin cerrar el menú")
+	_check(menu.is_open() and paused and menu.is_tree_open(), "Z sobre el árbol de habilidades lo abre sin cerrar el menú")
+	await _press_action("ui_cancel")
 	# ...y sobre Salir, cierra.
 	await _press_action("ui_down")
 	await _press_action("interact")
@@ -512,7 +533,7 @@ func _test_anchor_menu_keyboard_and_pause() -> void:
 	_check(highest_y > standing_y - 5.0, "aceptar Salir no hace saltar al personaje")
 
 	# Lo mismo con Z estando junto al Ancla: abrir y cerrar con Z no debe reabrir el
-	# menú. Sin Ecos, el cursor empieza en Salir y Z lo elige.
+	# menú (se baja a Salir y Z lo elige).
 	_player.ecos = 0
 	var anchor: Node2D = _level.get_node("MemoryAnchor2")
 	_player.global_position = anchor.global_position
@@ -521,15 +542,19 @@ func _test_anchor_menu_keyboard_and_pause() -> void:
 	await _press_action("interact")
 	await _wait(5)
 	_check(menu.is_open(), "Z junto al Ancla abre el menú")
+	await _press_action("ui_down")
 	await _press_action("interact")
 	await _wait(15)
 	_check(not menu.is_open() and not paused, "cerrar con Z cierra el menú y no lo reabre")
-	# Sin Ecos suficientes, la mejora sale atenuada y el cursor empieza en Salir.
+	# El árbol está siempre disponible: el cursor empieza en él, aunque no haya Ecos.
 	_player.ecos = 0
 	_player.rest_at(_player.global_position)
-	_check(menu.menu.selected == 1, "sin Ecos el cursor empieza en la primera opción disponible")
+	_check(menu.menu.selected == 0, "el cursor empieza en la primera opción")
 	await _press_action("ui_accept")
-	_check(not menu.is_open() and not paused, "Intro sobre la opción disponible funciona a la primera")
+	_check(menu.is_open() and menu.is_tree_open(), "Intro sobre el árbol lo abre a la primera")
+	await _press_action("ui_cancel")
+	await _press_action("ui_cancel")
+	_check(not menu.is_open() and not paused, "y Esc dos veces cierra el menú")
 
 
 func _test_dash_gates_the_far_platform() -> void:
@@ -1020,11 +1045,11 @@ func _test_enemy_types() -> void:
 	# Coloso: aguanta mucho y su mazazo hace doble daño.
 	await _load_world()
 	var colossus := await _spawn_enemy_next_to_player("res://game/enemy/enemy_coloso.tscn", 70.0)
-	_check(colossus.health.max_health == 8, "el coloso tiene 8 de vida")
+	_check(colossus.health.max_health == 10, "el coloso tiene 10 de vida")
 	hp_before = _player.health.health
 	await _wait(240)
 	_check(hp_before - _player.health.health >= 2, "su mazazo quita 2 de vida de una vez")
-	_check(colossus.ai.windup_time >= 0.9, "y avisa el golpe durante casi un segundo")
+	_check(colossus.ai.windup_time >= 0.7, "y avisa el golpe durante más de medio segundo")
 
 
 func _test_input_glyphs() -> void:
@@ -1076,6 +1101,34 @@ func _test_input_glyphs() -> void:
 	_check(InputGlyphs.kind == InputGlyphs.Kind.KEYBOARD, "y pulsar una tecla los devuelve al teclado")
 	prompt.queue_free()
 	bar.queue_free()
+
+
+func _test_enemy_damage_feedback() -> void:
+	print("\n[Golpear a un enemigo se nota: número de daño, barra de vida y mayor dificultad]")
+	await _load_world()
+	var enemy := await _spawn_enemy_next_to_player("res://game/enemy/enemy_lancero.tscn", 60.0)
+	var bar: OverheadBar = enemy.get_node("HealthBar")
+	_check(not bar.visible, "la barra de vida del enemigo está oculta mientras no le hacen daño")
+	enemy.take_hit(1, 1)
+	_check(bar.visible, "al herirlo aparece su barra de vida")
+	var numbers := 0
+	for child in _room.get_children():
+		if child is DamageNumber:
+			numbers += 1
+	_check(numbers == 1, "y sale un número de daño sobre su cabeza")
+	await _wait(220)
+	_check(not bar.visible, "la barra se oculta sola unos segundos después")
+
+	# Más difícil: los ataques enemigos se preparan más rápido que antes.
+	var casc: Node = load("res://game/enemy/enemy.tscn").instantiate()
+	_check(casc.get_node("PatrolChaseAI").windup_time <= 0.3 and casc.get_node("PatrolChaseAI").recovery_time <= 0.5, "el cascarón ataca más rápido (aviso 0,3 s, recuperación 0,5 s)")
+	casc.free()
+
+	# Contragolpe: el parry aturde más tiempo al enemigo.
+	await _load_world()
+	var target := await _spawn_enemy_next_to_player("res://game/enemy/enemy.tscn", 60.0)
+	target.on_parried(0.5)
+	_check(is_equal_approx(target._stun_timer, target.parry_stun_time + 0.5), "un enemigo desviado queda aturdido el tiempo extra que da el Contragolpe")
 
 
 func _test_inscription_is_readable() -> void:
@@ -1156,7 +1209,7 @@ func _test_pause_menu() -> void:
 	await _press_action("ui_accept")
 	_check(pause.title_label.text == "Personaje" and pause.info.visible, "Personaje abre su pantalla")
 	_check("Vida: 5 / 5" in pause.info_label.text and "Ecos: 7" in pause.info_label.text, "muestra vida y Ecos")
-	_check("Filo: nivel 1 (daño 1)" in pause.info_label.text, "muestra el Filo")
+	_check("Daño: 1" in pause.info_label.text and "Frascos: 3 / 3" in pause.info_label.text, "muestra el daño y los frascos")
 	_check(pause_panel.size == pause_size, "el panel mide lo mismo en Personaje que en el menú principal")
 	_check("Dash" not in pause.info_label.text and "???" in pause.info_label.text, "las habilidades sin recordar salen como ???")
 	await _press_action("ui_cancel")
@@ -1723,7 +1776,8 @@ func _test_loading_restores_progress() -> void:
 	print("\n[Al abrir el juego se carga la partida y se aparece en la última Ancla]")
 	await _load_world()
 	_player.unlock_ability(&"dash")
-	_player.weapon.set_level(2)
+	_player.skills.set_level(&"filo", 2)
+	_player.skills.set_level(&"vitalidad", 3)
 	_level.map_data.visit(&"TerrazasSecas")
 	_level.map_data.visit(&"Cisterna")
 	# Un trozo explorado lejos de donde se va a reaparecer (en la Torre).
@@ -1744,7 +1798,8 @@ func _test_loading_restores_progress() -> void:
 	_check(_player.global_position.distance_to(anchor_at) < 8.0, "se aparece en la última Ancla en la que se descansó")
 	_check(_level.current_room.name == "Cisterna", "y la cámara y la sala son las de esa Ancla")
 	_check(_player.has_ability(&"dash") and not _player.has_ability(&"double_jump"), "se conservan las habilidades conseguidas, y solo esas")
-	_check(_player.weapon.level == 2 and _player.melee.damage == _player.weapon.current_value(), "se conserva el nivel del Filo, y su daño")
+	_check(_player.skills.level(&"filo") == 2 and _player.melee.damage == 3 and _player.skills.level(&"vitalidad") == 3, "se conservan las mejoras del árbol, y sus efectos")
+	_check(_player.health.max_health == 8 and _player.health.health == 8, "la vida máxima mejorada se conserva y se rellena")
 	_check(_player.ecos == 0 and is_instance_valid(_player.active_echo) and _player.active_echo.ecos_held == 7, "el Eco de la última muerte sigue esperando con sus Ecos")
 	_check(_player.active_echo.global_position.distance_to(echo_at) < 1.0, "en el mismo sitio")
 	_check(_player.health.health == _player.health.max_health, "con la vida completa")

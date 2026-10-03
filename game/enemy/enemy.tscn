@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3]
+[gd_scene load_steps=12 format=3]
 
 [ext_resource type="Script" path="res://game/enemy/enemy.gd" id="1_enemy"]
 [ext_resource type="Script" path="res://core/components/health_component.gd" id="2_health"]
@@ -9,6 +9,7 @@
 [ext_resource type="Script" path="res://core/components/attack_visual_component.gd" id="7_attack_visual"]
 [ext_resource type="Texture2D" path="res://game/enemy/enemy_sheet.png" id="8_sheet"]
 [ext_resource type="Script" path="res://core/components/sheet_animator.gd" id="9_animator"]
+[ext_resource type="Script" path="res://core/ui/overhead_bar.gd" id="10_bar"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_enemy"]
 size = Vector2(32, 48)
@@ -67,7 +68,15 @@ duration = 0.12
 [node name="PatrolChaseAI" type="Node" parent="." node_paths=PackedStringArray("ledge_probe")]
 script = ExtResource("6_ai")
 ledge_probe = NodePath("../LedgeProbe")
+chase_speed = 150.0
+windup_time = 0.3
+recovery_time = 0.5
 
 [node name="AttackVisualComponent" type="Node" parent="." node_paths=PackedStringArray("animator")]
 script = ExtResource("7_attack_visual")
 animator = NodePath("../SheetAnimator")
+
+[node name="HealthBar" type="Node2D" parent="." node_paths=PackedStringArray("health")]
+position = Vector2(0, -32)
+script = ExtResource("10_bar")
+health = NodePath("../HealthComponent")

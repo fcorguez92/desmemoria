@@ -10,13 +10,21 @@ Estado: diseño aprobado, pendiente de validar con el prototipo grey-box. Estas 
 
 Un único arma cuerpo a cuerpo que mejora por niveles gastando Ecos, en vez de un inventario de armas distintas. Moveset fijo: ataque horizontal, ataque hacia arriba y hacia abajo (necesario para combate vertical en un mapa con plataformas; hoy solo existe el horizontal).
 
-### Mejora del Filo (implementada)
+### Árbol de habilidades (implementado)
 
-- Se mejora **en el menú del Ancla de Memoria**: al pulsar **Z** se descansa y se abre un menú (con el juego en pausa) que muestra los Ecos, el nivel del Filo y la opción de mejorarlo con su coste. Si no llegan los Ecos, la opción sale atenuada y dice cuántos faltan. El menú tendrá más opciones cuando existan (tienda, viaje entre Anclas, otras mejoras).
-- Cinco niveles. Cada subida aumenta el **daño**: 1, 2, 3, 4, 5. Costes de cada subida en Ecos: 4, 8, 14, 22.
-- Los enemigos de prueba tienen 3 de vida y dan 2 Ecos, así que la primera mejora cuesta matar a 2 enemigos y con el nivel 3 caen de un golpe.
-- Las mejoras son permanentes: morir no las pierde (los Ecos sí).
-- Los costes y valores son de partida y se ajustarán jugando. Solo sube el daño; alcance y velocidad de ataque quedan sin decidir.
+El arma ya no sube de nivel sin más: las mejoras se compran en un **árbol de habilidades** que se abre desde el menú del Ancla de Memoria (**Z** para descansar, y la primera opción del menú). Se gastan Ecos y el juego se pausa mientras se elige.
+
+Tres ramas de tres mejoras; cada una pide tener antes la de encima (al menos nivel 1):
+
+- **Cuerpo**: Vitalidad (+1 vida máxima, 4 niveles) → Frascos (+1 carga de curación, 2) → Temple (más tiempo invulnerable tras un golpe, 2).
+- **Filo**: Filo afilado (+1 daño, 2 niveles: de 1 a 3 como máximo) → Ritmo (menos espera entre golpes, 3) → Alcance (el golpe llega más lejos, 2).
+- **Espíritu**: Guardia (ventana del parry más larga, 3) → Impulso (menos espera entre dashes, 2) → Contragolpe (el enemigo desviado queda aturdido más tiempo, 2).
+
+Los costes (de 5 a 30 Ecos por nivel) suman unos 310 Ecos en total, mucho más de lo que se junta en una vida: hay que elegir qué mejorar. El daño tiene tope en 3, así que el arma deja de acabar con todo de un golpe. Las mejoras son permanentes (morir no las pierde, los Ecos sí) y comprar vida o frascos los rellena. Los valores son de partida y se ajustarán jugando.
+
+### Dificultad
+
+Los enemigos preparan sus ataques más rápido (aviso y recuperación más cortos), persiguen algo más deprisa y varios aguantan más (lancero 4 de vida, acechador 3, coloso 10). Al golpearlos se nota: un número de daño flota sobre su cabeza (amarillo si estaban aturdidos y reciben doble), salen unas gotas rojas y aparece una barra de vida que se oculta sola.
 
 ## Combate contra enemigos (implementado, cifras de partida)
 
@@ -110,7 +118,7 @@ descansó** (o al principio, si aún no se ha descansado en ninguna), con la vid
 y las curaciones completas, no en el sitio exacto donde se dejó: así cada
 sesión empieza en un lugar seguro y conocido, y descansar sigue importando.
 
-Se guarda: habilidades, Ecos, nivel del Filo, lo explorado del mapa (baldosa a
+Se guarda: habilidades, Ecos, mejoras del árbol de habilidades, lo explorado del mapa (baldosa a
 baldosa) y las salas ya visitadas,
 última Ancla y el Eco de la última muerte (dónde está y cuántos Ecos guarda).
 No se guarda: los enemigos (reaparecen, como al descansar) ni las urnas rotas

@@ -8,7 +8,7 @@
 [ext_resource type="Script" path="res://core/components/camera_look_component.gd" id="6_camera_look"]
 [ext_resource type="Script" path="res://core/components/respawn_component.gd" id="7_respawn"]
 [ext_resource type="Script" path="res://core/components/hit_flash_component.gd" id="8_flash"]
-[ext_resource type="Script" path="res://core/components/tiered_upgrade.gd" id="9_upgrade"]
+[ext_resource type="Script" path="res://core/components/skill_tree.gd" id="9_skills"]
 [ext_resource type="Script" path="res://core/components/knockback_component.gd" id="10_knockback"]
 [ext_resource type="Script" path="res://core/components/attack_visual_component.gd" id="11_attack_visual"]
 [ext_resource type="Script" path="res://core/components/screen_shake_component.gd" id="12_shake"]
@@ -86,10 +86,8 @@ target = NodePath("../Visual")
 [node name="KnockbackComponent" type="Node" parent="."]
 script = ExtResource("10_knockback")
 
-[node name="WeaponUpgrade" type="Node" parent="."]
-script = ExtResource("9_upgrade")
-values = PackedInt32Array(1, 2, 3, 4, 5)
-costs = PackedInt32Array(4, 8, 14, 22)
+[node name="SkillTree" type="Node" parent="."]
+script = ExtResource("9_skills")
 
 [node name="AttackVisualComponent" type="Node" parent="." node_paths=PackedStringArray("animator")]
 script = ExtResource("11_attack_visual")
