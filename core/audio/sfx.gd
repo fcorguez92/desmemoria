@@ -139,6 +139,9 @@ func _ensure_bus() -> void:
 	cave.wet = 0.16
 	cave.dry = 1.0
 	cave.spread = 0.8
+	# Por defecto la reverberación entra 150 ms tarde y suena como un eco a destiempo.
+	cave.predelay_msec = 8.0
+	cave.predelay_feedback = 0.0
 	AudioServer.add_bus_effect(index, cave)
 
 
