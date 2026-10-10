@@ -1,10 +1,14 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=10 format=3]
 
 [ext_resource type="Script" path="res://game/levels/world.gd" id="1_world"]
 [ext_resource type="PackedScene" path="res://game/levels/ultimo_umbral.tscn" id="2_umbral"]
 [ext_resource type="PackedScene" path="res://game/levels/terrazas_secas.tscn" id="3_terrazas"]
 [ext_resource type="PackedScene" path="res://game/levels/cisterna.tscn" id="4_cisterna"]
 [ext_resource type="PackedScene" path="res://game/levels/torre_de_riego.tscn" id="5_torre"]
+[ext_resource type="PackedScene" path="res://game/levels/galerias_bajas.tscn" id="6_galerias"]
+[ext_resource type="PackedScene" path="res://game/levels/aljibe.tscn" id="7_aljibe"]
+[ext_resource type="PackedScene" path="res://game/levels/chimenea.tscn" id="8_chimenea"]
+[ext_resource type="PackedScene" path="res://game/levels/pasarela.tscn" id="9_pasarela"]
 
 [node name="World" type="Node2D"]
 script = ExtResource("1_world")
@@ -406,3 +410,15 @@ position = Vector2(1280, 384)
 
 [node name="TorreDeRiego" parent="Rooms" instance=ExtResource("5_torre")]
 position = Vector2(2304, -320)
+
+[node name="GaleriasBajas" parent="Rooms" instance=ExtResource("6_galerias")]
+position = Vector2(2304, 416)
+
+[node name="Aljibe" parent="Rooms" instance=ExtResource("7_aljibe")]
+position = Vector2(3328, 288)
+
+[node name="Chimenea" parent="Rooms" instance=ExtResource("8_chimenea")]
+position = Vector2(4288, -336)
+
+[node name="Pasarela" parent="Rooms" instance=ExtResource("9_pasarela")]
+position = Vector2(3200, -336)

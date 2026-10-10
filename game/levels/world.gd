@@ -79,6 +79,9 @@ func _ready() -> void:
 	process_physics_priority = -1
 	for room in $Rooms.get_children():
 		_rooms.append(room)
+		if room.has_signal(&"boss_defeated"):
+			# Al vencer a un jefe se guarda enseguida: que no se pierda si se cierra el juego.
+			room.boss_defeated.connect(save_game, CONNECT_DEFERRED)
 		_room_rects.append(room.world_rect())
 		var image := MapData.image_from_layer(room.tiles, room.tiles.map_size, MAP_TILE_COLOR, { PLANK_ATLAS: MAP_PLANK_COLOR })
 		map_data.add_area(room.name, room.title, room.cell_rect(), image)
@@ -196,7 +199,8 @@ func _show_sky(show: bool, instant: bool = false) -> void:
 		_sky_tween.tween_property(layer, "modulate:a", alpha, SKY_FADE_SECONDS)
 
 
-## Guarda la partida: lo del jugador, las salas visitadas y lo explorado del mapa.
+## Guarda la partida: lo del jugador, las salas visitadas, los jefes vencidos y
+## lo explorado del mapa.
 func save_game() -> void:
 	if player == null:
 		return
@@ -204,7 +208,11 @@ func save_game() -> void:
 	for area in map_data.areas:
 		if area.visited:
 			rooms.append(String(area.id))
-	_save_slot.write({ player = player.get_save_data(), rooms = rooms, seen = map_data.get_seen_data() })
+	var bosses: Array[String] = []
+	for room in _rooms:
+		if room.has_method(&"is_defeated") and room.is_defeated():
+			bosses.append(String(room.name))
+	_save_slot.write({ player = player.get_save_data(), rooms = rooms, bosses = bosses, seen = map_data.get_seen_data() })
 
 
 ## Guarda y vuelve al menú principal.
@@ -244,6 +252,11 @@ func _apply_save(saved: Dictionary) -> void:
 		for id in rooms:
 			if id is String:
 				map_data.visit(StringName(id))
+	var bosses: Variant = saved.get("bosses")
+	if bosses is Array:
+		for room in _rooms:
+			if room.has_method(&"mark_defeated") and String(room.name) in bosses:
+				room.mark_defeated()
 	var seen: Variant = saved.get("seen")
 	if seen is Dictionary:
 		map_data.set_seen_data(seen)

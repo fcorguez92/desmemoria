@@ -66,7 +66,12 @@ inscripción (que el jugador elige leer, no se le impone):
   madera; `P` inicio del jugador, `A` Ancla de Memoria, `E` cascarón (tajo), `1` lancero (estocada larga), `2` arrojador (esquirlas a distancia), `3` coloso (mazazo lento) y `4` acechador (embestida), `R` urna
   rompible, `I` inscripción legible, `d` / `j` / `w` recuerdo de dash / doble
   salto / salto de pared; `Q` caja rompible, `O` barril rompible (aguanta 2 golpes);
-  `.` vacío. Marcadores de **decorado** sin función (sprites de `decor.sprite`, sin
+  `.` vacío. `i` inscripción con el texto `note` de su sala; `^` y `v` pinchos fijos
+  (en el suelo y colgando del techo), `~` y `-` pinchos que salen y se retraen
+  (los dos grupos alternan). En una **sala de jefe** (`game/boss/boss_room.gd`):
+  `b` dónde duerme el jefe, `t` línea que dispara la pelea, `[` celdas de la reja de
+  entrada (se cierra al empezar), `]` celdas de la reja de salida (cerrada hasta
+  vencer) y `r` dónde aparece la recompensa. Marcadores de **decorado** sin función (sprites de `decor.sprite`, sin
   colisión): `Y` árbol muerto, `U` columna rota, `H` hierba (delante del jugador),
   `Z` zarza, `K` huesos y escombros (delante), `F` estandarte y `N` cadenas y `q`
   enredaderas (cuelgan del techo o de un tablón: el marcador va en la celda de

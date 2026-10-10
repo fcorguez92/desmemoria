@@ -53,7 +53,11 @@ Estas cifras son de partida y sirven para comprobar el ritmo del combate; el dis
 
 Cada habilidad es narrativamente una técnica recordada de otra persona (ver docs/historia.md); desbloquearla es a la vez progreso mecánico y revelación de historia.
 
-1. **Dash** — desplazamiento horizontal rápido. *(implementado)*
+1. **Dash** — desplazamiento horizontal rápido. *(implementado)* En el aire solo
+   cabe **uno por salto**: se recarga al pisar suelo (en el suelo se puede repetir
+   tras su enfriamiento). Sin esa regla, con un enfriamiento corto se encadenarían
+   dos dashes por salto y ninguna distancia pensada para "salto + dash" quedaría
+   cerrada. Con ella, el alcance máximo de un salto es de unas 22 baldosas.
 2. **Salto de pared** — te agarras a una pared manteniendo la dirección hacia ella (resbalas despacio) y saltas desde ella, empujado hacia el lado contrario, lo que permite subir pozos estrechos saltando de una pared a la otra. Funciona en **cualquier pared**, no solo en grietas marcadas como se pensó al principio: encaja con el manejo tipo Hollow Knight y es más simple; si más adelante se quiere restringir a superficies concretas, es un cambio pequeño. *(implementado)*
 3. **Doble salto** — un salto extra en el aire, algo más corto que el primero. *(implementado)*
 4. **Excavar/romper suelo** — abre Las Minas del Origen como red de atajos entre regiones de superficie (ver docs/mundo.md).
@@ -64,7 +68,7 @@ Ninguna habilidad se tiene al empezar: se consiguen recogiendo un **recuerdo** (
 
 **En el mundo del juego** (ver `docs/mundo.md`, "El mundo construido hoy"):
 
-- El **dash** está al fondo de La Cisterna, a la que se cae por el foso de Las Terrazas Secas; con él se cruza ese mismo foso y se llega a La Torre de Riego.
+- El **dash** lo suelta el **Centinela Hueco** (ver `jefes.md`), el jefe del Aljibe, al fondo del camino que baja por el foso de Las Terrazas Secas y cruza La Cisterna y las Galerías Bajas. Con él se cruza ese mismo foso, y se supera el puzle de La Chimenea y La Pasarela, que sube de vuelta a La Torre de Riego.
 - El **doble salto** está en lo alto de la escalera de tablones de La Torre de Riego, y abre la cornisa del Ancla, que sin él queda demasiado alta.
 - El **salto de pared** todavía no está colocado en el mundo (solo en el banco de pruebas).
 

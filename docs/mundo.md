@@ -61,33 +61,57 @@ cuatro salas pequeñas y no hace falta.
 ## El mundo construido hoy
 
 ```
-                                           ┌──────────────┐
-                                           │ La Torre de  │
-                                           │    Riego     │
-┌──────────────────┬──────────────────────┤ (doble salto,│
-│ El Último Umbral │  Las Terrazas Secas  │  cornisa con │
-│ (inicio, Anclas) │  ════ foso ════      │  Ancla)      │
-└──────────────────┼───────┤      ├───────┴──────────────┘
-                   │     La Cisterna      │
-                   │    (Ancla, dash)     │
-                   └──────────────────────┘
+                                            ┌────────────┐        ┌─────────────────────────┐
+                                            │ La Torre de│◄───────┤ La Pasarela de los      │
+┌─────────────────┬────────────────────┐    │   Riego    │ cornisa│ Mensajeros (al aire)    │◄─┐
+│ El Último Umbral│ Las Terrazas Secas │    │(doble salto│ + Ancla│ 3 huecos, solo con dash │  │
+│ (inicio, Anclas)│   ═══ foso ═══     │    └────────────┘        └─────────────────────────┘  │
+└─────────────────┴──────┬──────┬──────┘                                          ┌────────────┴─┐
+                         │ La Cisterna  ├─► Galerías Bajas ─► El Aljibe ─(dash)─► │ La Chimenea  │
+                         │ (Ancla)      │   (Ancla, pinchos)  (jefe)              │ (puzle, Ancla)│
+                         └──────────────┘                                         └──────────────┘
 ```
 
-1. **El Último Umbral** — la zona de inicio (ver `vertical-slice.md`). Su borde
-   derecho, antes abierto al vacío, continúa ahora hacia el Cinturón Yermo.
-2. **Las Terrazas Secas** — primera sala del Cinturón Yermo: bancales de cultivo
-   abandonados y la torre rota de una acequia. Un foso de 20 baldosas no se
-   puede saltar sin dash; caer en él no mata, lleva a La Cisterna.
-3. **La Cisterna** — depósito subterráneo de agua, ya seco. Ancla junto a la
-   entrada, dos Cascarones y, al fondo, el recuerdo del **dash**. Una escalera de
-   tablones devuelve al borde oeste del foso: no se puede quedar atrapado.
-4. **La Torre de Riego** — interior de una torre de riego, al otro lado del
-   foso. Escalera de tablones hasta el recuerdo del **doble salto**; con él se
-   alcanza una cornisa alta con un Ancla. Su pared derecha queda cerrada: es el
-   sitio natural para la siguiente ampliación del Cinturón Yermo.
+El recorrido sigue el ritmo de un primer tramo de Hollow Knight (un pueblo, una
+caída a una zona subterránea, un banco justo antes del primer jefe y el poder que
+da, probado enseguida en un pasaje exigente):
 
-Es el primer bucle metroidvania del mundo real: ves un foso que no puedes
-cruzar, caes, encuentras el dash abajo, vuelves y lo cruzas.
+1. **El Último Umbral** — la zona de inicio (ver `vertical-slice.md`). Su borde
+   derecho continúa hacia el Cinturón Yermo.
+2. **Las Terrazas Secas** — primera sala del Cinturón Yermo. Un foso de 20
+   baldosas no se puede saltar sin dash; caer en él no mata, lleva a La Cisterna.
+3. **La Cisterna** — depósito subterráneo seco: Ancla junto a la entrada, tres
+   enemigos y una escalera de tablones que devuelve al foso (no se puede quedar
+   atrapado). Al este, una puerta lleva a las Galerías.
+4. **Las Galerías Bajas** — el tramo largo antes del jefe: un cascarón y, tras
+   el primer foso de pinchos, otro; un acechador; una galería alta con un
+   arrojador; un lancero y un coloso en la cámara central (con tablones para
+   rodearlos); pinchos que salen y se retraen; y, justo antes de la puerta, un
+   **Ancla** y una inscripción que anuncia al Custodio.
+5. **El Aljibe** — la sala del **Centinela Hueco** (ver `jefes.md`). Las
+   rejas se cierran al cruzar la línea; al vencerlo se abren y aparece el
+   recuerdo del **dash**.
+6. **La Chimenea** — el puzle del dash: un pozo de 69 filas dividido en cinco
+   cámaras por losas con una abertura. Cada cámara pide una maniobra de salto +
+   dash (foso de 15 baldosas, techo bajo, carril de pinchos arriba y abajo, un
+   ledge alto lejano). Los pinchos devuelven al último suelo firme con 1 de daño,
+   así que un fallo cuesta un tramo, no todo. Tiene un **Ancla** en la cámara D.
+7. **La Pasarela de los Mensajeros** — al aire libre, a lo alto del mundo: tres
+   huecos de 17 baldosas sobre un abismo de pinchos, todos con dash. Acaba en la
+   cornisa del **Ancla de la Torre de Riego**: un atajo hasta un sitio que sin
+   doble salto no se alcanzaba desde abajo.
+8. **La Torre de Riego** — al otro lado del foso de las Terrazas. Escalera de
+   tablones hasta el recuerdo del **doble salto**; con él se alcanza la cornisa
+   del Ancla, que ahora también tiene la pared derecha abierta hacia la Pasarela.
+
+Es el primer bucle metroidvania del mundo real, ahora más largo: ves un foso
+que no puedes cruzar, caes, abres el camino bajo tierra con un jefe, vuelves
+con el dash y cruzas ese mismo foso; y el puzle del dash te devuelve a la Torre
+por el aire.
+
+Cómo se comprueba que el puzle se puede resolver (y solo con dash): las
+maniobras de referencia están en `tests/puzzle_plans.json` y la prueba de humo
+las repite en el motor (ver `jefes.md` y `docs/arquitectura.md#verificación`).
 
 ## Pendiente de definir en próximas sesiones de diseño
 

@@ -515,14 +515,6 @@ def('spikes_pulse', 2, (i, r) => {
   });
   return lp(o, 6500);
 });
-def('cache_open', 1, (i, r) => {
-  const len = 1.0, o = buf(len);
-  [[392, 0], [294, 0.07], [220, 0.15], [330, 0.24]].forEach(([f, at]) => mix(o, bell(0.8, f, [1, 2.76, 4.1], [0.35, 0.2, 0.1], [1, 0.3, 0.12], 0.003), 0.5, at));
-  for (let k = 0; k < 7; k++) mix(o, env(hp(noise(0.05, r), 4500), 0.0005, 0.012), 0.2, 0.02 + r() * 0.4);
-  mix(o, env(tone(len, 98), 0.01, 0.2), 0.3);
-  return lp(o, 5500);
-});
-
 // ---------- comprobación de arranque ----------
 // Los sonidos de acción (pasos, saltos, golpes...) tienen que sonar a tope desde el
 // primer instante: si empiezan flojos y suben, se perciben tarde. Se exige que en los
