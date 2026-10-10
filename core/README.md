@@ -16,9 +16,9 @@ no se mueven solos: el dueño llama a su `step()` en un orden explícito.
 
 | Componente | Responsabilidad | API principal |
 |---|---|---|
-| `HealthComponent` | Vida, invulnerabilidad tras daño, cargas de curación | `take_hit(amount) -> bool`, `use_heal_charge() -> bool`, `reset_health()`, `restore()`; señales `changed`, `damaged(amount)`, `died` |
+| `HealthComponent` | Vida, invulnerabilidad tras daño, cargas de curación | `take_hit(amount) -> bool`, `is_invulnerable()`, `use_heal_charge() -> bool`, `reset_health()`, `restore()`; señales `changed`, `damaged(amount)`, `died` |
 | `PlatformerMotor` | Movimiento lateral (todo o nada: con la palanca, pasada la zona muerta se va a toda velocidad), gravedad, salto con coyote time, jump buffering y salto variable, saltos extra en el aire (`max_air_jumps`: 0 = ninguno, 1 = doble salto) y agarre/salto de pared (`can_wall_jump`, con `wall_slide_speed`, `wall_jump_push`, etc.) y bajada de plataformas de un solo sentido con abajo + salto (`can_drop_through`; funciona con baldosas de TileMapLayer y con formas de colisión con `one_way_collision`; sobre suelo sólido, abajo + salto sigue siendo un salto). Al pulsar salto: suelo > pared > salto extra | `step(body, delta)`, `facing`; señal `facing_changed(facing)` |
-| `DashComponent` | Empujón horizontal recto que ignora la gravedad | `step(body, facing, delta)`, `is_dashing`; `unlocked` (false = habilidad aún no conseguida) |
+| `DashComponent` | Empujón horizontal recto que ignora la gravedad. Con `once_per_air_time` (por defecto sí) solo cabe un dash por salto en el aire: se recarga al pisar suelo | `step(body, facing, delta)`, `is_dashing`; `unlocked` (false = habilidad aún no conseguida) |
 | `MeleeAttackComponent` | Golpe cuerpo a cuerpo con enfriamiento sobre un `Area2D`. Con `target_group` solo golpea a ese grupo (vacío = a todo lo golpeable) | `try_attack(attacker, facing) -> bool`, `set_facing(facing)`; señal `hit_landed(body)` por cada cuerpo alcanzado; exporta `hitbox` |
 | `ParryComponent` | Parry: al pulsar se abre una ventana breve (por defecto 0,2 s) en la que un golpe frontal se desvía en vez de hacer daño; después hay un enfriamiento. No sabe qué pasa al desviar: emite `parried` | `try_start() -> bool`, `try_deflect(blow_direction, facing, attacker) -> bool`, `is_active`; señales `started`, `parried(attacker)` |
 | `KnockbackComponent` | Retroceso horizontal breve al recibir un golpe. Mientras `is_active`, el dueño deja que mande sobre la velocidad | `apply(direction)`, `step(body, delta)`, `is_active` |
@@ -44,6 +44,7 @@ de cada variable exportada (se ven en el Inspector).
 | `Projectile` | `Area2D` | Proyectil recto: vuela a `speed` en `direction` hasta herir a algo golpeable del grupo `target_group` (`damage`), chocar con el escenario o agotar `lifetime`. Ignora cuerpos con movimiento que no son su objetivo (quien lo lanzó, otros enemigos). Si el objetivo lo desvía con un parry llama a `on_parried()`: se devuelve y pasa a herir a `reflect_group`. Quien lo crea llama a `launch(dirección)` |
 | `BreakableProp` | `StaticBody2D` | Objeto rompible decorativo: implementa "golpeable" y se destruye con un chispazo tras `hits` golpes (1 por defecto). No suelta nada ni afecta a la partida, así que no forma parte de `resettable`. Se atraviesa caminando: está en la capa de física 2 ("rompibles") sin máscara, y solo lo alcanzan los hitbox de ataque que incluyan esa capa (máscara 3). Se dibuja detrás del personaje |
 | `Readable` | `Area2D` | Objeto legible: con la acción de interacción y un cuerpo del grupo objetivo dentro, llama a `read_text(text: String)` en él (contrato "lector"). No decide cómo se muestra el texto ni afecta a la partida |
+| `Hazard` | `Area2D` | Zona peligrosa (pinchos): mientras está activa llama a `hazard_hit(damage, hazard)` en los cuerpos del grupo objetivo; qué significa tocarla lo decide el cuerpo. Fija (`period` = 0) o pulsante: activa `active_fraction` del ciclo, avisa `warning_time` antes de salir y `phase` desfasa unas de otras; `state` (`RETRACTED`/`WARNING`/`ACTIVE`) y señal `state_changed` para el dibujo. Entra en el grupo `hazard` |
 | `TextTileMap` | `TileMapLayer` | Construye el nivel desde un `.map` de texto (un carácter por baldosa, según `legend`). Los caracteres que no están en la leyenda son **marcadores**: no ponen baldosa y su posición queda en `markers[carácter]` para que el nivel coloque entidades. `map_size` es el tamaño del mapa de texto en baldosas, vacío incluido (a diferencia de `get_used_rect()`). Al exportar hay que incluir `*.map` en los filtros de recursos no gráficos |
 
 ## Interfaz (`core/ui/`)
@@ -90,6 +91,7 @@ Controles genéricos para el HUD y los menús. No saben de dónde vienen los nú
   quien golpea (puede ser null) y permite, p. ej., aturdirlo si el golpe se desvía.
 - **Checkpoint:** el cuerpo objetivo implementa `rest_at(position: Vector2)` y
   pertenece al grupo configurado en `target_group`.
+- **Peligroso:** el cuerpo objetivo de un `Hazard` implementa `hazard_hit(damage: int, hazard: Node = null)` y pertenece al grupo `target_group`. Se llama en cada fotograma de físicas mientras se toca la zona activa.
 - **Lector:** el cuerpo objetivo de un `Readable` implementa `read_text(text: String)`
   y pertenece al grupo configurado en `target_group`.
 - **Acciones de entrada:** los nombres de acción son variables exportadas

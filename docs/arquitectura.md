@@ -115,6 +115,7 @@ El orden importa y por eso está explícito en `game/player/player.gd`:
 |---|---|---|
 | **Golpeable:** `take_hit(damage: int, from_direction: int, attacker: Node = null)` | Jugador, enemigos | `MeleeAttackComponent` |
 | **Descansable:** `rest_at(position: Vector2)` + pertenecer al grupo `target_group` | Jugador | `Checkpoint` |
+| **Peligroso:** `hazard_hit(damage: int, hazard: Node = null)` + pertenecer al grupo `target_group` | Jugador (daña y vuelve al último suelo firme) | `Hazard` |
 | **Reiniciable:** grupo `resettable` con método `reset()` | `EntitySpawner` | El jugador (`_reset_world()`) al morir y al descansar |
 | **Aprendiz:** `unlock_ability(id: StringName)` + pertenecer al grupo `target_group` | Jugador (decide qué activa cada `id`) | `AbilityPickup` |
 | **Grupo `player`** | El jugador se añade a sí mismo en `_ready()` | `PatrolChaseAI`, `MeleeAttackComponent` (vía `target_group`), `Checkpoint`, `AbilityPickup`, Eco |
@@ -187,6 +188,16 @@ Carga el banco de pruebas y el mundo real, simula muertes, checkpoints, combate 
 código 0 (todo bien) o 1 (algo falla). **Debe pasar antes de dar por terminado
 cualquier cambio en `core/` o en el ciclo jugable.** No sustituye a jugar: mide
 que las reglas se cumplen, no que se sienta bien.
+
+**El puzle del dash** (La Chimenea y La Pasarela) se comprueba además con maniobras
+guardadas en `tests/puzzle_plans.json`, que la prueba repite en el motor real: si se
+cambia un mapa del puzle o la física del salto/dash, hay que regenerarlas con
+`node tools/maniobras_puzle.js` (usa `tools/sim_saltos.js`, un simulador del salto
+que también sirve para diseñar plataformas: `node tools/sim_saltos.js mapa.map 1 fila col`).
+Una maniobra del plan es una lista de entradas por fotograma; para repetirla en el motor
+hay que pulsar el salto y el dash **un fotograma antes** (Input marca "recién pulsado" en el
+siguiente) y llamar a `Input.action_press` solo al cambiar el estado: repetirlo cada
+fotograma anula el corte del salto.
 
 ## Trampas conocidas de Godot
 
