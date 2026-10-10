@@ -233,10 +233,12 @@ function drawWeapon(c, S, p, fist) {
   } else if (kind === 'maul') {
     const back = 6, L = S.weaponLen;
     const sA = add(fist, mul(bd, -back)), sB = add(fist, mul(bd, L));
-    c.shape(chainTest([sA, sB], [1.7, 1.6]), chainColor([sA, sB], [1.7, 1.6], 'c', 'b', 'a'), bbox([sA, sB]), true);
+    // mango (S.maulShaft = radios, S.shaftCol = tonos) y cabeza (S.maulHead = [semilargo, semiancho]); por defecto, los del coloso
+    const shR = S.maulShaft || [1.7, 1.6], shC = S.shaftCol || ['c', 'b', 'a'];
+    c.shape(chainTest([sA, sB], shR), chainColor([sA, sB], shR, shC[0], shC[1], shC[2]), bbox([sA, sB]), true);
     // cabeza: bloque de piedra con bandas de hierro
     const hc = add(fist, mul(bd, L + 4)); tipPt = hc;
-    const hl = 6.5, hw2 = 8;
+    const hl = (S.maulHead || [6.5, 8])[0], hw2 = (S.maulHead || [6.5, 8])[1];
     const blk = [add(add(hc, mul(bd, -hl)), mul(bn, hw2)), add(add(hc, mul(bd, hl)), mul(bn, hw2)), add(add(hc, mul(bd, hl)), mul(bn, -hw2)), add(add(hc, mul(bd, -hl)), mul(bn, -hw2))];
     c.shape(polyTest(blk), (px, py) => {
       const al = (px - hc[0]) * bd[0] + (py - hc[1]) * bd[1];
