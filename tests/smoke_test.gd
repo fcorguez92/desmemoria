@@ -80,6 +80,7 @@ func _run() -> void:
 	await _test_boss_phases_and_reward()
 	await _test_boss_attacks_and_parry()
 	await _test_boss_resets_and_stays_dead()
+	await _test_boss_death_survives_the_player_dying()
 	await _test_dash_puzzle_needs_dash()
 	await _test_the_bridge_leads_to_the_tower()
 	await _test_minimap_and_pause_map()
@@ -1697,7 +1698,7 @@ func _test_world_is_made_of_connected_rooms() -> void:
 	for id in data.markers:
 		if String(id).begins_with("anchor_"):
 			anchors += 1
-	_check(anchors == 6, "las seis Anclas están marcadas en el mapa (se ven al pasar cerca)")
+	_check(anchors == 7, "las siete Anclas están marcadas en el mapa (se ven al pasar cerca)")
 	_check(_player.hud.message_label.text.is_empty(), "la sala de inicio no se anuncia")
 	var dash_pickup := 0
 	var jump_pickup := 0
@@ -2262,7 +2263,7 @@ func _test_the_way_to_the_boss() -> void:
 	_player.health.max_health = 99
 	_player.health.health = 99
 	# Puerta este de la Cisterna: fila 17-21, columnas 62-63; la sala siguiente empieza ahí.
-	_player.global_position = _standing_on("Cisterna", 58, 22)
+	_player.global_position = _standing_on("Cisterna", 55, 22)
 	_player.velocity = Vector2.ZERO
 	await _wait(10)
 	Input.action_press(&"ui_right")
@@ -2470,6 +2471,33 @@ func _test_boss_attacks_and_parry() -> void:
 	_check(all_gone, "y se rompen al llegar al suelo")
 
 
+func _test_boss_death_survives_the_player_dying() -> void:
+	print("
+[Si el jugador muere mientras el jefe agoniza, la victoria no se pierde]")
+	await _load_world()
+	var arena := _arena()
+	var boss: Node = arena.boss
+	await _enter_arena()
+	await _wait(110)
+	boss._enter_stagger(3.0)
+	boss._rage_left = 0
+	boss.core_hp = 1
+	boss.phase = 2
+	boss.take_hit(1, 1)
+	_check(boss.state == boss.State.DYING, "el jefe empieza a morir")
+	_player.die()
+	await _wait(4)
+	# (Lejos del Aljibe la sala deja de procesar; al volver, termina de morir.)
+	_player.global_position = _standing_on("Aljibe", 10, 28)
+	_player.velocity = Vector2.ZERO
+	await _wait(150)
+	_check(arena.is_defeated() and arena.boss == null, "aunque el jugador muera en ese momento, el jefe queda vencido")
+	var rewards := 0
+	for child in arena.get_children():
+		rewards += 1 if child is AbilityPickup and not child.is_queued_for_deletion() else 0
+	_check(rewards == 1, "y la recompensa está en la sala")
+
+
 func _test_boss_resets_and_stays_dead() -> void:
 	print("\n[El jefe: si se muere el jugador se reinicia; vencido, sigue vencido tras cargar]")
 	await _load_world()
@@ -2570,10 +2598,13 @@ func _test_dash_puzzle_needs_dash() -> void:
 	var room_a: Node2D = _level.get_node("Rooms/" + first.room)
 	_level._enter_room(room_a, false, false)
 	_player.dash.unlocked = false
+	_player.health.max_health = 99
+	_player.health.health = 99
 	var start_a: Vector2 = room_a.global_position + Vector2(first.sx, first.from.row * 16.0 - 24.0)
 	await _replay_plan(first.plan, start_a)
+	await _wait(20)
 	var far_x: float = room_a.global_position.x + first.to.c0 * 16.0
-	_check(_player.global_position.x < far_x - 32.0, "sin dash el primer foso no se cruza")
+	_check(_player.global_position.x < far_x - 32.0 and _player.health.health == 98 and _player.active_echo == null, "sin dash el primer foso no se cruza: cae en los pinchos (1 de vida) y vuelve al suelo")
 
 
 func _test_the_bridge_leads_to_the_tower() -> void:

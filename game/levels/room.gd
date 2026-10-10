@@ -15,10 +15,9 @@ extends Node2D
 ## es quien crea al jugador.
 ## Cada entidad se coloca con los pies en la parte de abajo de su celda.
 ##
-## Nota: hoy solo hay una inscripción, con el texto fijado en su propia escena
-## (game/environment/inscription.tscn). Si una sala necesitara varias con textos
-## distintos, este script tendría que asignarles el texto por posición o por un
-## marcador numerado (I1, I2...); no hace falta esa complicación todavía.
+## Inscripciones: `I` es la de El Último Umbral (su texto está en
+## game/environment/inscription.tscn); `i` toma el texto de `note`, uno por sala.
+## La leyenda completa de marcadores está en docs/vertical-slice.md.
 
 const EnemyScene := preload("res://game/enemy/enemy.tscn")
 const LanceroScene := preload("res://game/enemy/enemy_lancero.tscn")

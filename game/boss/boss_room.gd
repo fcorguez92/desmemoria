@@ -60,7 +60,8 @@ func _physics_process(_delta: float) -> void:
 	var player := get_tree().get_first_node_in_group("player") as Node2D
 	if player == null:
 		return
-	var inside := world_rect().has_point(player.global_position)
+	# Dentro de la arena (entre las rejas), no en el hueco de una puerta.
+	var inside := world_rect().grow_individual(-2.0 * CELL, 0.0, -2.0 * CELL, 0.0).has_point(player.global_position)
 	if inside and player.global_position.x >= _trigger_x:
 		_start_fight()
 
@@ -80,7 +81,8 @@ func mark_defeated() -> void:
 
 ## Reinicio del mundo (al morir o descansar): la pelea empieza de cero.
 func reset() -> void:
-	if defeated:
+	# Si el jugador muere mientras el jefe acaba de morir, la victoria no se pierde.
+	if defeated or (is_instance_valid(boss) and boss.state == boss.State.DYING):
 		return
 	_reset_fight.call_deferred()
 

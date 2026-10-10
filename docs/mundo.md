@@ -44,7 +44,7 @@ de una a otra caminando, cayendo o saltando, sin pantallas de carga ni cortes.
   mapas ni cartógrafos.
 
 **Para ampliar el mundo** con una sala nueva:
-1. Dibujar su `.map` (mínimo 54 columnas, el ancho de la pantalla; si es más
+1. Dibujar su `.map` (lo normal es 54 columnas o más, el ancho de la pantalla; una sala vertical estrecha, como La Chimenea con 34, se centra con la cámara; si es más
    baja de 31 filas, la cámara enseña lo que hay encima de ella).
 2. Copiar una escena de sala (p. ej. `terrazas_secas.tscn`) cambiando `map_file`,
    `title` y `has_sky` (false bajo tierra o bajo techo).
@@ -54,9 +54,9 @@ de una a otra caminando, cayendo o saltando, sin pantallas de carga ni cortes.
 4. Añadir a `tests/smoke_test.gd` una prueba de que se llega a ella y de que se
    puede volver (que no deje al jugador atrapado).
 
-Cuando el mundo sea grande, tener todas las salas cargadas a la vez dejará de
-ser barato; entonces se cargarán solo la sala actual y sus vecinas. Hoy son
-cuatro salas pequeñas y no hace falta.
+Hoy son ocho salas, todas cargadas a la vez; solo la actual y sus vecinas
+procesan (ver `world.gd`). Si el mundo crece mucho, habrá que cargarlas y
+descargarlas, pero hoy no hace falta.
 
 ## El mundo construido hoy
 
@@ -67,7 +67,7 @@ cuatro salas pequeñas y no hace falta.
 │ El Último Umbral│ Las Terrazas Secas │    │(doble salto│ + Ancla│ 3 huecos, solo con dash │  │
 │ (inicio, Anclas)│   ═══ foso ═══     │    └────────────┘        └─────────────────────────┘  │
 └─────────────────┴──────┬──────┬──────┘                                          ┌────────────┴─┐
-                         │ La Cisterna  ├─► Galerías Bajas ─► El Aljibe ─(dash)─► │ La Chimenea  │
+                         │ La Cisterna  ├─► Galerías Bajas ─► El Aljibe ─(recuerdo)─► │ La Chimenea  │
                          │ (Ancla)      │   (Ancla, pinchos)  (jefe)              │ (puzle, Ancla)│
                          └──────────────┘                                         └──────────────┘
 ```
@@ -80,9 +80,9 @@ da, probado enseguida en un pasaje exigente):
    derecho continúa hacia el Cinturón Yermo.
 2. **Las Terrazas Secas** — primera sala del Cinturón Yermo. Un foso de 20
    baldosas no se puede saltar sin dash; caer en él no mata, lleva a La Cisterna.
-3. **La Cisterna** — depósito subterráneo seco: Ancla junto a la entrada, tres
-   enemigos y una escalera de tablones que devuelve al foso (no se puede quedar
-   atrapado). Al este, una puerta lleva a las Galerías.
+3. **La Cisterna** — depósito subterráneo seco: tres enemigos bajo el foso, una escalera de
+   tablones que devuelve a él (no se puede quedar atrapado) y, al final, junto a la
+   puerta este que lleva a las Galerías, un **Ancla**.
 4. **Las Galerías Bajas** — el tramo largo antes del jefe: un cascarón y, tras
    el primer foso de pinchos, otro; un acechador; una galería alta con un
    arrojador; un lancero y un coloso en la cámara central (con tablones para
@@ -95,7 +95,7 @@ da, probado enseguida en un pasaje exigente):
    cámaras por losas con una abertura. Cada cámara pide una maniobra de salto +
    dash (foso de 15 baldosas, techo bajo, carril de pinchos arriba y abajo, un
    ledge alto lejano). Los pinchos devuelven al último suelo firme con 1 de daño,
-   así que un fallo cuesta un tramo, no todo. Tiene un **Ancla** en la cámara D.
+   así que un fallo cuesta un tramo, no todo. Tiene un **Ancla** al acabar la primera cámara (el primer salto de dash es la prueba) y otra en la cámara D.
 7. **La Pasarela de los Mensajeros** — al aire libre, a lo alto del mundo: tres
    huecos de 17 baldosas sobre un abismo de pinchos, todos con dash. Acaba en la
    cornisa del **Ancla de la Torre de Riego**: un atajo hasta un sitio que sin

@@ -8,6 +8,8 @@ extends Node2D
 
 var closed: bool = false
 
+var _tween: Tween
+
 
 func _ready() -> void:
 	set_closed(false, false)
@@ -20,8 +22,10 @@ func set_closed(value: bool, animate: bool = true) -> void:
 		_bars.visible = value
 		_bars.modulate.a = 1.0
 		return
+	if _tween:
+		_tween.kill()
 	_bars.visible = true
-	var tween := create_tween()
-	tween.tween_property(_bars, "modulate:a", 1.0 if value else 0.0, 0.35)
+	_tween = create_tween()
+	_tween.tween_property(_bars, "modulate:a", 1.0 if value else 0.0, 0.35)
 	if not value:
-		tween.tween_callback(func() -> void: _bars.visible = false)
+		_tween.tween_callback(func() -> void: _bars.visible = false)

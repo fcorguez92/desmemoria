@@ -14,7 +14,7 @@ extends Node
 ## Si es true, en el aire solo cabe un dash por salto: se recarga al tocar suelo.
 ## Sin esto, con enfriamiento corto se encadenan dos dashes en un solo salto y
 ## ninguna distancia pensada para "salto + dash" queda cerrada.
-@export var once_per_air_time: bool = true
+@export var once_per_air_time: bool = false
 
 var is_dashing: bool = false
 
@@ -43,3 +43,6 @@ func step(body: CharacterBody2D, facing: int, delta: float) -> void:
 		body.velocity = Vector2(_direction * speed, 0.0)
 		if _timer <= 0.0:
 			is_dashing = false
+			# Un dash que arranca en el suelo y acaba en el aire también es "el del salto".
+			if not body.is_on_floor():
+				_air_dash_used = true

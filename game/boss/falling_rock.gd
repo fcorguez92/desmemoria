@@ -52,7 +52,8 @@ func _physics_process(delta: float) -> void:
 
 func _on_body_entered(body: Node) -> void:
 	if _falling and body.is_in_group("player") and body.has_method("take_hit"):
-		body.take_hit(DAMAGE, 1 if body.global_position.x >= global_position.x else -1, self)
+		# Dirección 0: una roca que cae no se desvía con un parry.
+		body.take_hit(DAMAGE, 0, self)
 		_shatter()
 
 

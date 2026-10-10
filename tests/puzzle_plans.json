@@ -137,19 +137,19 @@
   },
   "sx": 484,
   "plan": {
-   "d1": 0,
+   "d1": 1,
    "d2": -1,
-   "delay": 0,
+   "delay": 4,
    "hold": 40,
-   "k": 38,
-   "dashAt": 20,
+   "k": 0,
+   "dashAt": 50,
    "dashDir": -1,
    "facing": 1
   },
   "margin": {
    "hold": 17,
    "k": 17,
-   "dash": 11,
+   "dash": 21,
    "pos": 52
   },
   "dash": true

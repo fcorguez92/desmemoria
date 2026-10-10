@@ -10,7 +10,7 @@ El repositorio contiene dos cosas:
   ataque, dash, puntos de control...) que puede llevarse a otros proyectos.
 - **`game/`** — el juego concreto construido encima.
 
-Estado actual: núcleo jugable validado y un primer mundo de cuatro salas conectadas,
+Estado actual: núcleo jugable validado y un primer mundo de ocho salas conectadas (con un jefe y un puzle de plataformas),
 con minimapa y mapa en la pausa.
 Ver [`docs/estado.md`](docs/estado.md).
 

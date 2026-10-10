@@ -55,7 +55,7 @@ inscripción (que el jugador elige leer, no se le impone):
 ## Fuera del alcance de esta pasada (decidido a propósito)
 
 - Personajes no jugadores y diálogo, jefe final, tienda o mejoras nuevas.
-- Reinicio de enemigos limitado a la zona (con cuatro salas pequeñas aún no hace falta).
+- Reinicio de enemigos limitado a la zona (con ocho salas, de momento no hace falta).
 - Que los objetos rompibles reaparezcan al reiniciar el mundo: no afectan a la
   partida, así que quedan rotos hasta recargar el nivel.
 
@@ -97,9 +97,9 @@ inscripción (que el jugador elige leer, no se le impone):
   no suelta nada ni afecta a la partida.
 - `game/environment/inscription.tscn` — una piedra con un texto (`core/objects/readable.gd`).
   Con Z al alcance, el jugador lo lee en el HUD el tiempo que tarde en leerse
-  (según su longitud); no afecta a la partida. Hoy solo hay una, con el texto
-  fijado en la propia escena (ver la nota en `room.gd` sobre qué
-  cambiaría si una zona necesitara varias con textos distintos).
+  (según su longitud); no afecta a la partida. La de El Último Umbral (marcador
+  `I`) lleva el texto en su escena; las demás salas usan el marcador `i`, que
+  toma el texto del campo `note` de su sala.
 - El carro volcado y el saco reventado de la cabaña, y las marcas de arrastre
   junto al foso, son polígonos fijos dentro de `ultimo_umbral.tscn` (nodo
   `SetDressing`): decorado propio de esta zona, sin colisión, no un objeto

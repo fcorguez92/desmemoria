@@ -1,6 +1,6 @@
 extends CharacterBody2D
 ## El Centinela Hueco: la armadura vacía de un Custodio de la Orden, que sigue
-## guardando la Cisterna por costumbre. Jefe de la primera zona; ver docs/jefes.md.
+## guardando el Aljibe por costumbre. Jefe de la primera zona; ver docs/jefes.md.
 ##
 ## La pelea tiene tres fases. En cada una hay que **romper la armadura** (aguanta
 ## `ARMOR[fase]` puntos de daño, sin aturdirla ni apartarla) y entonces queda
@@ -103,7 +103,6 @@ var _flash_left: float = 0.0
 
 func _ready() -> void:
 	add_to_group("enemy")
-	add_to_group("boss")
 	core_hp = core_health
 	armor_hp = ARMOR[0]
 	_set_facing(_facing)
@@ -299,9 +298,9 @@ func _die() -> void:
 	_rage_left = 0
 	Sfx.play(&"centinela_die", global_position, -2.0)
 	_shake(10.0, 1.2)
-	var player := get_tree().get_first_node_in_group("player")
-	if player:
-		player.add_ecos(ecos_reward)
+	# Lo que quedaba en vuelo de su último ataque no debe herir durante la muerte.
+	for debris in get_tree().get_nodes_in_group(&"boss_debris"):
+		debris.queue_free()
 	status_changed.emit()
 	var tween := create_tween()
 	tween.tween_property(visual, "modulate", Color(1.0, 0.7, 0.5), 0.5)
@@ -310,6 +309,9 @@ func _die() -> void:
 
 
 func _finish_death() -> void:
+	var player := get_tree().get_first_node_in_group("player")
+	if player:
+		player.add_ecos(ecos_reward)
 	defeated.emit()
 	queue_free()
 

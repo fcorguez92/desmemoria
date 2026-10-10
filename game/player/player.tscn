@@ -60,6 +60,7 @@ script = ExtResource("2_motor")
 [node name="DashComponent" type="Node" parent="."]
 script = ExtResource("3_dash")
 unlocked = false
+once_per_air_time = true
 
 [node name="HealthComponent" type="Node" parent="."]
 script = ExtResource("4_health")

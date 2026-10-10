@@ -146,6 +146,7 @@ func hazard_hit(damage: int, _hazard: Node = null) -> void:
 	global_position = respawn.last_grounded_position
 	velocity = Vector2.ZERO
 	dash.is_dashing = false
+	knockback.is_active = false
 	_peak_fall_speed = 0.0
 
 

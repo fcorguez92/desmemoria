@@ -11,14 +11,14 @@
 5. Diseño del núcleo jugable — hecho (ver `nucleo-jugable.md`).
 6. Prototipo jugable mínimo — hecho.
 7. Validación del núcleo — hecho: movimiento, combate con enemigos y feedback, vida/muerte/Ecos, mejora del arma, puntos de control con curación y las tres habilidades de movimiento (dash, doble salto, salto de pared) que se consiguen en el mundo y abren caminos.
-8. Vertical slice — **en marcha.**  Estilo de arte decidido (pixel art oscuro, ver `arte.md`) y Godot configurado para pixel art (864×486, escalado entero). Primer arte hecho (caminante con espada y cascarón con cuchillo, con animaciones básicas de movimiento y ataque, ver `arte.md`). El terreno de El Último Umbral ya existe (mapa de texto + baldosas, ver `vertical-slice.md`) y es la sala de inicio del mundo. Ya tiene fondo con parallax, objetos rompibles y narrativa ambiental (una inscripción legible, restos en la cabaña, marcas de arrastre; ver `docs/vertical-slice.md`), geometría de colores sin arte final todavía. El mundo ya crece por salas conectadas sin pantallas de carga (ver `mundo.md`): a El Último Umbral le siguen Las Terrazas Secas, La Cisterna y La Torre de Riego, donde se consiguen el dash y el doble salto. Minimapa en el HUD y mapa completo en la pausa, que solo muestran lo explorado (baldosa a baldosa alrededor del jugador). La partida se guarda sola (al cambiar de sala, descansar, reaparecer y salir) y el juego arranca en un menú principal (continuar, nuevo juego, opciones); al continuar se aparece en la última Ancla. El primer tramo ya llega a un **jefe** que suelta el dash (El Aljibe, tras las Galerías Bajas; ver `jefes.md`), con un **puzle de plataformas** exigente con el dash (La Chimenea y La Pasarela de los Mensajeros) que vuelve a la Torre de Riego por el aire. Falta jugarlo para ajustar el recorrido, el jefe y el puzle.
+8. Vertical slice — **en marcha.**  Estilo de arte decidido (pixel art oscuro, ver `arte.md`) y Godot configurado para pixel art (864×486, escalado entero). Primer arte hecho (caminante con espada y cascarón con cuchillo, con animaciones básicas de movimiento y ataque, ver `arte.md`). El terreno de El Último Umbral ya existe (mapa de texto + baldosas, ver `vertical-slice.md`) y es la sala de inicio del mundo. Ya tiene fondo con parallax, objetos rompibles y narrativa ambiental (una inscripción legible, restos en la cabaña, marcas de arrastre; ver `docs/vertical-slice.md`), geometría de colores sin arte final todavía. El mundo ya crece por salas conectadas sin pantallas de carga (ver `mundo.md`): a El Último Umbral le siguen Las Terrazas Secas, La Cisterna, Las Galerías Bajas, El Aljibe (el jefe, que suelta el dash), La Chimenea y La Pasarela (el puzle del dash) y La Torre de Riego (el doble salto). Minimapa en el HUD y mapa completo en la pausa, que solo muestran lo explorado (baldosa a baldosa alrededor del jugador). La partida se guarda sola (al cambiar de sala, descansar, reaparecer y salir) y el juego arranca en un menú principal (continuar, nuevo juego, opciones); al continuar se aparece en la última Ancla. El primer tramo ya llega a un **jefe** que suelta el dash (El Aljibe, tras las Galerías Bajas; ver `jefes.md`), con un **puzle de plataformas** exigente con el dash (La Chimenea y La Pasarela de los Mensajeros) que vuelve a la Torre de Riego por el aire. Falta jugarlo para ajustar el recorrido, el jefe y el puzle.
 
 ## Qué existe ahora mismo
 
 ```
-core/         Base reutilizable: 14 componentes + 6 objetos + 2 efectos + 5 piezas de interfaz + guardado (ver core/README.md)
+core/         Base reutilizable: 14 componentes + 9 objetos + 2 efectos + 5 piezas de interfaz + guardado (ver core/README.md)
 game/         player, enemy, boss (el Centinela Hueco y su sala), echo, memory_anchor, ability_pickup, environment, levels (el mundo y sus 8 salas + banco de pruebas)
-tests/        smoke_test.gd — 317 comprobaciones, todas en verde
+tests/        smoke_test.gd — 484 comprobaciones, todas en verde
 docs/         Diseño, decisiones, arquitectura y estado
 ```
 
@@ -68,7 +68,7 @@ están cambiadas respecto a Xbox):
 
 ## Rendimiento
 
-Medido con ventana real (RTX 2060, 4 salas, ~285 nodos, 32-42 draw calls): 480-680 FPS
+Medido con ventana real (RTX 2060, cuando el mundo tenía 4 salas, ~285 nodos, 32-42 draw calls): 480-680 FPS
 sin vsync con Forward+, así que en un equipo normal el juego va con mucho margen sobre
 60 FPS. Aun así se ha recortado trabajo evitable: el minimapa solo se redibuja al cambiar
 de baldosa, el animador solo toca el sprite cuando cambia el fotograma, solo procesan la
