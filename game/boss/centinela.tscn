@@ -1,0 +1,60 @@
+[gd_scene load_steps=10 format=3]
+
+[ext_resource type="Script" path="res://game/boss/centinela.gd" id="1_boss"]
+[ext_resource type="Texture2D" path="res://game/boss/centinela_sheet.png" id="2_sheet"]
+[ext_resource type="Script" path="res://core/components/sheet_animator.gd" id="3_animator"]
+[ext_resource type="Script" path="res://core/components/melee_attack_component.gd" id="5_melee"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_body"]
+size = Vector2(56, 88)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_slam"]
+size = Vector2(96, 76)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_land"]
+size = Vector2(170, 40)
+
+[node name="Centinela" type="CharacterBody2D"]
+script = ExtResource("1_boss")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("RectangleShape2D_body")
+
+[node name="Visual" type="Sprite2D" parent="."]
+texture = ExtResource("2_sheet")
+offset = Vector2(0, -20)
+hframes = 10
+vframes = 8
+
+[node name="SheetAnimator" type="Node" parent="." node_paths=PackedStringArray("sprite")]
+script = ExtResource("3_animator")
+sprite = NodePath("../Visual")
+animations = {"air": [5, 2, 6.0, true], "crouch": [4, 4, 10.0, false], "getup": [7, 4, 8.0, false], "idle": [0, 8, 6.0, true], "stagger": [6, 6, 8.0, true], "strike": [3, 6, 24.0, false], "walk": [1, 10, 14.0, true], "windup": [2, 6, 8.0, false]}
+
+[node name="SlamBox" type="Area2D" parent="."]
+position = Vector2(72, 0)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="SlamBox"]
+shape = SubResource("RectangleShape2D_slam")
+
+[node name="LandBox" type="Area2D" parent="."]
+position = Vector2(0, 24)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="LandBox"]
+shape = SubResource("RectangleShape2D_land")
+
+[node name="SlamMelee" type="Node" parent="." node_paths=PackedStringArray("hitbox")]
+script = ExtResource("5_melee")
+hitbox = NodePath("../SlamBox")
+cooldown = 0.0
+reach = 72.0
+damage = 2
+target_group = &"player"
+
+[node name="LandMelee" type="Node" parent="." node_paths=PackedStringArray("hitbox")]
+script = ExtResource("5_melee")
+hitbox = NodePath("../LandBox")
+cooldown = 0.0
+reach = 0.0
+damage = 2
+target_group = &"player"
