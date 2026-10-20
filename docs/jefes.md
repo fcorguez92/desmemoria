@@ -30,13 +30,17 @@ figura pálida y encorvada. Es el primer recuerdo que el jugador **no puede
 olvidar**: el del mensajero que cruzaba los pasos rotos. Al vencerlo suelta el
 recuerdo del **dash**.
 
-- Sala: **El Aljibe** (`game/levels/aljibe.map`, 60×31 baldosas). Entrada por el
-  oeste desde las Galerías Bajas, salida por el este hacia La Chimenea.
+- Sala: **El Aljibe** (`game/levels/aljibe.map`, 64×33 baldosas: una arena propia,
+  del tamaño de una pantalla y media, con dos tablones para esquivar). Entrada por
+  el oeste desde las Galerías Bajas, salida por el este hacia La Chimenea. Al cruzar
+  la línea de la sala caen **dos rastrillos de hierro** de 2×6 baldosas (temblor de
+  cámara y sonido) que se ven claramente; no se abren hasta vencerlo (o morir).
 - Código: `game/boss/centinela.gd` (la pelea), `boss_room.gd` (la sala: disparador,
   rejas, recompensa, reinicio, barra), `falling_rock.gd`, `shockwave.tscn`
   (un `Projectile` de `core/`), `arena_gate.*` (cada celda de reja), `boss_bar.gd`.
-- Arte: `art/source/centinela.sprite` (lo genera `tools/rig_centinela.js`), 192×128
-  por fotograma, 8 animaciones.
+- Arte: `art/source/centinela.sprite` (lo genera `tools/rig_centinela.js`), 384×256
+  por fotograma, 8 animaciones. Es **enorme**: el cuerpo mide 112×176 (el jugador,
+  24×48), casi cuatro veces su altura.
 
 ### Reglas de la pelea
 
@@ -58,7 +62,7 @@ recuerdo del **dash**.
 - **Parry**: desviar el mazazo (o el aterrizaje) lo deja expuesto 1,5 s sin gastar
   armadura. Una onda de polvo desviada vuelve contra él y le quita el doble.
 - **Ataques** (todos con aviso en amarillo, esquivables):
-  - *Mazazo*: golpe de área delante (2 de daño) y una onda baja de polvo (1 de daño)
+  - *Mazazo* (alcance de ~240 px): golpe de área delante (2 de daño) y una onda baja de polvo (1 de daño)
     que se salta. Desde la fase 2 caen rocas del techo, cada una con un aviso de
     polvo en el suelo.
   - *Salto*: se agazapa, salta y cae junto al jugador (no encima). El golpe es

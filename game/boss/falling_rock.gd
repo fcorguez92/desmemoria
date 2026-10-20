@@ -18,7 +18,7 @@ var _falling: bool = false
 
 func _ready() -> void:
 	body_entered.connect(_on_body_entered)
-	_marker.polygon = PackedVector2Array([Vector2(-14, 0), Vector2(-8, -3), Vector2(8, -3), Vector2(14, 0), Vector2(8, 2), Vector2(-8, 2)])
+	_marker.polygon = PackedVector2Array([Vector2(-26, 0), Vector2(-15, -5), Vector2(15, -5), Vector2(26, 0), Vector2(15, 4), Vector2(-15, 4)])
 	_sprite.visible = false
 	monitoring = false
 
@@ -46,7 +46,7 @@ func _physics_process(delta: float) -> void:
 	_vy += FALL_GRAVITY * delta
 	position.y += _vy * delta
 	_sprite.rotation += 6.0 * delta
-	if global_position.y + 8.0 >= _floor_y:
+	if global_position.y + 14.0 >= _floor_y:
 		_shatter()
 
 
@@ -59,5 +59,5 @@ func _on_body_entered(body: Node) -> void:
 
 func _shatter() -> void:
 	Sfx.play(&"rock_break", global_position, -8.0)
-	HitSpark.spawn(get_parent(), Vector2(global_position.x, _floor_y - 6.0), Color(0.7, 0.66, 0.6), 0.7)
+	HitSpark.spawn(get_parent(), Vector2(global_position.x, _floor_y - 10.0), Color(0.7, 0.66, 0.6), 1.2)
 	queue_free()

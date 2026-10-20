@@ -17,7 +17,7 @@ signal boss_defeated
 
 const GateScene := preload("res://game/boss/arena_gate.tscn")
 const BossBarScript := preload("res://game/boss/boss_bar.gd")
-const BOSS_HALF_HEIGHT := 44.0
+const BOSS_HALF_HEIGHT := 88.0
 
 @export var boss_scene: PackedScene
 ## Habilidad que suelta el jefe al morir (identificador de AbilityPickup).
@@ -157,6 +157,12 @@ func _make_gate(at: Vector2) -> Node:
 
 func _set_gates(gates: Array[Node], closed: bool, animate: bool) -> void:
 	if animate and not gates.is_empty():
-		Sfx.play(&"gate_close" if closed else &"gate_open", gates[0].global_position, -4.0)
+		Sfx.play(&"gate_close" if closed else &"gate_open", gates[0].global_position, -2.0)
+		var player := get_tree().get_first_node_in_group("player")
+		if closed and player and player.get("screen_shake") != null:
+			player.screen_shake.shake(7.0, 0.5)
+	var i := 0
 	for gate in gates:
-		gate.set_closed(closed, animate)
+		# Escalonadas por filas (las celdas vienen ordenadas fila a fila).
+		gate.set_closed(closed, animate, 0.015 * i)
+		i += 1

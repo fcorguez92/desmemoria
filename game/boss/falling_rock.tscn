@@ -4,7 +4,7 @@
 [ext_resource type="Texture2D" path="res://game/boss/roca_sheet.png" id="2_sheet"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_rock"]
-size = Vector2(14, 14)
+size = Vector2(28, 28)
 
 [node name="FallingRock" type="Area2D" groups=["boss_debris"]]
 z_index = 5
@@ -12,6 +12,7 @@ script = ExtResource("1_rock")
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
 texture = ExtResource("2_sheet")
+scale = Vector2(2, 2)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("RectangleShape2D_rock")

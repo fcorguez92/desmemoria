@@ -9,7 +9,7 @@ const ROOT = path.join(__dirname, "..");
 const LEVELS = path.join(ROOT, "game/levels") + "/";
 const jobs = [
   { room: 'Chimenea', map: 'chimenea.map', startRow: 67, startCol: 3, goal: (S) => S.find((s) => s.row === 8) },
-  { room: 'Pasarela', map: 'pasarela.map', startRow: 8, startCol: 62, goal: (S) => S.find((s) => s.row === 8 && s.c0 === 0) },
+  { room: 'Pasarela', map: 'pasarela.map', startRow: 8, startCol: 3, goal: (S) => S.find((s) => s.row === 8 && s.c0 === 77) },
 ];
 const out = [];
 for (const job of jobs) {

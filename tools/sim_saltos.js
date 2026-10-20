@@ -198,20 +198,31 @@ function analyse(m, dash, startRow, startCol) {
   const graph = {};
   for (const s of S) graph[s.id] = explore(m, S, s, { dash });
   const start = S.find((s) => s.row === startRow && startCol >= s.c0 && startCol <= s.c1);
-  const dist = { [start.id]: 0 }, prev = {}, q = [start.id];
-  while (q.length) {
-    const a = q.shift();
-    for (const e of graph[a]) if (!(e.to in dist)) { dist[e.to] = dist[a] + 1; prev[e.to] = e; q.push(e.to); }
+  // Camino de mayor margen: maximiza el peor tramo (y, a igualdad, usa menos tramos).
+  const dist = { [start.id]: 0 }, prev = {}, best = { [start.id]: Infinity };
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const a of Object.keys(best)) {
+      for (const e of graph[a]) {
+        const sc = Math.min(best[a], edgeScore(e));
+        if (!(e.to in best) || sc > best[e.to] || (sc === best[e.to] && dist[a] + 1 < dist[e.to])) {
+          if (e.to === start.id) continue;
+          best[e.to] = sc; dist[e.to] = dist[a] + 1; prev[e.to] = e; changed = true;
+        }
+      }
+    }
   }
-  return { S, graph, dist, prev, start };
+  return { S, graph, dist, prev, best, start };
 }
+function edgeScore(e) { return Math.min(e.margin.hold, e.margin.k, e.margin.dash, Math.floor(e.margin.pos / 3)); }
 function pathTo(r, id) {
   const out = [];
   let cur = id;
   while (cur !== r.start.id && r.prev[cur]) { out.unshift(r.prev[cur]); cur = r.prev[cur].from; }
   return out;
 }
-module.exports = { pathTo, margins, loadMap, surfaces, surfaceAt, explore, simulate, analyse, P, CELL };
+module.exports = { edgeScore, pathTo, margins, loadMap, surfaces, surfaceAt, explore, simulate, analyse, P, CELL };
 
 if (require.main === module) {
   const m = loadMap(process.argv[2]);
@@ -224,7 +235,7 @@ if (require.main === module) {
     console.log('--- camino a la meta (fila ' + goal.row + ')');
     for (const e of pathTo(r, goal.id)) {
       const a = r.S[e.from], b = r.S[e.to], mg = e.margin;
-      console.log(`fila ${a.row} c${a.c0}-${a.c1} -> fila ${b.row} c${b.c0}-${b.c1}${e.dash ? ' [DASH]' : ''}  margen: mantener=${mg.hold}f giro=${mg.k}f dash=${mg.dash}f pos=${mg.pos}px`);
+      console.log(`[${edgeScore(e)}] fila ${a.row} c${a.c0}-${a.c1} -> fila ${b.row} c${b.c0}-${b.c1}${e.dash ? ' [DASH]' : ''}  margen: mantener=${mg.hold}f giro=${mg.k}f dash=${mg.dash}f pos=${mg.pos}px`);
     }
   }
 }

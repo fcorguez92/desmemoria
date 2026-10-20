@@ -4,214 +4,28 @@
   "from": {
    "row": 67,
    "c0": 0,
-   "c1": 7
-  },
-  "to": {
-   "row": 67,
-   "c0": 23,
-   "c1": 31
-  },
-  "sx": 100,
-  "plan": {
-   "d1": 0,
-   "d2": 1,
-   "delay": 0,
-   "hold": 3,
-   "k": 0,
-   "dashAt": 20,
-   "dashDir": 1,
-   "facing": 1
-  },
-  "margin": {
-   "hold": 12,
-   "k": 12,
-   "dash": 11,
-   "pos": 36
-  },
-  "dash": true
- },
- {
-  "room": "Chimenea",
-  "from": {
-   "row": 67,
-   "c0": 23,
-   "c1": 31
-  },
-  "to": {
-   "row": 56,
-   "c0": 2,
-   "c1": 9
-  },
-  "sx": 426,
-  "plan": {
-   "d1": -1,
-   "d2": -1,
-   "delay": 4,
-   "hold": 40,
-   "k": 0,
-   "dashAt": 26,
-   "dashDir": -1,
-   "facing": -1
-  },
-  "margin": {
-   "hold": 17,
-   "k": 17,
-   "dash": 11,
-   "pos": 40
-  },
-  "dash": true
- },
- {
-  "room": "Chimenea",
-  "from": {
-   "row": 56,
-   "c0": 2,
    "c1": 9
   },
   "to": {
-   "row": 45,
-   "c0": 8,
-   "c1": 11
+   "row": 67,
+   "c0": 26,
+   "c1": 37
   },
-  "sx": 108,
+  "sx": 55,
   "plan": {
-   "d1": 0,
+   "d1": 1,
    "d2": 1,
    "delay": 0,
    "hold": 40,
    "k": 16,
-   "dashAt": 50,
-   "dashDir": -1,
-   "facing": 1
-  },
-  "margin": {
-   "hold": 17,
-   "k": 17,
-   "dash": 21,
-   "pos": 34
-  },
-  "dash": true
- },
- {
-  "room": "Chimenea",
-  "from": {
-   "row": 45,
-   "c0": 8,
-   "c1": 11
-  },
-  "to": {
-   "row": 45,
-   "c0": 27,
-   "c1": 31
-  },
-  "sx": 160,
-  "plan": {
-   "d1": 1,
-   "d2": 1,
-   "delay": 4,
-   "hold": 3,
-   "k": 0,
-   "dashAt": 26,
+   "dashAt": 40,
    "dashDir": 1,
    "facing": 1
   },
   "margin": {
-   "hold": 9,
-   "k": 17,
-   "dash": 14,
-   "pos": 34
-  },
-  "dash": true
- },
- {
-  "room": "Chimenea",
-  "from": {
-   "row": 45,
-   "c0": 27,
-   "c1": 31
-  },
-  "to": {
-   "row": 34,
-   "c0": 19,
-   "c1": 25
-  },
-  "sx": 484,
-  "plan": {
-   "d1": 1,
-   "d2": -1,
-   "delay": 4,
-   "hold": 40,
-   "k": 0,
-   "dashAt": 50,
-   "dashDir": -1,
-   "facing": 1
-  },
-  "margin": {
    "hold": 17,
    "k": 17,
-   "dash": 21,
-   "pos": 52
-  },
-  "dash": true
- },
- {
-  "room": "Chimenea",
-  "from": {
-   "row": 34,
-   "c0": 19,
-   "c1": 25
-  },
-  "to": {
-   "row": 28,
-   "c0": 2,
-   "c1": 4
-  },
-  "sx": 334,
-  "plan": {
-   "d1": -1,
-   "d2": -1,
-   "delay": 4,
-   "hold": 9,
-   "k": 0,
-   "dashAt": 20,
-   "dashDir": -1,
-   "facing": -1
-  },
-  "margin": {
-   "hold": 12,
-   "k": 17,
-   "dash": 10,
-   "pos": 20
-  },
-  "dash": true
- },
- {
-  "room": "Chimenea",
-  "from": {
-   "row": 28,
-   "c0": 2,
-   "c1": 4
-  },
-  "to": {
-   "row": 21,
-   "c0": 10,
-   "c1": 31
-  },
-  "sx": 76,
-  "plan": {
-   "d1": -1,
-   "d2": 0,
-   "delay": 0,
-   "hold": 18,
-   "k": 8,
-   "dashAt": 15,
-   "dashDir": 1,
-   "facing": -1
-  },
-  "margin": {
-   "hold": 17,
-   "k": 17,
-   "dash": 17,
+   "dash": 15,
    "pos": 62
   },
   "dash": true
@@ -219,54 +33,54 @@
  {
   "room": "Chimenea",
   "from": {
-   "row": 21,
-   "c0": 10,
-   "c1": 31
+   "row": 67,
+   "c0": 26,
+   "c1": 37
   },
   "to": {
-   "row": 14,
+   "row": 57,
    "c0": 24,
-   "c1": 25
+   "c1": 33
   },
-  "sx": 262,
+  "sx": 473,
   "plan": {
    "d1": 0,
    "d2": 0,
    "delay": 0,
    "hold": 40,
-   "k": 16,
-   "dashAt": 20,
+   "k": 26,
+   "dashAt": 40,
    "dashDir": 1,
    "facing": 1
   },
   "margin": {
    "hold": 17,
    "k": 17,
-   "dash": 21,
-   "pos": 16
+   "dash": 18,
+   "pos": 62
   },
   "dash": true
  },
  {
   "room": "Chimenea",
   "from": {
-   "row": 14,
+   "row": 57,
    "c0": 24,
-   "c1": 25
+   "c1": 33
   },
   "to": {
-   "row": 8,
-   "c0": 0,
-   "c1": 9
+   "row": 47,
+   "c0": 2,
+   "c1": 11
   },
   "sx": 388,
   "plan": {
    "d1": -1,
    "d2": -1,
-   "delay": 4,
-   "hold": 13,
+   "delay": 0,
+   "hold": 40,
    "k": 0,
-   "dashAt": 20,
+   "dashAt": 26,
    "dashDir": -1,
    "facing": -1
   },
@@ -279,95 +93,250 @@
   "dash": true
  },
  {
-  "room": "Pasarela",
+  "room": "Chimenea",
   "from": {
-   "row": 8,
-   "c0": 60,
-   "c1": 67
+   "row": 47,
+   "c0": 2,
+   "c1": 11
   },
   "to": {
-   "row": 7,
-   "c0": 40,
-   "c1": 42
+   "row": 37,
+   "c0": 10,
+   "c1": 19
   },
-  "sx": 964,
+  "sx": 163,
   "plan": {
-   "d1": -1,
-   "d2": -1,
+   "d1": 1,
+   "d2": 0,
    "delay": 4,
-   "hold": 3,
-   "k": 0,
-   "dashAt": 20,
-   "dashDir": -1,
-   "facing": -1
+   "hold": 40,
+   "k": 16,
+   "dashAt": null,
+   "dashDir": 0,
+   "facing": 1
   },
   "margin": {
-   "hold": 10,
+   "hold": 17,
    "k": 17,
-   "dash": 13,
-   "pos": 32
+   "dash": 99,
+   "pos": 62
+  },
+  "dash": false
+ },
+ {
+  "room": "Chimenea",
+  "from": {
+   "row": 37,
+   "c0": 10,
+   "c1": 19
+  },
+  "to": {
+   "row": 29,
+   "c0": 28,
+   "c1": 37
+  },
+  "sx": 316,
+  "plan": {
+   "d1": 1,
+   "d2": 1,
+   "delay": 0,
+   "hold": 18,
+   "k": 8,
+   "dashAt": 20,
+   "dashDir": 1,
+   "facing": 1
+  },
+  "margin": {
+   "hold": 17,
+   "k": 17,
+   "dash": 20,
+   "pos": 62
   },
   "dash": true
  },
  {
-  "room": "Pasarela",
+  "room": "Chimenea",
   "from": {
-   "row": 7,
-   "c0": 40,
-   "c1": 42
+   "row": 29,
+   "c0": 28,
+   "c1": 37
   },
   "to": {
-   "row": 9,
-   "c0": 20,
-   "c1": 22
+   "row": 19,
+   "c0": 26,
+   "c1": 35
   },
-  "sx": 644,
+  "sx": 452,
+  "plan": {
+   "d1": 0,
+   "d2": 1,
+   "delay": 0,
+   "hold": 40,
+   "k": 26,
+   "dashAt": null,
+   "dashDir": 0,
+   "facing": 1
+  },
+  "margin": {
+   "hold": 17,
+   "k": 17,
+   "dash": 99,
+   "pos": 62
+  },
+  "dash": false
+ },
+ {
+  "room": "Chimenea",
+  "from": {
+   "row": 19,
+   "c0": 26,
+   "c1": 35
+  },
+  "to": {
+   "row": 14,
+   "c0": 18,
+   "c1": 27
+  },
+  "sx": 420,
   "plan": {
    "d1": -1,
    "d2": 0,
    "delay": 4,
-   "hold": 1,
-   "k": 38,
-   "dashAt": 20,
-   "dashDir": -1,
+   "hold": 40,
+   "k": 0,
+   "dashAt": null,
+   "dashDir": 0,
    "facing": -1
   },
   "margin": {
    "hold": 17,
-   "k": 12,
-   "dash": 16,
-   "pos": 34
+   "k": 17,
+   "dash": 99,
+   "pos": 62
+  },
+  "dash": false
+ },
+ {
+  "room": "Chimenea",
+  "from": {
+   "row": 14,
+   "c0": 18,
+   "c1": 27
+  },
+  "to": {
+   "row": 8,
+   "c0": 28,
+   "c1": 39
+  },
+  "sx": 292,
+  "plan": {
+   "d1": 0,
+   "d2": 1,
+   "delay": 0,
+   "hold": 18,
+   "k": 16,
+   "dashAt": 20,
+   "dashDir": 1,
+   "facing": 1
+  },
+  "margin": {
+   "hold": 17,
+   "k": 17,
+   "dash": 18,
+   "pos": 62
   },
   "dash": true
  },
  {
   "room": "Pasarela",
   "from": {
-   "row": 9,
-   "c0": 20,
-   "c1": 22
+   "row": 8,
+   "c0": 0,
+   "c1": 7
   },
   "to": {
    "row": 8,
-   "c0": 0,
-   "c1": 2
+   "c0": 25,
+   "c1": 33
   },
-  "sx": 324,
+  "sx": 124,
   "plan": {
-   "d1": -1,
-   "d2": -1,
+   "d1": 1,
+   "d2": 1,
    "delay": 4,
    "hold": 3,
    "k": 0,
    "dashAt": 20,
-   "dashDir": -1,
-   "facing": -1
+   "dashDir": 1,
+   "facing": 1
   },
   "margin": {
    "hold": 17,
    "k": 17,
-   "dash": 13,
-   "pos": 42
+   "dash": 15,
+   "pos": 48
+  },
+  "dash": true
+ },
+ {
+  "room": "Pasarela",
+  "from": {
+   "row": 8,
+   "c0": 25,
+   "c1": 33
+  },
+  "to": {
+   "row": 8,
+   "c0": 51,
+   "c1": 59
+  },
+  "sx": 540,
+  "plan": {
+   "d1": 1,
+   "d2": 1,
+   "delay": 4,
+   "hold": 3,
+   "k": 0,
+   "dashAt": 20,
+   "dashDir": 1,
+   "facing": 1
+  },
+  "margin": {
+   "hold": 17,
+   "k": 17,
+   "dash": 15,
+   "pos": 48
+  },
+  "dash": true
+ },
+ {
+  "room": "Pasarela",
+  "from": {
+   "row": 8,
+   "c0": 51,
+   "c1": 59
+  },
+  "to": {
+   "row": 8,
+   "c0": 77,
+   "c1": 97
+  },
+  "sx": 956,
+  "plan": {
+   "d1": 1,
+   "d2": 1,
+   "delay": 4,
+   "hold": 3,
+   "k": 0,
+   "dashAt": 20,
+   "dashDir": 1,
+   "facing": 1
+  },
+  "margin": {
+   "hold": 17,
+   "k": 17,
+   "dash": 15,
+   "pos": 48
   },
   "dash": true
  }

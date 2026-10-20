@@ -48,17 +48,23 @@ const ARMOR := [8, 9, 10]
 ## Vida del núcleo al terminar cada fase (empieza en `core_health`).
 const CORE_FLOORS := [10, 5, 0]
 ## Mitad de la altura de su cuerpo (sus pies están a esta distancia del origen).
-const HALF_HEIGHT := 44.0
+const HALF_HEIGHT := 88.0
+## Mitad de su anchura (el cuerpo mide 112 x 176).
+const HALF_WIDTH := 56.0
 ## Alcance del mazazo: si el jugador está más cerca, ataca; si no, se acerca.
-const SLAM_RANGE := 120.0
-const WALK_RANGE := 100.0
+const SLAM_RANGE := 230.0
+const WALK_RANGE := 180.0
+## Dónde cae la cabeza del mazo, delante de sus pies.
+const SLAM_REACH := 110.0
+## A qué distancia del jugador cae tras el salto (no encima: ahí no se puede estar).
+const LEAP_STANDOFF := 90.0
 ## Tiempos en segundos.
 const WAKE_TIME := 1.6
 const SLAM_STRIKE_TIME := 0.3
 const GETUP_TIME := 0.6
 const STAGGER_TIME := 3.0
 const PARRY_STAGGER_TIME := 1.5
-const LEAP_FLIGHT_TIME := 0.75
+const LEAP_FLIGHT_TIME := 0.85
 const RAGE_WINDUP_TIME := 0.5
 const RAGE_GAP_TIME := 0.5
 const DEATH_TIME := 1.8
@@ -75,7 +81,7 @@ const PHASES := [
 @export var core_health: int = 15
 @export var ecos_reward: int = 40
 @export var gravity: float = 2250.0
-@export var walk_speed: float = 80.0
+@export var walk_speed: float = 100.0
 
 ## Límites de la sala (coordenadas globales): los fija quien lo coloca.
 var arena_left: float = -INF
@@ -185,7 +191,7 @@ func _physics_process(delta: float) -> void:
 			velocity.x = 0.0
 
 	move_and_slide()
-	global_position.x = clampf(global_position.x, arena_left + 30.0, arena_right - 30.0)
+	global_position.x = clampf(global_position.x, arena_left + HALF_WIDTH, arena_right - HALF_WIDTH)
 	if state != State.DYING:
 		visual.modulate = FLASH_COLOR if _flash_left > 0.0 else _tint()
 	if state == State.IDLE:
@@ -243,7 +249,7 @@ func _hit_armor(damage: int) -> void:
 	armor_hp = maxi(armor_hp - damage, 0)
 	_flash_left = FLASH_TIME
 	Sfx.play(&"armor_hit", global_position, -4.0)
-	HitSpark.spawn(get_parent(), global_position + Vector2(0.0, -16.0), ARMOR_SPARK_COLOR, 0.8)
+	HitSpark.spawn(get_parent(), global_position + Vector2(0.0, -40.0), ARMOR_SPARK_COLOR, 1.3)
 	DamageNumber.spawn(get_parent(), global_position + Vector2(0.0, -HALF_HEIGHT - 8.0), damage, Color(0.75, 0.75, 0.8))
 	status_changed.emit()
 	if armor_hp <= 0:
@@ -257,7 +263,7 @@ func _hit_core(damage: int) -> void:
 	core_hp = maxi(core_hp - damage, floor_hp)
 	_flash_left = FLASH_TIME
 	Sfx.play(&"centinela_hurt", global_position, -6.0)
-	HitSpark.spawn(get_parent(), global_position + Vector2(0.0, -10.0), CORE_SPARK_COLOR, 0.7)
+	HitSpark.spawn(get_parent(), global_position + Vector2(0.0, -20.0), CORE_SPARK_COLOR, 1.1)
 	DamageNumber.spawn(get_parent(), global_position + Vector2(0.0, -HALF_HEIGHT - 8.0), damage, Color(1.0, 0.85, 0.3))
 	status_changed.emit()
 	if core_hp <= floor_hp:
@@ -344,7 +350,7 @@ func _slam_strike() -> void:
 	_timer = SLAM_STRIKE_TIME
 	animator.play_action("strike")
 	slam_melee.try_attack(self, _facing)
-	_impact(_facing * 40.0, PHASES[phase].slam_both, PHASES[phase].slam_rocks)
+	_impact(_facing * SLAM_REACH, PHASES[phase].slam_both, PHASES[phase].slam_rocks)
 
 
 func _start_leap() -> void:
@@ -360,11 +366,11 @@ func _leap() -> void:
 	_air_time = 0.0
 	# Cae un poco antes que el jugador, no encima: ahí no se puede estar.
 	var player := _player()
-	var target := global_position.x + _facing * 120.0
+	var target := global_position.x + _facing * 240.0
 	if player:
 		var side := signf(player.global_position.x - global_position.x)
-		target = player.global_position.x - side * 44.0
-	target = clampf(target, arena_left + 40.0, arena_right - 40.0)
+		target = player.global_position.x - side * LEAP_STANDOFF
+	target = clampf(target, arena_left + HALF_WIDTH, arena_right - HALF_WIDTH)
 	velocity.x = (target - global_position.x) / LEAP_FLIGHT_TIME
 	velocity.y = -gravity * LEAP_FLIGHT_TIME / 2.0
 	animator.release_action()
@@ -396,7 +402,7 @@ func _rage_strike() -> void:
 	_timer = SLAM_STRIKE_TIME
 	animator.play_action("strike")
 	slam_melee.try_attack(self, _facing)
-	_impact(_facing * 40.0, true, 2)
+	_impact(_facing * SLAM_REACH, true, 2)
 
 
 func _recover() -> void:
@@ -417,7 +423,7 @@ func _impact(offset_x: float, both_waves: bool, rocks: int, forward_wave: bool =
 	_shake(9.0, 0.28)
 	var floor_y := global_position.y + HALF_HEIGHT
 	var at := Vector2(global_position.x + offset_x, floor_y)
-	HitSpark.spawn(get_parent(), at + Vector2(0.0, -8.0), Color(0.7, 0.66, 0.6), 1.3)
+	HitSpark.spawn(get_parent(), at + Vector2(0.0, -14.0), Color(0.7, 0.66, 0.6), 2.0)
 	if both_waves:
 		_spawn_wave(-1, at.x, floor_y)
 		_spawn_wave(1, at.x, floor_y)
@@ -429,7 +435,7 @@ func _impact(offset_x: float, both_waves: bool, rocks: int, forward_wave: bool =
 func _spawn_wave(direction: int, from_x: float, floor_y: float) -> void:
 	var wave := ShockwaveScene.instantiate() as Projectile
 	get_parent().add_child(wave)
-	wave.global_position = Vector2(from_x, floor_y - 12.0)
+	wave.global_position = Vector2(from_x, floor_y - 16.0)
 	wave.launch(Vector2(direction, 0.0))
 
 
@@ -439,7 +445,7 @@ func _drop_rocks(count: int, floor_y: float) -> void:
 		return
 	var player := _player()
 	for i in count:
-		var x := randf_range(arena_left + 40.0, arena_right - 40.0)
+		var x := randf_range(arena_left + 60.0, arena_right - 60.0)
 		if i == 0 and player:
 			x = player.global_position.x
 		var rock := RockScene.instantiate()

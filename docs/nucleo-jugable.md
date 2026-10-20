@@ -68,7 +68,7 @@ Ninguna habilidad se tiene al empezar: se consiguen recogiendo un **recuerdo** (
 
 **En el mundo del juego** (ver `docs/mundo.md`, "El mundo construido hoy"):
 
-- El **dash** lo suelta el **Centinela Hueco** (ver `jefes.md`), el jefe del Aljibe, al fondo del camino que baja por el foso de Las Terrazas Secas y cruza La Cisterna y las Galerías Bajas. Con él se cruza ese mismo foso, y se supera el puzle de La Chimenea y La Pasarela, que sube de vuelta a La Torre de Riego.
+- El **dash** lo suelta el **Centinela Hueco** (ver `jefes.md`), el jefe del Aljibe, al fondo del camino que baja por el foso de Las Terrazas Secas y cruza La Cisterna y las Galerías Bajas. Con él se cruza ese mismo foso, y se supera el puzle de La Chimenea y La Pasarela, que acaba en un mirador con Ancla.
 - El **doble salto** está en lo alto de la escalera de tablones de La Torre de Riego, y abre la cornisa del Ancla, que sin él queda demasiado alta.
 - El **salto de pared** todavía no está colocado en el mundo (solo en el banco de pruebas).
 

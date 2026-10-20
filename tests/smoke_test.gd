@@ -82,7 +82,7 @@ func _run() -> void:
 	await _test_boss_resets_and_stays_dead()
 	await _test_boss_death_survives_the_player_dying()
 	await _test_dash_puzzle_needs_dash()
-	await _test_the_bridge_leads_to_the_tower()
+	await _test_the_bridge_ends_in_a_lookout()
 	await _test_minimap_and_pause_map()
 	await _test_save_slot()
 	await _test_autosave_triggers()
@@ -1698,7 +1698,7 @@ func _test_world_is_made_of_connected_rooms() -> void:
 	for id in data.markers:
 		if String(id).begins_with("anchor_"):
 			anchors += 1
-	_check(anchors == 7, "las siete Anclas están marcadas en el mapa (se ven al pasar cerca)")
+	_check(anchors == 8, "las ocho Anclas están marcadas en el mapa (se ven al pasar cerca)")
 	_check(_player.hud.message_label.text.is_empty(), "la sala de inicio no se anuncia")
 	var dash_pickup := 0
 	var jump_pickup := 0
@@ -2190,7 +2190,7 @@ func _test_spikes_hurt_and_return_to_safe_ground() -> void:
 	var galerias: Node2D = _level.get_node("Rooms/GaleriasBajas")
 	await _clear_enemies(galerias)
 	# Se cruza el foso de pinchos caminando: de pie en la baldosa 12, antes del foso (14-19).
-	_player.global_position = _standing_on("GaleriasBajas", 12, 20)
+	_player.global_position = _standing_on("GaleriasBajas", 22, 26)
 	_player.velocity = Vector2.ZERO
 	await _wait(15)
 	_check(_level.current_room == galerias and _player.is_on_floor(), "se está de pie junto al foso de pinchos")
@@ -2203,7 +2203,7 @@ func _test_spikes_hurt_and_return_to_safe_ground() -> void:
 	await _wait(30)
 	_check(_player.health.health == before - 1, "caer en los pinchos quita 1 de vida")
 	_check(_player.active_echo == null, "pero no mata ni deja un Eco")
-	_check(_player.is_on_floor() and _player.global_position.x < _cell("GaleriasBajas", 15, 0).x and absf(_player.global_position.x - edge_x) < 80.0, "y devuelve al último suelo seguro, antes del foso (pos=%s suelo=%s ultimo=%s)" % [_player.global_position, _player.is_on_floor(), _player.respawn.last_grounded_position])
+	_check(_player.is_on_floor() and _player.global_position.x < _cell("GaleriasBajas", 25, 0).x and absf(_player.global_position.x - edge_x) < 80.0, "y devuelve al último suelo seguro, antes del foso (pos=%s suelo=%s ultimo=%s)" % [_player.global_position, _player.is_on_floor(), _player.respawn.last_grounded_position])
 
 	# Con la vida justa, sí mata.
 	_player.health.health = 1
@@ -2263,7 +2263,7 @@ func _test_the_way_to_the_boss() -> void:
 	_player.health.max_health = 99
 	_player.health.health = 99
 	# Puerta este de la Cisterna: fila 17-21, columnas 62-63; la sala siguiente empieza ahí.
-	_player.global_position = _standing_on("Cisterna", 55, 22)
+	_player.global_position = _standing_on("Cisterna", 118, 22)
 	_player.velocity = Vector2.ZERO
 	await _wait(10)
 	Input.action_press(&"ui_right")
@@ -2274,7 +2274,7 @@ func _test_the_way_to_the_boss() -> void:
 	_check(_level.map_data.is_visited(&"GaleriasBajas"), "y se descubre la sala")
 	var anchor := _anchor_in("GaleriasBajas")
 	_check(anchor != null, "las Galerías tienen un Ancla antes del Aljibe")
-	_player.global_position = _standing_on("GaleriasBajas", 58, 20)
+	_player.global_position = _standing_on("GaleriasBajas", 106, 26)
 	_player.velocity = Vector2.ZERO
 	await _wait(10)
 	Input.action_press(&"ui_right")
@@ -2291,7 +2291,7 @@ func _arena() -> Node2D:
 ## Mete al jugador en el Aljibe, pasada la línea del disparador, con vida de sobra
 ## para que los ataques del jefe no interfieran con lo que se comprueba.
 func _enter_arena(tough: bool = true) -> void:
-	_player.global_position = _standing_on("Aljibe", 10, 28)
+	_player.global_position = _standing_on("Aljibe", 14, 30)
 	_player.velocity = Vector2.ZERO
 	if tough:
 		_player.health.max_health = 99
@@ -2400,8 +2400,8 @@ func _test_boss_attacks_and_parry() -> void:
 	# Que no decida solo: se le fuerza cada ataque.
 	boss.state = boss.State.RECOVER
 	boss._timer = 100.0
-	boss.global_position.x = _cell("Aljibe", 30, 27).x
-	_player.global_position = _standing_on("Aljibe", 24, 28)
+	boss.global_position.x = _cell("Aljibe", 36, 29).x
+	_player.global_position = _standing_on("Aljibe", 26, 30)
 	_player.velocity = Vector2.ZERO
 	await _wait(10)
 	boss._set_facing(-1)
@@ -2437,8 +2437,8 @@ func _test_boss_attacks_and_parry() -> void:
 	# El salto cae junto al jugador y hace daño rasante; saltar lo evita.
 	boss.state = boss.State.RECOVER
 	boss._timer = 100.0
-	boss.global_position = Vector2(_cell("Aljibe", 40, 27).x, boss.global_position.y)
-	_player.global_position = _standing_on("Aljibe", 24, 28)
+	boss.global_position = Vector2(_cell("Aljibe", 52, 29).x, boss.global_position.y)
+	_player.global_position = _standing_on("Aljibe", 22, 30)
 	_player.velocity = Vector2.ZERO
 	await _wait(10)
 	boss._face_player()
@@ -2446,18 +2446,18 @@ func _test_boss_attacks_and_parry() -> void:
 	_check(boss.state == boss.State.LEAP_CROUCH, "el salto empieza agachándose")
 	await _wait(int(boss._timer * 60.0) + 3)
 	_check(boss.state == boss.State.LEAP_AIR, "y despega")
-	var land_x: float = _player.global_position.x + 44.0
+	var land_x: float = _player.global_position.x + boss.LEAP_STANDOFF
 	var landed := false
 	for i in 90:
 		await physics_frame
 		if boss.state != boss.State.LEAP_AIR:
 			landed = true
 			break
-	_check(landed and absf(boss.global_position.x - land_x) < 40.0, "cae junto al jugador (a ~44 px, no encima)")
+	_check(landed and absf(boss.global_position.x - land_x) < 70.0, "cae junto al jugador (a ~90 px, no encima)")
 
 	# Rocas: aviso en el suelo y luego caen.
 	var rocks: Array = []
-	boss._drop_rocks(2, _cell("Aljibe", 0, 28).y - 8.0)
+	boss._drop_rocks(2, _cell("Aljibe", 0, 30).y - 8.0)
 	for node in get_nodes_in_group(&"boss_debris"):
 		if node.has_method("start") and not node is Projectile:
 			rocks.append(node)
@@ -2488,7 +2488,7 @@ func _test_boss_death_survives_the_player_dying() -> void:
 	_player.die()
 	await _wait(4)
 	# (Lejos del Aljibe la sala deja de procesar; al volver, termina de morir.)
-	_player.global_position = _standing_on("Aljibe", 10, 28)
+	_player.global_position = _standing_on("Aljibe", 14, 30)
 	_player.velocity = Vector2.ZERO
 	await _wait(150)
 	_check(arena.is_defeated() and arena.boss == null, "aunque el jugador muera en ese momento, el jefe queda vencido")
@@ -2578,7 +2578,7 @@ func _test_dash_puzzle_needs_dash() -> void:
 	print("\n[El puzle del dash: cada tramo se supera con la maniobra prevista y no sin dash]")
 	await _load_world()
 	var plans: Array = JSON.parse_string(FileAccess.get_file_as_string("res://tests/puzzle_plans.json"))
-	_check(plans.size() >= 12, "hay %d maniobras de referencia (la Chimenea y la Pasarela)" % plans.size())
+	_check(plans.size() >= 9, "hay %d maniobras de referencia (la Chimenea y la Pasarela)" % plans.size())
 	_player.unlock_ability(&"dash")
 	var failures := []
 	for entry in plans:
@@ -2607,27 +2607,25 @@ func _test_dash_puzzle_needs_dash() -> void:
 	_check(_player.global_position.x < far_x - 32.0 and _player.health.health == 98 and _player.active_echo == null, "sin dash el primer foso no se cruza: cae en los pinchos (1 de vida) y vuelve al suelo")
 
 
-func _test_the_bridge_leads_to_the_tower() -> void:
-	print("\n[La Pasarela termina en la cornisa de la Torre de Riego, con su Ancla]")
+func _test_the_bridge_ends_in_a_lookout() -> void:
+	print("\n[La salida alta de la Chimenea da a la Pasarela, que acaba en un mirador con Ancla]")
 	await _load_world()
-	_player.global_position = _standing_on("Pasarela", 1, 8)
+	_player.global_position = _standing_on("Chimenea", 34, 8)
 	_player.velocity = Vector2.ZERO
 	await _wait(10)
-	Input.action_press(&"ui_left")
-	await _wait(30)
-	Input.action_release(&"ui_left")
+	Input.action_press(&"ui_right")
+	await _wait(40)
+	Input.action_release(&"ui_right")
 	await _wait(6)
-	_check(_level.current_room.name == "TorreDeRiego" and _player.is_on_floor(), "por la derecha de la cornisa se entra en la Torre")
-	var ledge_y: float = _standing_on("TorreDeRiego", 46, 7).y
-	_check(absf(_player.global_position.y - ledge_y) < 4.0, "y se llega a la altura de la cornisa del Ancla, sin doble salto")
-	_player.global_position = _standing_on("Chimenea", 4, 8)
+	_check(_level.current_room.name == "Pasarela" and _player.is_on_floor(), "se sale de la Chimenea a la Pasarela caminando")
+	_check(_anchor_in("Pasarela") != null, "al final de la Pasarela hay un Ancla")
+	_player.global_position = _standing_on("Pasarela", 90, 8)
 	_player.velocity = Vector2.ZERO
-	await _wait(10)
-	Input.action_press(&"ui_left")
-	await _wait(30)
-	Input.action_release(&"ui_left")
-	await _wait(6)
-	_check(_level.current_room.name == "Pasarela" and _player.is_on_floor(), "y la salida alta de la Chimenea da a la Pasarela")
+	await _wait(20)
+	Input.action_press(&"ui_right")
+	await _wait(120)
+	Input.action_release(&"ui_right")
+	_check(_player.global_position.x < _level.get_node("Rooms/Pasarela").global_position.x + 98.0 * 16.0, "el mirador acaba en una pared: de momento no se sigue más allá")
 
 
 ## Quita los enemigos de una sala (para pruebas que no tratan de combatir).
