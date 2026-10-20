@@ -2401,7 +2401,7 @@ func _test_boss_attacks_and_parry() -> void:
 	boss.state = boss.State.RECOVER
 	boss._timer = 100.0
 	boss.global_position.x = _cell("Aljibe", 36, 29).x
-	_player.global_position = _standing_on("Aljibe", 26, 30)
+	_player.global_position = _standing_on("Aljibe", 22, 30)
 	_player.velocity = Vector2.ZERO
 	await _wait(10)
 	boss._set_facing(-1)

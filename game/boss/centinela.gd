@@ -48,14 +48,14 @@ const ARMOR := [8, 9, 10]
 ## Vida del núcleo al terminar cada fase (empieza en `core_health`).
 const CORE_FLOORS := [10, 5, 0]
 ## Mitad de la altura de su cuerpo (sus pies están a esta distancia del origen).
-const HALF_HEIGHT := 88.0
-## Mitad de su anchura (el cuerpo mide 112 x 176).
+const HALF_HEIGHT := 80.0
+## Mitad de su anchura (el cuerpo mide 112 x 160).
 const HALF_WIDTH := 56.0
 ## Alcance del mazazo: si el jugador está más cerca, ataca; si no, se acerca.
 const SLAM_RANGE := 230.0
 const WALK_RANGE := 180.0
 ## Dónde cae la cabeza del mazo, delante de sus pies.
-const SLAM_REACH := 110.0
+const SLAM_REACH := 150.0
 ## A qué distancia del jugador cae tras el salto (no encima: ahí no se puede estar).
 const LEAP_STANDOFF := 90.0
 ## Tiempos en segundos.

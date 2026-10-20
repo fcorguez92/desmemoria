@@ -39,7 +39,7 @@ recuerdo del **dash**.
   rejas, recompensa, reinicio, barra), `falling_rock.gd`, `shockwave.tscn`
   (un `Projectile` de `core/`), `arena_gate.*` (cada celda de reja), `boss_bar.gd`.
 - Arte: `art/source/centinela.sprite` (lo genera `tools/rig_centinela.js`), 384×256
-  por fotograma, 8 animaciones. Es **enorme**: el cuerpo mide 112×176 (el jugador,
+  por fotograma, 8 animaciones. Es **enorme**: el cuerpo mide 112×160 (el jugador,
   24×48), casi cuatro veces su altura.
 
 ### Reglas de la pelea

@@ -17,7 +17,7 @@ signal boss_defeated
 
 const GateScene := preload("res://game/boss/arena_gate.tscn")
 const BossBarScript := preload("res://game/boss/boss_bar.gd")
-const BOSS_HALF_HEIGHT := 88.0
+const BOSS_HALF_HEIGHT := 80.0
 
 @export var boss_scene: PackedScene
 ## Habilidad que suelta el jefe al morir (identificador de AbilityPickup).
