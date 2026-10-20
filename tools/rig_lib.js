@@ -112,7 +112,10 @@ function polyTest(poly) {
     return inside;
   };
 }
-const bbox = pts => [Math.min(...pts.map(p => p[0])) - 3, Math.min(...pts.map(p => p[1])) - 3, Math.max(...pts.map(p => p[0])) + 3, Math.max(...pts.map(p => p[1])) + 3];
+// factor de escala del estilo en curso (S.z): solo lo usan los personajes dibujados a mayor tamano
+let Z = 1;
+const bboxZ = pts => bbox(pts, 3 * Z);
+const bbox = (pts, pad = 3) => [Math.min(...pts.map(p => p[0])) - pad, Math.min(...pts.map(p => p[1])) - pad, Math.max(...pts.map(p => p[0])) + pad, Math.max(...pts.map(p => p[1])) + pad];
 
 // cadena que arrastra (capa, bufanda): cada tramo mezcla gravedad y estela
 function trailChain(root, n, seg, grav, trail, amt, wave, phase) {
@@ -192,7 +195,7 @@ function drawWeapon(c, S, p, fist) {
       const sd = (px - cl[bi][0]) * n[0] + (py - cl[bi][1]) * n[1];
       if (bi >= N - 2) return 'h';
       return sd > 0.45 ? 'g' : (sd < -0.5 ? '3' : '4');
-    }, bbox(bladePoly), true);
+    }, bboxZ(bladePoly), true);
     // guarda ambar (cruceta) y empunadura
     const gi = 2, gn = [-tg[gi][1], tg[gi][0]];
     c.line(add(cl[gi], mul(gn, 3.6)), add(cl[gi], mul(gn, -3.6)), 'c');
@@ -212,12 +215,12 @@ function drawWeapon(c, S, p, fist) {
       if (al > L - 3) return '4';
       if (((Math.floor(px) * 7 + Math.floor(py) * 3) % 5) === 0 && al > 3) return 'b';
       return sd > 0.7 ? '4' : (sd < -0.6 ? '2' : '3');
-    }, bbox(poly), true);
+    }, bboxZ(poly), true);
     c.line(add(fist, mul(bn, 3)), add(fist, mul(bn, -3)), 'a');
   } else if (kind === 'spear') {
     const back = 10, L = S.weaponLen;
     const sA = add(fist, mul(bd, -back)), sB = add(fist, mul(bd, L - 8));
-    c.shape(chainTest([sA, sB], [1.3, 1.1]), chainColor([sA, sB], [1.3, 1.1], 'c', 'b', 'a'), bbox([sA, sB]), true);
+    c.shape(chainTest([sA, sB], [1.3, 1.1]), chainColor([sA, sB], [1.3, 1.1], 'c', 'b', 'a'), bboxZ([sA, sB]), true);
     // punta en hoja
     const hb = add(fist, mul(bd, L - 9)); tipPt = add(fist, mul(bd, L + 1));
     const leaf = [add(hb, mul(bn, 0.6)), add(add(hb, mul(bd, 4)), mul(bn, 2.7)), tipPt, add(add(hb, mul(bd, 4)), mul(bn, -2.7)), add(hb, mul(bn, -0.6))];
@@ -225,29 +228,29 @@ function drawWeapon(c, S, p, fist) {
       const sd = (px - hb[0]) * bn[0] + (py - hb[1]) * bn[1];
       const al = (px - hb[0]) * bd[0] + (py - hb[1]) * bd[1];
       return al > 8 ? 'h' : (sd > 0.5 ? '4' : (sd < -0.5 ? '2' : '3'));
-    }, bbox(leaf), true);
+    }, bboxZ(leaf), true);
     // trapo rojo atado bajo la punta
     const tb = add(hb, mul(bd, -1.2));
     const rag = trailChain(tb, 3, 3.2, [0, 1], [-bd[0] * 0.2 - 0.6, 0.2], 0.6, 0.6, p.phase + 2);
-    c.shape(chainTest(rag, [1.4, 1.2, 0.9, 0.6]), chainColor(rag, [1.4, 1.2, 0.9, 0.6], 't', 's', 'r'), bbox(rag), false);
+    c.shape(chainTest(rag, [1.4, 1.2, 0.9, 0.6]), chainColor(rag, [1.4, 1.2, 0.9, 0.6], 't', 's', 'r'), bboxZ(rag), false);
   } else if (kind === 'maul') {
-    const back = 6, L = S.weaponLen;
+    const back = 6 * Z, L = S.weaponLen;
     const sA = add(fist, mul(bd, -back)), sB = add(fist, mul(bd, L));
     // mango (S.maulShaft = radios, S.shaftCol = tonos) y cabeza (S.maulHead = [semilargo, semiancho]); por defecto, los del coloso
     const shR = S.maulShaft || [1.7, 1.6], shC = S.shaftCol || ['c', 'b', 'a'];
-    c.shape(chainTest([sA, sB], shR), chainColor([sA, sB], shR, shC[0], shC[1], shC[2]), bbox([sA, sB]), true);
+    c.shape(chainTest([sA, sB], shR), chainColor([sA, sB], shR, shC[0], shC[1], shC[2]), bboxZ([sA, sB]), true);
     // cabeza: bloque de piedra con bandas de hierro
-    const hc = add(fist, mul(bd, L + 4)); tipPt = hc;
+    const hc = add(fist, mul(bd, L + 4 * Z)); tipPt = hc;
     const hl = (S.maulHead || [6.5, 8])[0], hw2 = (S.maulHead || [6.5, 8])[1];
     const blk = [add(add(hc, mul(bd, -hl)), mul(bn, hw2)), add(add(hc, mul(bd, hl)), mul(bn, hw2)), add(add(hc, mul(bd, hl)), mul(bn, -hw2)), add(add(hc, mul(bd, -hl)), mul(bn, -hw2))];
     c.shape(polyTest(blk), (px, py) => {
       const al = (px - hc[0]) * bd[0] + (py - hc[1]) * bd[1];
       const sd = (px - hc[0]) * bn[0] + (py - hc[1]) * bn[1];
-      if (Math.abs(al) > hl - 1.5 && Math.abs(al) <= hl) return '1';
-      if (Math.abs(al) <= 1.2) return '1';
-      const s = ((px - hc[0]) * LIGHT[0] + (py - hc[1]) * LIGHT[1]) / 8;
+      if (Math.abs(al) > hl - 1.5 * Z && Math.abs(al) <= hl) return '1';
+      if (Math.abs(al) <= 1.2 * Z) return '1';
+      const s = ((px - hc[0]) * LIGHT[0] + (py - hc[1]) * LIGHT[1]) / (8 * Z);
       return s > 0.3 ? '4' : (s < -0.35 ? '2' : '3');
-    }, bbox(blk), true);
+    }, bboxZ(blk), true);
     // pinchos oxidados
     for (const sgn of [1, -1]) c.set(Math.floor(hc[0] + bn[0] * (hw2 + 1) * sgn), Math.floor(hc[1] + bn[1] * (hw2 + 1) * sgn), 'b');
   } else if (kind === 'claws') {
@@ -260,7 +263,7 @@ function drawWeapon(c, S, p, fist) {
       c.shape(polyTest(poly), (px, py) => {
         const al = (px - fist[0]) * d[0] + (py - fist[1]) * d[1];
         return al > S.weaponLen - 3 ? 'u' : '4';
-      }, bbox(poly), true);
+      }, bboxZ(poly), true);
     }
   } else if (kind === 'shard') {
     const L = S.weaponLen; tipPt = add(fist, mul(bd, L));
@@ -268,12 +271,12 @@ function drawWeapon(c, S, p, fist) {
     c.shape(polyTest(poly), (px, py) => {
       const al = (px - fist[0]) * bd[0] + (py - fist[1]) * bd[1];
       return al > L - 3 ? 'u' : (((px - fist[0]) * bn[0] + (py - fist[1]) * bn[1]) > 0 ? '4' : '3');
-    }, bbox(poly), true);
+    }, bboxZ(poly), true);
   } else {
     tipPt = fist;
   }
   // puño
-  c.shape((px, py) => Math.hypot(px - fist[0], py - fist[1]) <= 2.4, (px, py) => ((px - fist[0]) * LIGHT[0] + (py - fist[1]) * LIGHT[1]) > 0 ? S.handCol[0] : S.handCol[1], [fist[0] - 4, fist[1] - 4, fist[0] + 4, fist[1] + 4], true);
+  c.shape((px, py) => Math.hypot(px - fist[0], py - fist[1]) <= 2.4 * Z, (px, py) => ((px - fist[0]) * LIGHT[0] + (py - fist[1]) * LIGHT[1]) > 0 ? S.handCol[0] : S.handCol[1], [fist[0] - 4 * Z, fist[1] - 4 * Z, fist[0] + 4 * Z, fist[1] + 4 * Z], true);
   return { tip: tipPt, mid: add(fist, mul(bd, 11)) };
 }
 
@@ -291,20 +294,21 @@ function wrap(c, S, seg, rr) {
 // ---------- la figura ----------
 function figure(p, S) {
   S = S || HERO;
+  Z = S.z || 1;
   const c = new Canvas();
   const O = [OX, OY];
   const hip = add(O, [p.hipx, p.hipy]);
   const waist = add(hip, mul(dirA(p.lean), S.waistLen));
   const chest = add(waist, mul(dirA(p.lean + p.bend), S.chestLen));
-  const neck = add(chest, mul(dirA(p.lean + p.bend + p.head * 0.5), 3));
+  const neck = add(chest, mul(dirA(p.lean + p.bend + p.head * 0.5), 3 * Z));
   const headC = add(neck, mul(dirA(p.lean + p.bend + p.head), S.headDist));
-  const shoulder = add(chest, mul(dirA(p.lean + p.bend + 90), -0.5));
+  const shoulder = add(chest, mul(dirA(p.lean + p.bend + 90), -0.5 * Z));
   const kneeFwd = (a, b) => (a[0] > b[0] ? a : b);
 
   // ---- capa o harapos (detras de todo)
   const K = S.cape;
   if (K.on) {
-    const capeRoot = add(neck, [-1.5, 2]);
+    const capeRoot = add(neck, [-1.5 * Z, 2 * Z]);
     const capeSpine = trailChain(capeRoot, K.segs, K.seg, [0, 1], [p.capeTx, p.capeTy], p.capeAmt, p.capeWave, p.phase);
     const half = i => K.w0 + i * K.wk;
     const left = [], right = [];
@@ -314,7 +318,7 @@ function figure(p, S) {
       left.push(add(capeSpine[i], mul(n, half(i)))); right.push(add(capeSpine[i], mul(n, -half(i))));
     }
     const endD = norm(sub(capeSpine[capeSpine.length - 1], capeSpine[capeSpine.length - 2]));
-    const tip = add(capeSpine[capeSpine.length - 1], mul(endD, 3));
+    const tip = add(capeSpine[capeSpine.length - 1], mul(endD, 3 * Z));
     let capePoly;
     if (K.rag > 0) {
       // borde inferior desgarrado: dientes de sierra
@@ -324,13 +328,13 @@ function figure(p, S) {
       for (let i = 0; i <= nTeeth; i++) {
         const t = i / nTeeth;
         const base = add(mul(lEnd, 1 - t), mul(rEnd, t));
-        ends.push(add(base, mul(endD, (i % 2 === 0 ? 4.5 : 1) + (i % 3))));
+        ends.push(add(base, mul(endD, ((i % 2 === 0 ? 4.5 : 1) + (i % 3)) * Z)));
       }
       capePoly = [...left.slice(0, -1), ...ends, ...right.slice(1).reverse()];
     } else {
       capePoly = [...left, tip, ...right.reverse()];
     }
-    c.shape(polyTest(capePoly), () => K.base, bbox(capePoly));
+    c.shape(polyTest(capePoly), () => K.base, bboxZ(capePoly));
     // pliegues a lo largo de la capa y borde claro del lado de la luz
     for (const f of [0.38, -0.2]) {
       for (let i = 1; i < capeSpine.length - 1; i++) {
@@ -356,11 +360,11 @@ function figure(p, S) {
 
   // ---- pierna lejana
   const legPart = (foot, ang, col, rr) => {
-    const ankle = add(O, [foot[0], foot[1] - 2.6]);
+    const ankle = add(O, [foot[0], foot[1] - 2.6 * Z]);
     const s = ik(hip, ankle, S.legLen, S.legLen, kneeFwd);
-    const toe = add(ankle, [4.2 * Math.cos(rad(ang)), 1.7 + 4.2 * Math.sin(rad(ang))]);
+    const toe = add(ankle, [4.2 * Z * Math.cos(rad(ang)), 1.7 * Z + 4.2 * Z * Math.sin(rad(ang))]);
     const pts = [hip, s.joint, s.end, toe];
-    c.shape(chainTest(pts, rr), chainColor(pts, rr, col[0], col[1], col[2], S.noise || 0), bbox(pts));
+    c.shape(chainTest(pts, rr), chainColor(pts, rr, col[0], col[1], col[2], S.noise || 0), bboxZ(pts));
     wrap(c, S, [s.joint, s.end], [rr[1], rr[2]]);
     return s;
   };
@@ -371,7 +375,7 @@ function figure(p, S) {
     const T = add(shoulder, [p.gx, p.gy]);
     const s = ik(shoulder, T, S.farArmLen, S.farArmLen, (a, b) => (a[1] > b[1] ? a : b));
     const pts = [shoulder, s.joint, s.end];
-    c.shape(chainTest(pts, S.farArmR), chainColor(pts, S.farArmR, S.farArmCol[0], S.farArmCol[1], S.farArmCol[2], S.noise || 0), bbox(pts));
+    c.shape(chainTest(pts, S.farArmR), chainColor(pts, S.farArmR, S.farArmCol[0], S.farArmCol[1], S.farArmCol[2], S.noise || 0), bboxZ(pts));
     wrap(c, S, [s.joint, s.end], [S.farArmR[1], S.farArmR[2]]);
     if (S.farHand === 'claws') {
       for (const da of [-24, 0, 24]) {
@@ -384,7 +388,7 @@ function figure(p, S) {
 
   // ---- torso (curvado: cadera, cintura, pecho, cuello)
   const tp = [hip, waist, chest, neck], tr = S.torsoR;
-  c.shape(chainTest(tp, tr), chainColor(tp, tr, S.torsoCol[0], S.torsoCol[1], S.torsoCol[2], S.noise || 0), bbox(tp));
+  c.shape(chainTest(tp, tr), chainColor(tp, tr, S.torsoCol[0], S.torsoCol[1], S.torsoCol[2], S.noise || 0), bboxZ(tp));
   if (S.ribs) {
     // costillas marcadas bajo la piel
     for (let k = 0; k < 3; k++) {
@@ -404,7 +408,7 @@ function figure(p, S) {
     // faja de trapo alrededor de la cintura
     const wb = S.waistBand;
     const wa = add(hip, mul(dirA(p.lean), 0.5)), wc = add(waist, mul(dirA(p.lean + p.bend * 0.5), S.tunic || 1));
-    c.shape(chainTest([wa, wc], [tr[0] + 0.8, tr[1] + 0.8]), chainColor([wa, wc], [tr[0] + 0.8, tr[1] + 0.8], wb[0], wb[1], wb[2]), bbox([wa, wc]), true);
+    c.shape(chainTest([wa, wc], [tr[0] + 0.8, tr[1] + 0.8]), chainColor([wa, wc], [tr[0] + 0.8, tr[1] + 0.8], wb[0], wb[1], wb[2]), bboxZ([wa, wc]), true);
   }
   if (S.strap) {
     // tira cruzada sobre el pecho
@@ -432,10 +436,10 @@ function figure(p, S) {
   // ---- bufanda (azul)
   if (S.scarf) {
     const scarfPts = [add(neck, [-2.2, 0.4]), add(neck, [2, 0.8])];
-    c.shape(chainTest(scarfPts, [1.9, 1.9]), () => 'g', bbox(scarfPts));
+    c.shape(chainTest(scarfPts, [1.9, 1.9]), () => 'g', bboxZ(scarfPts));
     const sc = trailChain(add(neck, [-2, 0.5]), 4, 4.6, [0, 1], [p.scTx, p.scTy], p.scAmt, 0.55, p.phase + 1.3);
     const sr = [1.7, 1.5, 1.2, 1.0, 0.8];
-    c.shape(chainTest(sc, sr), chainColor(sc, sr, 'h', 'g', 'f'), bbox(sc));
+    c.shape(chainTest(sc, sr), chainColor(sc, sr, 'h', 'g', 'f'), bboxZ(sc));
   }
 
   // ---- cabeza
@@ -444,7 +448,7 @@ function figure(p, S) {
     const Hd = S.hood;
     const hoodTip = add(headC, mul(norm([-1, p.hoodTy]), 9.5));
     const hoodBack = [add(headC, [-1, -5.2]), hoodTip, add(headC, [-4.5, 3.5])];
-    c.shape(polyTest(hoodBack), () => Hd.main, bbox(hoodBack), true);
+    c.shape(polyTest(hoodBack), () => Hd.main, bboxZ(hoodBack), true);
     c.shape((px, py) => Math.hypot(px - headC[0], py - headC[1]) <= HR, (px, py) => {
       const s = ((px - headC[0]) * LIGHT[0] + (py - headC[1]) * LIGHT[1]) / HR;
       return s > 0.45 ? Hd.hi : Hd.main;
@@ -487,7 +491,7 @@ function figure(p, S) {
       c.set(Math.floor(headC[0] + HR - 2), Math.floor(headC[1] + 2.6), 'u');
       c.set(Math.floor(headC[0] + HR - 3), Math.floor(headC[1] + 2.6), 't');
       const plume = trailChain(add(headC, [-1.5, -HR + 0.5]), 3, 3.4, [0, 1], [-1, -0.2], 0.7, 0.5, p.phase + 0.7);
-      c.shape(chainTest(plume, [1.5, 1.3, 1.0, 0.7]), chainColor(plume, [1.5, 1.3, 1.0, 0.7], 't', 's', 'r'), bbox(plume), true);
+      c.shape(chainTest(plume, [1.5, 1.3, 1.0, 0.7]), chainColor(plume, [1.5, 1.3, 1.0, 0.7], 't', 's', 'r'), bboxZ(plume), true);
     }
   }
 
@@ -495,7 +499,7 @@ function figure(p, S) {
   const T = add(shoulder, [p.fx, p.fy]);
   const arm = ik(shoulder, T, S.armLen, S.armLen, (a, b) => (a[1] > b[1] ? a : b));
   const apts = [shoulder, arm.joint, arm.end];
-  c.shape(chainTest(apts, S.armR), chainColor(apts, S.armR, S.nearArmCol[0], S.nearArmCol[1], S.nearArmCol[2], S.noise || 0), bbox(apts));
+  c.shape(chainTest(apts, S.armR), chainColor(apts, S.armR, S.nearArmCol[0], S.nearArmCol[1], S.nearArmCol[2], S.noise || 0), bboxZ(apts));
   wrap(c, S, [arm.joint, arm.end], [S.armR[1], S.armR[2]]);
   const fist = arm.end;
   const w = drawWeapon(c, S, p, fist);

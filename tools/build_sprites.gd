@@ -27,6 +27,7 @@ const SOURCE_DIR := "res://art/source"
 const PALETTE_PATH := "res://art/palette.txt"
 const PREVIEW_DIR := "res://art/preview"
 const PREVIEW_SCALE := 8
+const PREVIEW_MAX_PIXELS := 200000000
 
 
 func _init() -> void:
@@ -143,9 +144,13 @@ func _build(path: String, palette: Dictionary) -> bool:
 		push_error("No se pudo guardar " + out_path)
 		return false
 
+	# Las hojas muy grandes (el jefe) se amplían menos para no pasar el límite de píxeles de Godot.
+	var scale := PREVIEW_SCALE
+	while scale > 1 and sheet.get_width() * sheet.get_height() * scale * scale > PREVIEW_MAX_PIXELS:
+		scale -= 1
 	var preview := sheet.duplicate() as Image
-	preview.resize(sheet.get_width() * PREVIEW_SCALE, sheet.get_height() * PREVIEW_SCALE, Image.INTERPOLATE_NEAREST)
-	preview.save_png(ProjectSettings.globalize_path(PREVIEW_DIR.path_join(path.get_file().get_basename() + "_x%d.png" % PREVIEW_SCALE)))
+	preview.resize(sheet.get_width() * scale, sheet.get_height() * scale, Image.INTERPOLATE_NEAREST)
+	preview.save_png(ProjectSettings.globalize_path(PREVIEW_DIR.path_join(path.get_file().get_basename() + "_x%d.png" % scale)))
 
 	print("%s -> %s (%dx%d, %d animaciones)" % [path.get_file(), out_path, sheet.get_width(), sheet.get_height(), animations.size()])
 	return true
