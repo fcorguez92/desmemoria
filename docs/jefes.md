@@ -77,6 +77,10 @@ recuerdo del **dash**.
   (`bosses` en la partida). El recuerdo del dash aparece en el centro de la sala
   y, si se carga una partida sin haberlo cogido, sigue esperando.
 
+### Animaciones y sincronía
+
+La hoja del jefe tiene 11 animaciones (idle, walk, windup, strike, crouch, jump, fall, land, stagger, getup, death). El daño, la onda y las rocas del mazazo no salen al empezar el tajo sino en el **fotograma de impacto** (`STRIKE_IMPACT_FRAME` = 5 de `strike`; `LAND_IMPACT_FRAME` = 1 de `land` para el salto), que avisa `SheetAnimator.frame_changed`: lo que se ve y lo que pega coinciden, y un parry o un aturdimiento a mitad del tajo cancelan el golpe. Si se redibuja la animación hay que mover esas dos constantes.
+
 ### Cómo se monta otro jefe
 
 1. Una escena del jefe con `take_hit` y `on_parried`, las señales `defeated` y
