@@ -568,4 +568,4 @@ function writeSprite(file, header, outPath, order, anims, S) {
 }
 
 module.exports = { setCanvas, canvasSize, rad, dirA, add, sub, mul, len, norm, lerp, ease, clamp, ik, Canvas,
-  chainTest, chainColor, polyTest, bbox, trailChain, HERO, makeStyle, BASE, pose, figure, render, keyed, writeSprite };
+  chainTest, chainColor, polyTest, bbox, trailChain, drawWeapon, HERO, makeStyle, BASE, pose, figure, render, keyed, writeSprite };
