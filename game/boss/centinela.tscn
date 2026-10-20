@@ -23,13 +23,13 @@ shape = SubResource("RectangleShape2D_body")
 [node name="Visual" type="Sprite2D" parent="."]
 texture = ExtResource("2_sheet")
 offset = Vector2(0, -48)
-hframes = 10
-vframes = 8
+hframes = 12
+vframes = 11
 
 [node name="SheetAnimator" type="Node" parent="." node_paths=PackedStringArray("sprite")]
 script = ExtResource("3_animator")
 sprite = NodePath("../Visual")
-animations = {"air": [5, 2, 6.0, true], "crouch": [4, 4, 10.0, false], "getup": [7, 4, 8.0, false], "idle": [0, 8, 6.0, true], "stagger": [6, 6, 8.0, true], "strike": [3, 6, 24.0, false], "walk": [1, 10, 14.0, true], "windup": [2, 6, 8.0, false]}
+animations = {"crouch": [4, 5, 10.0, false], "death": [10, 12, 10.0, false], "fall": [6, 3, 10.0, true], "getup": [9, 6, 10.0, false], "idle": [0, 12, 8.0, true], "jump": [5, 3, 10.0, false], "land": [7, 6, 18.0, false], "stagger": [8, 8, 8.0, true], "strike": [3, 8, 30.0, false], "walk": [1, 12, 16.0, true], "windup": [2, 10, 12.0, false]}
 
 [node name="SlamBox" type="Area2D" parent="."]
 position = Vector2(150, 0)

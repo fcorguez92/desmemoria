@@ -115,9 +115,11 @@ func _test_death_drops_echo_at_last_ground() -> void:
 	var ground: Vector2 = _player.respawn.last_grounded_position
 	_player.add_ecos(4)
 	_player.global_position = Vector2(300, 100)
+	_player.health.heal_charges = 0
 	_player.health.take_hit(99)
 	_check(_player.ecos == 0, "los Ecos se pierden al morir")
 	_check(_player.health.health == 5, "la vida se restaura al reaparecer")
+	_check(_player.health.heal_charges == _player.health.max_heal_charges, "y las curaciones se recargan del todo")
 	_check(is_instance_valid(_player.active_echo), "aparece un Eco")
 	_check(_player.active_echo.ecos_held == 4, "el Eco guarda los Ecos perdidos")
 	_check(_player.active_echo.global_position == ground, "el Eco está en el último suelo pisado")
@@ -2411,7 +2413,14 @@ func _test_boss_attacks_and_parry() -> void:
 	_check(boss.state == boss.State.SLAM_WINDUP, "el mazazo empieza con un aviso")
 	var windup: float = boss._timer
 	_check(windup > 0.5, "que dura más de medio segundo (%.2f s)" % windup)
+	# El golpe llega en el fotograma de impacto del mazazo, un poco después del aviso:
+	# al empezar el tajo todavía no hay daño ni onda.
 	await _wait(int(windup * 60.0) + 3)
+	var early_waves := 0
+	for node in get_nodes_in_group(&"boss_debris"):
+		early_waves += 1 if node is Projectile else 0
+	_check(boss.state == boss.State.SLAM_STRIKE and early_waves == 0 and _player.health.health == health_before, "al empezar el tajo aún no hay golpe: llega cuando el mazo toca el suelo")
+	await _wait(13)
 	_check(_player.health.health <= health_before - 2 or boss.state == boss.State.SLAM_STRIKE, "el mazazo pega fuerte a quien está al alcance")
 	var wave: Projectile = null
 	for node in get_nodes_in_group(&"boss_debris"):

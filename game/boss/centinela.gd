@@ -63,6 +63,11 @@ const DROP_IF_BELOW := 60.0
 ## Como el jugador al bajar de un tablón: se hunde un poco y cae.
 const DROP_DISTANCE := 5.0
 const DROP_SPEED := 60.0
+## Fotograma de la animación en el que la cabeza del mazo toca el suelo (strike) y en el
+## que el cuerpo se estrella contra él (land): ahí, y no antes, se hace el daño y se
+## sueltan las ondas y las rocas. Ver art/source/centinela.sprite / tools/rig_centinela.js.
+const STRIKE_IMPACT_FRAME := 5
+const LAND_IMPACT_FRAME := 1
 ## Tiempos en segundos.
 const WAKE_TIME := 1.6
 const SLAM_STRIKE_TIME := 0.3
@@ -73,6 +78,8 @@ const LEAP_FLIGHT_TIME := 0.85
 const RAGE_WINDUP_TIME := 0.5
 const RAGE_GAP_TIME := 0.5
 const DEATH_TIME := 1.8
+## Lo que dura la animación de morir (12 fotogramas a 10 fps) antes de desvanecerse.
+const DEATH_ANIMATION_TIME := 1.2
 ## Ajuste por fase: aviso, recuperación y pausa entre ataques; agachado del
 ## salto y su probabilidad; rocas y ondas del mazazo y del aterrizaje; mazazos de
 ## la furia con la que empieza la fase.
@@ -105,6 +112,8 @@ var _rage_left: int = 0
 var _rage_pending: bool = false
 var _last_was_leap: bool = false
 var _flash_left: float = 0.0
+## Acaba de aterrizar del salto y aún no ha dado el golpe (llega en el fotograma de impacto).
+var _landing: bool = false
 
 @onready var visual: Sprite2D = $Visual
 @onready var animator: SheetAnimator = $SheetAnimator
@@ -117,6 +126,7 @@ func _ready() -> void:
 	core_hp = core_health
 	armor_hp = ARMOR[0]
 	_set_facing(_facing)
+	animator.frame_changed.connect(_on_animation_frame)
 
 
 func _physics_process(delta: float) -> void:
@@ -158,6 +168,7 @@ func _physics_process(delta: float) -> void:
 				_leap()
 		State.LEAP_AIR:
 			_air_time += delta
+			animator.play("jump" if velocity.y < 0.0 else "fall")
 			if _air_time > 0.15 and is_on_floor():
 				_land()
 		State.RECOVER:
@@ -282,6 +293,7 @@ func _hit_core(damage: int) -> void:
 
 
 func _enter_stagger(duration: float) -> void:
+	_landing = false
 	state = State.STAGGER
 	_timer = duration
 	_rage_left = 0
@@ -307,9 +319,12 @@ func _end_stagger() -> void:
 
 func _die() -> void:
 	state = State.DYING
+	_landing = false
 	velocity.x = 0.0
 	visual.modulate = Color.WHITE
 	_rage_left = 0
+	animator.release_action()
+	animator.play_action("death", true)
 	Sfx.play(&"centinela_die", global_position, -2.0)
 	_shake(10.0, 1.2)
 	# Lo que quedaba en vuelo de su último ataque no debe herir durante la muerte.
@@ -317,8 +332,8 @@ func _die() -> void:
 		debris.queue_free()
 	status_changed.emit()
 	var tween := create_tween()
-	tween.tween_property(visual, "modulate", Color(1.0, 0.7, 0.5), 0.5)
-	tween.tween_property(visual, "modulate:a", 0.0, DEATH_TIME - 0.5)
+	tween.tween_interval(DEATH_ANIMATION_TIME)
+	tween.tween_property(visual, "modulate:a", 0.0, DEATH_TIME - DEATH_ANIMATION_TIME)
 	tween.tween_callback(_finish_death)
 
 
@@ -357,8 +372,6 @@ func _slam_strike() -> void:
 	state = State.SLAM_STRIKE
 	_timer = SLAM_STRIKE_TIME
 	animator.play_action("strike")
-	slam_melee.try_attack(self, _facing)
-	_impact(_facing * SLAM_REACH, PHASES[phase].slam_both, PHASES[phase].slam_rocks)
 
 
 func _start_leap() -> void:
@@ -387,7 +400,7 @@ func _leap() -> void:
 	# y = vy*t + g*t²/2 = rise al cabo de LEAP_FLIGHT_TIME
 	velocity.y = (rise - 0.5 * gravity * LEAP_FLIGHT_TIME * LEAP_FLIGHT_TIME) / LEAP_FLIGHT_TIME
 	animator.release_action()
-	animator.play("air")
+	animator.play("jump")
 	Sfx.play(&"boss_leap", global_position, -4.0)
 
 
@@ -395,11 +408,26 @@ func _land() -> void:
 	velocity.x = 0.0
 	state = State.RECOVER
 	_timer = PHASES[phase].recovery
+	_landing = true
 	animator.release_action()
-	animator.play_action("strike")
-	land_melee.try_attack(self, _facing)
-	Sfx.play(&"boss_land", global_position, -2.0)
-	_impact(0.0, PHASES[phase].land_waves, PHASES[phase].land_rocks, false)
+	animator.play_action("land")
+
+
+## El golpe llega en el fotograma de impacto de la animación (ver las constantes
+## STRIKE_IMPACT_FRAME y LAND_IMPACT_FRAME).
+func _on_animation_frame(animation: String, frame: int) -> void:
+	if animation == "strike" and frame == STRIKE_IMPACT_FRAME:
+		if state == State.SLAM_STRIKE:
+			slam_melee.try_attack(self, _facing)
+			_impact(_facing * SLAM_REACH, PHASES[phase].slam_both, PHASES[phase].slam_rocks)
+		elif state == State.RAGE_STRIKE:
+			slam_melee.try_attack(self, _facing)
+			_impact(_facing * SLAM_REACH, true, 2)
+	elif animation == "land" and frame == LAND_IMPACT_FRAME and _landing:
+		_landing = false
+		land_melee.try_attack(self, _facing)
+		Sfx.play(&"boss_land", global_position, -2.0)
+		_impact(0.0, PHASES[phase].land_waves, PHASES[phase].land_rocks, false)
 
 
 func _rage_windup() -> void:
@@ -414,8 +442,6 @@ func _rage_strike() -> void:
 	state = State.RAGE_STRIKE
 	_timer = SLAM_STRIKE_TIME
 	animator.play_action("strike")
-	slam_melee.try_attack(self, _facing)
-	_impact(_facing * SLAM_REACH, true, 2)
 
 
 func _recover() -> void:

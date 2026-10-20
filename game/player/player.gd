@@ -359,7 +359,8 @@ func die() -> void:
 	_spawn_echo(respawn.last_grounded_position, ecos)
 
 	ecos = 0
-	health.reset_health()
+	# Como al descansar: vida y frascos al máximo.
+	health.restore()
 	respawn.respawn(self)
 	_update_hud()
 	_reset_world()
