@@ -23,12 +23,30 @@ func _ready() -> void:
 	monitoring = false
 
 
-## `from` es dónde empieza (en el techo) y `floor_y` el suelo bajo ella.
-func start(from: Vector2, floor_y: float) -> void:
+## `from` es dónde empieza (en el techo). Cae hasta lo primero sólido que haya
+## debajo (suelo o tablón); `fallback_floor_y` solo se usa si no hay nada.
+func start(from: Vector2, fallback_floor_y: float) -> void:
 	global_position = from
-	_floor_y = floor_y
+	_floor_y = _find_floor(from, fallback_floor_y)
 	_marker.top_level = true
-	_marker.global_position = Vector2(from.x, floor_y - 2.0)
+	_marker.global_position = Vector2(from.x, _floor_y - 2.0)
+
+
+## Lo primero que toca un rayo hacia abajo desde el techo, saltándose a los que se
+## mueven (el jugador, el jefe): la roca cae a través de ellos y se rompe contra el
+## escenario. Los tablones cuentan: una roca no atraviesa un tablón.
+func _find_floor(from: Vector2, fallback: float) -> float:
+	var space := get_world_2d().direct_space_state
+	var start := from
+	for i in 6:
+		var query := PhysicsRayQueryParameters2D.create(start, Vector2(start.x, start.y + 4000.0), 1)
+		var hit := space.intersect_ray(query)
+		if hit.is_empty():
+			return fallback
+		if not hit.collider is CharacterBody2D:
+			return hit.position.y
+		start = hit.position + Vector2(0.0, 2.0)
+	return fallback
 
 
 func _physics_process(delta: float) -> void:

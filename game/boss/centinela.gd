@@ -58,6 +58,11 @@ const WALK_RANGE := 180.0
 const SLAM_REACH := 150.0
 ## A qué distancia del jugador cae tras el salto (no encima: ahí no se puede estar).
 const LEAP_STANDOFF := 90.0
+## Si el jugador está al menos esto por debajo de sus pies, baja de un tablón.
+const DROP_IF_BELOW := 60.0
+## Como el jugador al bajar de un tablón: se hunde un poco y cae.
+const DROP_DISTANCE := 5.0
+const DROP_SPEED := 60.0
 ## Tiempos en segundos.
 const WAKE_TIME := 1.6
 const SLAM_STRIKE_TIME := 0.3
@@ -130,10 +135,12 @@ func _physics_process(delta: float) -> void:
 		State.IDLE:
 			velocity.x = 0.0
 			_face_player()
+			_drop_if_player_is_below()
 			if _timer <= 0.0:
 				_decide()
 		State.WALK:
 			_face_player()
+			_drop_if_player_is_below()
 			velocity.x = _facing * walk_speed
 			if _distance_to_player() <= WALK_RANGE or _timer <= 0.0:
 				_to_idle(0.0)
@@ -157,6 +164,7 @@ func _physics_process(delta: float) -> void:
 			velocity.x = 0.0
 			if _timer <= 0.0:
 				_to_idle(PHASES[phase].think)
+				_drop_if_player_is_below()
 		State.RAGE_WINDUP:
 			velocity.x = 0.0
 			if _timer <= 0.0:
@@ -367,12 +375,17 @@ func _leap() -> void:
 	# Cae un poco antes que el jugador, no encima: ahí no se puede estar.
 	var player := _player()
 	var target := global_position.x + _facing * 240.0
+	var rise := 0.0
 	if player:
 		var side := signf(player.global_position.x - global_position.x)
 		target = player.global_position.x - side * LEAP_STANDOFF
+		# Si el jugador está en un tablón más alto, salta hasta su altura (si está más
+		# abajo, cae a su lado desde donde esté). Limitado para no salir de la sala.
+		rise = clampf(player_feet_y(player) - feet_y(), -200.0, 0.0)
 	target = clampf(target, arena_left + HALF_WIDTH, arena_right - HALF_WIDTH)
 	velocity.x = (target - global_position.x) / LEAP_FLIGHT_TIME
-	velocity.y = -gravity * LEAP_FLIGHT_TIME / 2.0
+	# y = vy*t + g*t²/2 = rise al cabo de LEAP_FLIGHT_TIME
+	velocity.y = (rise - 0.5 * gravity * LEAP_FLIGHT_TIME * LEAP_FLIGHT_TIME) / LEAP_FLIGHT_TIME
 	animator.release_action()
 	animator.play("air")
 	Sfx.play(&"boss_leap", global_position, -4.0)
@@ -466,6 +479,27 @@ func _tint() -> Color:
 		State.STAGGER:
 			return STUN_COLOR
 	return Color.WHITE
+
+
+## Y de los pies del jefe y del jugador (el jugador mide 48 de alto).
+func feet_y() -> float:
+	return global_position.y + HALF_HEIGHT
+
+
+func player_feet_y(player: Node2D) -> float:
+	return player.global_position.y + 24.0
+
+
+## Si está sobre un tablón y el jugador está claramente más abajo, baja como lo hace
+## el jugador (abajo + salto): se hunde un poco para atravesarlo y cae.
+func _drop_if_player_is_below() -> void:
+	if not is_on_floor() or not PlatformerMotor.is_standing_on_one_way(self):
+		return
+	var player := _player()
+	if player == null or player_feet_y(player) < feet_y() + DROP_IF_BELOW:
+		return
+	position.y += DROP_DISTANCE
+	velocity.y = DROP_SPEED
 
 
 func _player() -> Node2D:

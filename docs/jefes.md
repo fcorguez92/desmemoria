@@ -67,6 +67,8 @@ recuerdo del **dash**.
     polvo en el suelo.
   - *Salto*: se agazapa, salta y cae junto al jugador (no encima). El golpe es
     rasante (2 de daño): saltar lo evita. No salta dos veces seguidas.
+  - Los tablones: baja de ellos como el jugador (se hunde y cae) si el jugador está claramente más abajo, y el salto apunta también a la altura del jugador, así que sube a un tablón alto si el jugador está en él.
+  - Las rocas caen hasta lo primero sólido que haya debajo de su sitio (suelo o tablón), esté el jefe a la altura que esté.
   - *Furia*: mazazos seguidos en el sitio, con ondas a los dos lados y rocas por
     toda la sala.
 - **Ecos**: suelta 40 al morir.

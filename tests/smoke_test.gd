@@ -79,6 +79,7 @@ func _run() -> void:
 	await _test_the_way_to_the_boss()
 	await _test_boss_phases_and_reward()
 	await _test_boss_attacks_and_parry()
+	await _test_boss_planks_and_rocks()
 	await _test_boss_resets_and_stays_dead()
 	await _test_boss_death_survives_the_player_dying()
 	await _test_dash_puzzle_needs_dash()
@@ -2496,6 +2497,68 @@ func _test_boss_death_survives_the_player_dying() -> void:
 	for child in arena.get_children():
 		rewards += 1 if child is AbilityPickup and not child.is_queued_for_deletion() else 0
 	_check(rewards == 1, "y la recompensa está en la sala")
+
+
+func _test_boss_planks_and_rocks() -> void:
+	print("\n[El jefe baja de los tablones y salta hasta ellos; las rocas caen hasta el suelo que haya debajo]")
+	await _load_world()
+	var arena := _arena()
+	var boss: Node = arena.boss
+	await _enter_arena()
+	await _wait(110)
+	boss.state = boss.State.RECOVER
+	boss._timer = 100.0
+	var floor_top: float = _cell("Aljibe", 0, 30).y - 8.0
+	var plank_top: float = _cell("Aljibe", 0, 23).y - 8.0
+	# Sobre el tablón (columnas 12-21 de la fila 23), con el jugador abajo: baja.
+	boss.global_position = Vector2(_cell("Aljibe", 16, 0).x, plank_top - boss.HALF_HEIGHT - 1.0)
+	boss.velocity = Vector2.ZERO
+	_player.global_position = _standing_on("Aljibe", 30, 30)
+	_player.velocity = Vector2.ZERO
+	await _wait(20)
+	_check(absf(boss.feet_y() - plank_top) < 3.0, "el jefe se apoya en el tablón (feet=%s tablón=%s)" % [boss.feet_y(), plank_top])
+	boss.state = boss.State.IDLE
+	boss._timer = 100.0
+	await _wait(60)
+	_check(absf(boss.feet_y() - floor_top) < 3.0, "con el jugador debajo, baja del tablón hasta el suelo (feet=%s suelo=%s)" % [boss.feet_y(), floor_top])
+	# Si el jugador está en su mismo tablón, se queda.
+	boss.global_position = Vector2(_cell("Aljibe", 14, 0).x, plank_top - boss.HALF_HEIGHT - 1.0)
+	boss.velocity = Vector2.ZERO
+	_player.global_position = _standing_on("Aljibe", 19, 23)
+	_player.velocity = Vector2.ZERO
+	await _wait(20)
+	boss.state = boss.State.IDLE
+	boss._timer = 100.0
+	await _wait(40)
+	_check(absf(boss.feet_y() - plank_top) < 3.0, "con el jugador en su tablón, no baja")
+
+	# El salto llega hasta un jugador que está en un tablón alto.
+	boss.state = boss.State.RECOVER
+	boss._timer = 100.0
+	boss.global_position = Vector2(_cell("Aljibe", 30, 0).x, floor_top - boss.HALF_HEIGHT)
+	boss.velocity = Vector2.ZERO
+	_player.global_position = _standing_on("Aljibe", 48, 23)
+	_player.velocity = Vector2.ZERO
+	await _wait(20)
+	boss._face_player()
+	boss._start_leap()
+	await _wait(int(boss._timer * 60.0) + 3)
+	await _wait(75)
+	_check(absf(boss.feet_y() - plank_top) < 3.0, "el salto sube hasta el tablón del jugador (feet=%s tablón=%s)" % [boss.feet_y(), plank_top])
+
+	# Rocas: sin tablón debajo llegan al suelo aunque el jefe esté más alto; sobre un tablón se rompen en él.
+	var rock_scene: PackedScene = load("res://game/boss/falling_rock.tscn")
+	var ceiling: float = _cell("Aljibe", 0, 0).y + 8.0
+	var open_rock: Node = rock_scene.instantiate()
+	arena.add_child(open_rock)
+	open_rock.start(Vector2(_cell("Aljibe", 30, 0).x, ceiling + 24.0), plank_top)
+	var covered_rock: Node = rock_scene.instantiate()
+	arena.add_child(covered_rock)
+	covered_rock.start(Vector2(_cell("Aljibe", 16, 0).x, ceiling + 24.0), floor_top)
+	_check(absf(open_rock._floor_y - floor_top) < 2.0, "una roca sin nada debajo cae hasta el suelo, aunque el jefe esté en un tablón (%s)" % open_rock._floor_y)
+	_check(absf(covered_rock._floor_y - plank_top) < 2.0, "y sobre un tablón se rompe en el tablón (%s)" % covered_rock._floor_y)
+	open_rock.queue_free()
+	covered_rock.queue_free()
 
 
 func _test_boss_resets_and_stays_dead() -> void:

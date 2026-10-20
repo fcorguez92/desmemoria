@@ -97,7 +97,7 @@ func step(body: CharacterBody2D, delta: float) -> void:
 
 	var jump_pressed := Input.is_action_just_pressed(action_jump)
 	if jump_pressed and on_floor and can_drop_through and Input.is_action_pressed(action_down) \
-			and _standing_on_one_way(body):
+			and is_standing_on_one_way(body):
 		# Abajo + salto sobre una plataforma de un solo sentido: bajar en vez de saltar.
 		body.position.y += drop_through_distance
 		body.velocity.y = drop_through_speed
@@ -140,7 +140,7 @@ func step(body: CharacterBody2D, delta: float) -> void:
 
 ## ¿Lo que hay justo bajo los pies es una plataforma de un solo sentido? Sirve
 ## tanto para baldosas (TileMapLayer) como para formas con `one_way_collision`.
-func _standing_on_one_way(body: CharacterBody2D) -> bool:
+static func is_standing_on_one_way(body: CharacterBody2D) -> bool:
 	var hit := KinematicCollision2D.new()
 	if not body.test_move(body.global_transform, Vector2(0.0, 2.0), hit):
 		return false
