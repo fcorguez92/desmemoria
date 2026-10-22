@@ -53,6 +53,12 @@ signal jumped(kind: StringName)
 ## Velocidad de caída inicial al atravesar.
 @export var drop_through_speed: float = 60.0
 
+@export_group("Esquinas")
+## Corrección de esquina: si al saltar la cabeza rozaría el borde de un techo por
+## menos de estos píxeles, el cuerpo se desplaza hacia el lado libre y sigue subiendo
+## en vez de chocar. Es lo que evita "quedarse pillado" en huecos justos. 0 = sin ella.
+@export var ceiling_corner_correction: float = 8.0
+
 @export_group("Entrada")
 @export var action_left: StringName = &"ui_left"
 @export var action_right: StringName = &"ui_right"
@@ -136,6 +142,25 @@ func step(body: CharacterBody2D, delta: float) -> void:
 		body.velocity.x = direction * speed
 		if direction != 0.0:
 			_set_facing(int(signf(direction)))
+
+
+## Llamar antes de `move_and_slide()`, con la velocidad ya final: si el cuerpo sube y
+## chocaría con la esquina de un techo, lo desplaza de lado hasta `ceiling_corner_correction`
+## píxeles para que pase.
+func correct_ceiling_corner(body: CharacterBody2D, delta: float) -> void:
+	if ceiling_corner_correction <= 0.0 or body.velocity.y >= 0.0:
+		return
+	var motion := Vector2(0.0, body.velocity.y * delta)
+	if not body.test_move(body.global_transform, motion):
+		return
+	for step in range(1, int(ceiling_corner_correction) + 1):
+		for side in [1, -1]:
+			var shift := Vector2(side * step, 0.0)
+			if body.test_move(body.global_transform, shift):
+				continue
+			if not body.test_move(body.global_transform.translated(shift), motion):
+				body.global_position.x += shift.x
+				return
 
 
 ## ¿Lo que hay justo bajo los pies es una plataforma de un solo sentido? Sirve

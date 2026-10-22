@@ -74,6 +74,8 @@ func _run() -> void:
 	await _test_climbing_back_out_of_the_cistern()
 	await _test_tower_needs_double_jump()
 	await _test_dash_is_once_per_air_time()
+	await _test_ceiling_corner_correction()
+	await _test_no_platform_has_a_cramped_ceiling()
 	await _test_spikes_hurt_and_return_to_safe_ground()
 	await _test_pulsing_hazards_cycle()
 	await _test_the_way_to_the_boss()
@@ -2188,6 +2190,66 @@ func _test_dash_is_once_per_air_time() -> void:
 	Input.action_release(&"dash")
 	await _wait(1)
 	_check(_player.dash.is_dashing, "al pisar suelo el dash vuelve a estar disponible")
+
+
+## Un techo cuya esquina roza la cabeza al saltar: sin corrección el jugador choca y
+## se queda abajo; con ella, se desplaza un poco y pasa.
+func _jump_under_a_ceiling_corner(correction: float) -> float:
+	await _fresh_level("", false)
+	_player.motor.ceiling_corner_correction = correction
+	await _stand_at(330.0)
+	var box := StaticBody2D.new()
+	var shape := CollisionShape2D.new()
+	var rect := RectangleShape2D.new()
+	rect.size = Vector2(120.0, 16.0)
+	shape.shape = rect
+	box.add_child(shape)
+	_level.add_child(box)
+	# Su borde derecho entra 6 px en el cuerpo del jugador (que mide 24 de ancho).
+	box.global_position = Vector2(_player.global_position.x - 6.0 - 60.0, 320.0 - 110.0)
+	var top := INF
+	Input.action_press(&"ui_accept")
+	for i in 60:
+		await physics_frame
+		top = minf(top, _player.global_position.y)
+	Input.action_release(&"ui_accept")
+	box.queue_free()
+	return top
+
+
+func _test_ceiling_corner_correction() -> void:
+	print("\n[Corrección de esquina: no se queda pillado al rozar el borde de un techo]")
+	var without := await _jump_under_a_ceiling_corner(0.0)
+	var with := await _jump_under_a_ceiling_corner(8.0)
+	# Sin corrección la cabeza choca bajo el techo (a 110 px del suelo); con ella sube mucho más.
+	_check(without > 320.0 - 110.0 + 20.0, "sin corrección choca con la esquina y no pasa (y=%s)" % without)
+	_check(with < 320.0 - 110.0 - 20.0, "con corrección se desplaza y pasa por encima (y=%s)" % with)
+
+
+## Ninguna plataforma deja menos de 6 baldosas libres hasta el techo (el jugador mide 3
+## y necesita sitio para saltar): un hueco justo hace que se quede pillado. Las puertas
+## de 4 baldosas son la excepción (solo se atraviesan, no se salta dentro).
+func _test_no_platform_has_a_cramped_ceiling() -> void:
+	print("\n[Las plataformas dejan hueco para saltar]")
+	var cramped := []
+	for file in ["ultimo_umbral", "terrazas_secas", "cisterna", "torre_de_riego", "galerias_bajas", "aljibe", "chimenea", "pasarela"]:
+		var rows := FileAccess.get_file_as_string("res://game/levels/%s.map" % file).split("\n", false)
+		for r in rows.size():
+			for c in rows[r].length():
+				var ch := rows[r][c]
+				if not (ch in "TGBCS"):
+					continue
+				if r > 0 and c < rows[r - 1].length() and rows[r - 1][c] in "TGBC":
+					continue
+				# Libre hasta el primer sólido de arriba.
+				var free := 0
+				var y := r - 1
+				while y >= 0 and (c >= rows[y].length() or not (rows[y][c] in "TGBC")):
+					free += 1
+					y -= 1
+				if y >= 0 and free < 6 and not (c <= 1 or c >= rows[r].length() - 2):
+					cramped.append("%s fila %d col %d (%d libres)" % [file, r, c, free])
+	_check(cramped.is_empty(), "ninguna plataforma queda bajo un techo a menos de 6 baldosas%s" % ("" if cramped.is_empty() else ": " + str(cramped.slice(0, 6))))
 
 
 func _test_spikes_hurt_and_return_to_safe_ground() -> void:
