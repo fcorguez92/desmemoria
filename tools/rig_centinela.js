@@ -261,6 +261,16 @@ function burst(out, gx, tau, str, rubble = 18) {
     for (let a2 = 0; a2 < sz * M / 1.4; a2++) for (let b2 = 0; b2 < sz * M / 1.4; b2++) out.set(Math.floor(x) + a2, Math.floor(y) + b2, col);
   }
 }
+// polvo diminuto pegado a la cabeza del mazo (maximo +-36 px de ancho y 30 de alto); el resto lo hace el codigo
+function puff(o, gx, tau) {
+  const hw = 20 + 8 * tau, hh = 14 + 6 * tau, thin = 0.15 * tau;
+  paintBehind(o, (x, y) => y <= GY + 1 && ((x - gx) / hw) ** 2 + ((y - (GY - hh * 0.4)) / hh) ** 2 <= 1,
+    (x, y) => (hash2(x * 0.5 | 0, y * 0.5 | 0) < thin ? '.' : (y < GY - hh * 0.7 ? '4' : '3')), [gx - hw, GY - hh * 1.4, gx + hw, GY]);
+  for (let k = 0; k < 6; k++) {
+    const x = gx + (hash2(k, 2.2) - 0.5) * 2 * (12 + 8 * tau), y = GY - 4 - hash2(k, 5.1) * (8 + 8 * tau);
+    dot(o, x, y, k % 3 === 0 ? 'c' : (k % 2 ? '3' : '4'));
+  }
+}
 // onda de choque rasa que se abre por el suelo (r = radio horizontal en px)
 function wave(out, cx, r, fade) {
   for (let k = 0; k < 2; k++) {
@@ -439,9 +449,9 @@ const STR = [
     if (i === 1) swoosh(o, [ps[0].headPx, tip], 10);
     if (i >= 5) {
       const tau = i - 5;
-      burst(o, tip[0] + 4, tau, 1, 22);
-      floorCracks(o, tip[0] + 4, 5 - tau, 1 - tau * 0.4);
-      if (i === 5) flash(o, tip[0] + 4, GY - 4, 40);
+      puff(o, tip[0] + 4, tau);
+      floorCracks(o, tip[0] + 4, 4 - tau, 1 - tau * 0.4);
+      if (i === 5) flash(o, tip[0] + 4, GY - 4, 30);
     }
   }));
   anims.strike = { fps: 30, loop: false, frames: ps };
@@ -482,16 +492,8 @@ const LD = [
   { hip: [0, -57], lean: 9, bend: 5, head: 1, nf: [30, 0], ff: [-30, 0], H: [-31, 135], blade: -148, glow: 0.55, pad: -2, capeTx: -1, capeTy: 0.4, capeAmt: 0.35 },
   { hip: [0, -65], lean: 5, bend: 4, head: 4, nf: [27, 0], ff: [-27, 0], H: [-37, 129], blade: -157, glow: 0.4, pad: 0.5, capeTx: -1, capeTy: 0.3, capeAmt: 0.25 },
 ];
-anims.land = { fps: 18, loop: false, frames: build('land', 6, (i) => withFx(mk(Object.assign({ phase: i * 0.9, capeWave: 0.45 }, LD[i])), (o) => {
-  if (i >= 1 && i <= 4) {
-    const tau = i - 1;
-    burst(o, OX, tau, 1.0, 20);
-    burst(o, OX + 44, tau + 0.5, 0.6, 6);
-    burst(o, OX - 44, tau + 0.5, 0.6, 6);
-    wave(o, OX, 40 + 56 * tau, tau * 0.22);
-    if (i <= 2) floorCracks(o, OX, 7 - 2 * tau, 1 - 0.5 * tau);
-  }
-})) };
+// (sin polvo ni onda: los genera el codigo solo donde hay suelo)
+anims.land = { fps: 18, loop: false, frames: build('land', 6, (i) => withFx(mk(Object.assign({ phase: i * 0.9, capeWave: 0.45 }, LD[i])))) };
 
 // stagger: de rodillas, el mazo apoyado, la armadura abierta y el cascaron palido asomando (punto debil); 8 fotogramas (bucle)
 anims.stagger = { fps: 8, loop: true, frames: build('stagger', 8, (i, t) => {
