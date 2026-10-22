@@ -67,6 +67,9 @@ recuerdo del **dash**.
     polvo en el suelo.
   - *Salto*: se agazapa, salta y cae junto al jugador (no encima). El golpe es
     rasante (2 de daño): saltar lo evita. No salta dos veces seguidas.
+  - La **onda** de polvo corre pegada al suelo: si sale de un tablón, al acabarse el tablón **cae al suelo de abajo y sigue avanzando**; sube escalones pequeños y se deshace contra una pared (`shockwave.gd`). Un parry la devuelve igual.
+  - El **polvo** del aterrizaje se genera por código y solo sale **sobre suelo** (`impact_dust.gd`): en un tablón estrecho no aparece flotando en el aire. Por eso el mazazo solo se da si hay suelo bajo toda la huella del mazo (si no, el jefe se recoloca con un salto).
+  - Si cae **encima del jugador** no se queda subido: mientras salta y justo después no choca con él (ni él con el jefe) y se aparta a un lado hasta separarse.
   - Los tablones: baja de ellos como el jugador (se hunde y cae) si el jugador está claramente más abajo, y el salto apunta también a la altura del jugador, así que sube a un tablón alto si el jugador está en él.
   - Las rocas caen hasta lo primero sólido que haya debajo de su sitio (suelo o tablón), esté el jefe a la altura que esté.
   - *Furia*: mazazos seguidos en el sitio, con ondas a los dos lados y rocas por

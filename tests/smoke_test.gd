@@ -80,6 +80,9 @@ func _run() -> void:
 	await _test_boss_phases_and_reward()
 	await _test_boss_attacks_and_parry()
 	await _test_boss_planks_and_rocks()
+	await _test_boss_does_not_stay_on_top_of_the_player()
+	await _test_boss_waves_follow_the_ground_and_dust_needs_ground()
+	await _test_enemies_only_act_in_their_own_room()
 	await _test_boss_resets_and_stays_dead()
 	await _test_boss_death_survives_the_player_dying()
 	await _test_dash_puzzle_needs_dash()
@@ -983,12 +986,12 @@ func _test_scenery_is_dense_and_harmless() -> void:
 ## píxeles a la derecha del jugador (que se coloca en x = 60: a su izquierda hay un
 ## muro y a la derecha, más allá de x = 250, la cabaña, que pararía los proyectiles).
 func _spawn_enemy_next_to_player(scene_path: String, distance: float) -> Node2D:
-	_player.global_position = Vector2(60.0, 296.0)
+	_player.global_position = Vector2(100.0, 296.0)
 	_player.velocity = Vector2.ZERO
 	var enemy: Node2D = load(scene_path).instantiate()
 	_room.add_child(enemy)
 	var half_height: float = enemy.get_node("CollisionShape2D").shape.size.y / 2.0
-	enemy.global_position = Vector2(60.0 + distance, 320.0 - half_height)
+	enemy.global_position = Vector2(100.0 + distance, 320.0 - half_height)
 	enemy.ai._home_x = enemy.global_position.x
 	return enemy
 
@@ -2568,6 +2571,138 @@ func _test_boss_planks_and_rocks() -> void:
 	_check(absf(covered_rock._floor_y - plank_top) < 2.0, "y sobre un tablón se rompe en el tablón (%s)" % covered_rock._floor_y)
 	open_rock.queue_free()
 	covered_rock.queue_free()
+
+
+func _test_boss_does_not_stay_on_top_of_the_player() -> void:
+	print("\n[Si el jefe cae encima del jugador, no se queda subido a su cabeza]")
+	await _load_world()
+	var arena := _arena()
+	var boss: Node = arena.boss
+	await _enter_arena()
+	await _wait(110)
+	boss.state = boss.State.RECOVER
+	boss._timer = 100.0
+	var floor_top: float = _cell("Aljibe", 0, 30).y - 8.0
+	boss.global_position = Vector2(_cell("Aljibe", 40, 0).x, floor_top - boss.HALF_HEIGHT)
+	boss.velocity = Vector2.ZERO
+	_player.global_position = _standing_on("Aljibe", 24, 30)
+	_player.velocity = Vector2.ZERO
+	await _wait(10)
+	boss._face_player()
+	boss._start_leap()
+	await _wait(int(boss._timer * 60.0) + 3)
+	# En pleno vuelo, el jugador se mete justo bajo el sitio de caída.
+	await _wait(20)
+	_player.global_position = Vector2(boss.global_position.x + boss.velocity.x * 0.45, _player.global_position.y)
+	_player.velocity = Vector2.ZERO
+	await _wait(90)
+	_check(absf(boss.feet_y() - floor_top) < 3.0, "el jefe acaba en el suelo, no subido al jugador (feet=%s suelo=%s)" % [boss.feet_y(), floor_top])
+	await _wait(60)
+	_check(absf(boss.global_position.x - _player.global_position.x) >= boss.HALF_WIDTH + 12.0 and boss._ghosted == null, "y se aparta: ya no se atraviesan")
+
+
+func _test_boss_waves_follow_the_ground_and_dust_needs_ground() -> void:
+	print("\n[La onda cae de los tablones al suelo y sigue; el polvo solo sale sobre suelo; no golpea sobre el vacío]")
+	await _load_world()
+	var arena := _arena()
+	var boss: Node = arena.boss
+	await _enter_arena()
+	await _wait(110)
+	boss.state = boss.State.RECOVER
+	boss._timer = 100.0
+	var floor_top: float = _cell("Aljibe", 0, 30).y - 8.0
+	var plank_top: float = _cell("Aljibe", 0, 23).y - 8.0
+	var plank_right: float = _cell("Aljibe", 22, 0).x - 8.0
+	# Una onda que sale del borde derecho del tablón (columnas 12-21) hacia la derecha.
+	var wave: Projectile = load("res://game/boss/shockwave.tscn").instantiate()
+	arena.add_child(wave)
+	wave.global_position = Vector2(plank_right - 30.0, plank_top - 16.0)
+	wave.launch(Vector2.RIGHT)
+	await _wait(8)
+	_check(absf(wave.global_position.y - (plank_top - 16.0)) < 4.0, "corre pegada al tablón mientras hay tablón")
+	await _wait(45)
+	_check(is_instance_valid(wave) and wave.global_position.x > plank_right and absf(wave.global_position.y - (floor_top - 16.0)) < 4.0, "al acabarse el tablón cae al suelo de abajo y sigue avanzando (x=%s y=%s)" % [wave.global_position.x, wave.global_position.y])
+	var before: float = wave.global_position.x
+	await _wait(10)
+	_check(is_instance_valid(wave) and wave.global_position.x > before, "y continúa por el suelo")
+	wave.queue_free()
+
+	# Polvo: sobre el tablón solo donde hay tablón.
+	var dust_script: Script = load("res://game/boss/impact_dust.gd")
+	var plank_center: float = _cell("Aljibe", 16, 0).x + 8.0
+	dust_script.spawn(arena, plank_center, plank_top, 150.0)
+	var dust: Node2D = null
+	for child in arena.get_children():
+		if child.get_script() == dust_script:
+			dust = child
+	var inside := dust != null
+	if dust:
+		for puff in dust._puffs:
+			inside = inside and absf(puff.x) <= 96.0
+	_check(dust != null and not dust._puffs.is_empty() and inside, "el polvo de un aterrizaje en un tablón no sale fuera de él")
+	if dust:
+		dust.queue_free()
+	dust_script.spawn(arena, _cell("Aljibe", 32, 0).x, floor_top, 150.0)
+	var floor_dust: Node2D = null
+	for child in arena.get_children():
+		if child.get_script() == dust_script and child != dust:
+			floor_dust = child
+	_check(floor_dust != null and floor_dust._puffs.size() >= 9, "y sobre el suelo sale con todo su ancho")
+
+	# No golpea con el mazo en el aire: desde un tablón (el mazo cae fuera) salta o baja.
+	boss.global_position = Vector2(plank_center, plank_top - boss.HALF_HEIGHT - 1.0)
+	boss.velocity = Vector2.ZERO
+	_player.global_position = _standing_on("Aljibe", 24, 23 + 7)
+	await _wait(15)
+	boss._set_facing(1)
+	_check(not boss._slam_supported(), "desde un tablón estrecho el mazo cae fuera de él: no hay golpe posible")
+	boss.state = boss.State.IDLE
+	boss._timer = 0.0
+	boss._last_was_leap = false
+	boss._decide()
+	_check(boss.state == boss.State.LEAP_CROUCH or boss.state == boss.State.WALK, "y en vez de golpear en el aire, se recoloca")
+	boss.global_position = Vector2(_cell("Aljibe", 36, 0).x, floor_top - boss.HALF_HEIGHT)
+	boss.velocity = Vector2.ZERO
+	await _wait(15)
+	boss._set_facing(-1)
+	_check(boss._slam_supported(), "en el suelo, el mazazo sí tiene dónde caer")
+
+
+func _test_enemies_only_act_in_their_own_room() -> void:
+	print("\n[Los enemigos solo actúan dentro de su sala, y no nada más entrar en ella]")
+	await _load_world()
+	_player.health.max_health = 99
+	_player.health.health = 99
+	var terrazas: Node2D = _level.get_node("Rooms/TerrazasSecas")
+	var east_enemies: Array = []
+	for child in terrazas.get_children():
+		if child is EntitySpawner and is_instance_valid(child.instance) and child.global_position.x > terrazas.global_position.x + 50.0 * 16.0:
+			east_enemies.append(child.instance)
+	_check(not east_enemies.is_empty(), "hay un enemigo en el lado este de las Terrazas")
+	# El jugador está en la Torre, al otro lado de la puerta, a unas baldosas del enemigo.
+	_player.global_position = _standing_on("TorreDeRiego", 3, 40)
+	_player.velocity = Vector2.ZERO
+	await _wait(90)
+	var calm := true
+	for enemy in east_enemies:
+		calm = calm and enemy.ai.state == PatrolChaseAI.State.PATROL
+	_check(calm, "desde la sala de al lado no lo persigue ni lo ataca")
+	# Recién entrado en la sala (junto a la puerta) todavía no lo nota.
+	_player.global_position = _standing_on("TerrazasSecas", 62, 20)
+	_player.velocity = Vector2.ZERO
+	await _wait(60)
+	calm = true
+	for enemy in east_enemies:
+		calm = calm and enemy.ai.state == PatrolChaseAI.State.PATROL
+	_check(calm, "y recién cambiado de sala, junto a la puerta, tampoco")
+	# Ya dentro, sí.
+	_player.global_position = _standing_on("TerrazasSecas", 52, 20)
+	_player.velocity = Vector2.ZERO
+	await _wait(60)
+	var woke := false
+	for enemy in east_enemies:
+		woke = woke or enemy.ai.state != PatrolChaseAI.State.PATROL
+	_check(woke, "dentro de su sala sí actúa con normalidad")
 
 
 func _test_boss_resets_and_stays_dead() -> void:

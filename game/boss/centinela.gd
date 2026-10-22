@@ -34,6 +34,7 @@ enum State {
 
 const ShockwaveScene := preload("res://game/boss/shockwave.tscn")
 const RockScene := preload("res://game/boss/falling_rock.tscn")
+const ImpactDust := preload("res://game/boss/impact_dust.gd")
 
 const TELEGRAPH_COLOR := Color(1.0, 0.85, 0.3)
 const STUN_COLOR := Color(0.7, 0.9, 1.0)
@@ -58,6 +59,13 @@ const WALK_RANGE := 180.0
 const SLAM_REACH := 150.0
 ## A qué distancia del jugador cae tras el salto (no encima: ahí no se puede estar).
 const LEAP_STANDOFF := 90.0
+## Mitad de la huella del mazo en el suelo: debe haber suelo bajo toda ella para
+## golpear (si no, el polvo del impacto saldría flotando en el aire).
+const SLAM_FOOTPRINT := 40.0
+## Mitad del ancho del polvo del aterrizaje (solo aparece sobre suelo).
+const LAND_DUST_HALF_WIDTH := 150.0
+## Separación mínima, en el aterrizaje, para dejar de atravesar al jugador.
+const SEPARATION := 18.0
 ## Si el jugador está al menos esto por debajo de sus pies, baja de un tablón.
 const DROP_IF_BELOW := 60.0
 ## Como el jugador al bajar de un tablón: se hunde un poco y cae.
@@ -114,6 +122,9 @@ var _last_was_leap: bool = false
 var _flash_left: float = 0.0
 ## Acaba de aterrizar del salto y aún no ha dado el golpe (llega en el fotograma de impacto).
 var _landing: bool = false
+## Mientras salta y justo después de caer no choca con el jugador (ni el jugador con él),
+## para que no se quede subido encima de su cabeza como si fuese suelo.
+var _ghosted: CollisionObject2D
 
 @onready var visual: Sprite2D = $Visual
 @onready var animator: SheetAnimator = $SheetAnimator
@@ -209,6 +220,7 @@ func _physics_process(delta: float) -> void:
 		_:
 			velocity.x = 0.0
 
+	_resolve_overlap_with_player()
 	move_and_slide()
 	global_position.x = clampf(global_position.x, arena_left + HALF_WIDTH, arena_right - HALF_WIDTH)
 	if state != State.DYING:
@@ -337,6 +349,11 @@ func _die() -> void:
 	tween.tween_callback(_finish_death)
 
 
+func _exit_tree() -> void:
+	if is_instance_valid(_ghosted):
+		_ghosted.remove_collision_exception_with(self)
+
+
 func _finish_death() -> void:
 	var player := get_tree().get_first_node_in_group("player")
 	if player:
@@ -354,7 +371,7 @@ func _decide() -> void:
 		state = State.WALK
 		_timer = 1.2
 		return
-	if leap or (not near and not _last_was_leap):
+	if leap or (not near and not _last_was_leap) or not _slam_supported():
 		_start_leap()
 	else:
 		_start_slam()
@@ -395,7 +412,15 @@ func _leap() -> void:
 		# Si el jugador está en un tablón más alto, salta hasta su altura (si está más
 		# abajo, cae a su lado desde donde esté). Limitado para no salir de la sala.
 		rise = clampf(player_feet_y(player) - feet_y(), -200.0, 0.0)
+		_ghost(player)
 	target = clampf(target, arena_left + HALF_WIDTH, arena_right - HALF_WIDTH)
+	if rise < -8.0:
+		# Aterriza en un tablón: dentro de él, con el cuerpo entero apoyado.
+		var span := _platform_span(target, feet_y() + rise)
+		if span.y - span.x < 2.0 * (HALF_WIDTH + 8.0):
+			target = (span.x + span.y) / 2.0
+		else:
+			target = clampf(target, span.x + HALF_WIDTH + 8.0, span.y - HALF_WIDTH - 8.0)
 	velocity.x = (target - global_position.x) / LEAP_FLIGHT_TIME
 	# y = vy*t + g*t²/2 = rise al cabo de LEAP_FLIGHT_TIME
 	velocity.y = (rise - 0.5 * gravity * LEAP_FLIGHT_TIME * LEAP_FLIGHT_TIME) / LEAP_FLIGHT_TIME
@@ -427,10 +452,16 @@ func _on_animation_frame(animation: String, frame: int) -> void:
 		_landing = false
 		land_melee.try_attack(self, _facing)
 		Sfx.play(&"boss_land", global_position, -2.0)
+		ImpactDust.spawn(get_parent(), global_position.x, feet_y(), LAND_DUST_HALF_WIDTH)
 		_impact(0.0, PHASES[phase].land_waves, PHASES[phase].land_rocks, false)
 
 
 func _rage_windup() -> void:
+	if not _slam_supported():
+		# Sin suelo bajo el mazo (borde de un tablón): no golpea; se recoloca con un salto.
+		_rage_left = 0
+		_start_leap()
+		return
 	state = State.RAGE_WINDUP
 	_timer = RAGE_WINDUP_TIME
 	_face_player()
@@ -526,6 +557,68 @@ func _drop_if_player_is_below() -> void:
 		return
 	position.y += DROP_DISTANCE
 	velocity.y = DROP_SPEED
+
+
+## ¿Hay suelo bajo toda la huella del mazo, delante de él?
+func _slam_supported() -> bool:
+	var x := global_position.x + _facing * SLAM_REACH
+	for dx in [-SLAM_FOOTPRINT, 0.0, SLAM_FOOTPRINT]:
+		if not _has_ground(x + dx, feet_y()):
+			return false
+	return true
+
+
+## ¿Hay suelo (no un cuerpo con movimiento) justo bajo `(x, y)`?
+func _has_ground(x: float, y: float) -> bool:
+	var start := Vector2(x, y - 10.0)
+	var space := get_world_2d().direct_space_state
+	for i in 4:
+		var query := PhysicsRayQueryParameters2D.create(start, Vector2(x, y + 24.0), 1, [get_rid()])
+		var hit := space.intersect_ray(query)
+		if hit.is_empty():
+			return false
+		if not hit.collider is CharacterBody2D:
+			return true
+		start = hit.position + Vector2(0.0, 2.0)
+	return false
+
+
+## Extremos izquierdo y derecho (x) del suelo a la altura `y` que pisa `x`.
+func _platform_span(x: float, y: float) -> Vector2:
+	var left := x
+	var right := x
+	for i in 80:
+		if not _has_ground(left - 8.0, y):
+			break
+		left -= 8.0
+	for i in 80:
+		if not _has_ground(right + 8.0, y):
+			break
+		right += 8.0
+	return Vector2(left, right)
+
+
+## Deja de chocar con el jugador (en los dos sentidos) hasta separarse de él.
+func _ghost(player: Node2D) -> void:
+	if player is CollisionObject2D and _ghosted == null:
+		_ghosted = player
+		add_collision_exception_with(player)
+		player.add_collision_exception_with(self)
+
+
+## Si cae encima del jugador, no se queda subido a su cabeza: lo atraviesa, y mientras
+## sigan solapados se aparta de él a un lado hasta que ya no se tocan.
+func _resolve_overlap_with_player() -> void:
+	if _ghosted == null or state == State.LEAP_AIR:
+		return
+	var offset := _ghosted.global_position - global_position
+	if absf(offset.x) < HALF_WIDTH + SEPARATION and absf(offset.y) < HALF_HEIGHT + 30.0:
+		var away := -signf(offset.x) if offset.x != 0.0 else -float(_facing)
+		velocity.x = away * 280.0
+	else:
+		remove_collision_exception_with(_ghosted)
+		_ghosted.remove_collision_exception_with(self)
+		_ghosted = null
 
 
 func _player() -> Node2D:

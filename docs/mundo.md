@@ -72,7 +72,7 @@ descargarlas, pero hoy no hace falta.
 
 El recorrido sigue el ritmo de un primer tramo de Hollow Knight (un pueblo, una
 caída a una zona subterránea, un banco justo antes del primer jefe y el poder que
-da, probado enseguida en un pasaje exigente). Las salas del tramo son **largas**
+da, probado enseguida en un pasaje exigente). Los enemigos **solo actúan dentro de su sala** y cuando el jugador lleva unas 4 baldosas dentro de ella (`ROOM_ENTRY_MARGIN` en `enemy.gd`, `PatrolChaseAI.territory`): no te pegan recién cambiado de sala ni desde la de al lado a través de la puerta. Además, ningún enemigo se coloca a menos de ~10 baldosas de una puerta. Las salas del tramo son **largas**
 (la Cisterna 128 baldosas, las Galerías 112) y los enemigos van separados unas
 14 o 18 baldosas, para que cada encuentro sea suyo y no un montón.
 

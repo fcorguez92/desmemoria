@@ -19,6 +19,9 @@ const STUN_COLOR := Color(0.7, 0.9, 1.0)
 const STEP_FRAMES := [5, 11]
 ## Segundos mínimos entre dos gruñidos de aviso del mismo enemigo.
 const ALERT_COOLDOWN := 3.0
+## Un enemigo solo actúa si el jugador está dentro de SU sala y al menos esto (px)
+## adentro de sus puertas: ni te pega recién cambiado de sala ni desde la sala de al lado.
+const ROOM_ENTRY_MARGIN := 64.0
 
 @export var ecos_reward: int = 2
 @export var gravity: float = 2250.0
@@ -65,7 +68,9 @@ func _ready() -> void:
 	ai.facing_changed.connect(_on_facing_changed)
 	ai.attack_started.connect(_on_attack_started)
 	ai.attack_landed.connect(_on_attack_landed)
+	ai.attack_cancelled.connect(_on_attack_cancelled)
 	melee.hit_landed.connect(_on_hit_landed)
+	_limit_to_room()
 	animator.frame_changed.connect(_on_animation_frame)
 
 
@@ -152,6 +157,21 @@ func _on_facing_changed(facing: int) -> void:
 	visual.scale.x = facing
 	melee.set_facing(facing)
 	attack_visual.set_facing(facing)
+
+
+## Si el enemigo cuelga de una sala (algo con `world_rect()`), solo actúa dentro de ella.
+func _limit_to_room() -> void:
+	var node := get_parent()
+	while node != null and not node.has_method(&"world_rect"):
+		node = node.get_parent()
+	if node != null:
+		ai.territory = node.world_rect().grow_individual(-ROOM_ENTRY_MARGIN, 0.0, -ROOM_ENTRY_MARGIN, 0.0)
+
+
+## El jugador ha salido de la sala en pleno aviso: no hay golpe.
+func _on_attack_cancelled() -> void:
+	visual.modulate = Color.WHITE
+	attack_visual.reset()
 
 
 func _on_attack_started() -> void:

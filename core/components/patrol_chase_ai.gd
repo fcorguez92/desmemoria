@@ -17,6 +17,8 @@ signal facing_changed(facing: int)
 signal attack_started
 ## Termina el aviso: aquí cae el golpe.
 signal attack_landed
+## Se cancela el aviso porque el objetivo ha salido del territorio (no hay golpe).
+signal attack_cancelled
 
 @export var target_group: StringName = &"player"
 @export var patrol_speed: float = 60.0
@@ -30,6 +32,10 @@ signal attack_landed
 ## Diferencia de altura máxima para considerar que ve al objetivo.
 @export var vertical_tolerance: float = 80.0
 ## Distancia horizontal a la que empieza el aviso del ataque.
+## Zona en la que actúa (en coordenadas globales). Con área, un objetivo fuera de ella
+## no cuenta: ni se detecta, ni se persigue, ni se le ataca (un aviso en curso se
+## cancela). Sin área (por defecto) no hay límite.
+@export var territory: Rect2 = Rect2()
 @export var attack_range: float = 44.0
 @export var windup_time: float = 0.4
 @export var recovery_time: float = 0.7
@@ -85,7 +91,11 @@ func step(body: CharacterBody2D, delta: float) -> void:
 				_walk(body, toward, chase_speed)
 		State.WINDUP:
 			body.velocity.x = 0.0
-			if _timer <= 0.0:
+			if target == null and territory.has_area():
+				_timer = recovery_time
+				state = State.RECOVER
+				attack_cancelled.emit()
+			elif _timer <= 0.0:
 				attack_landed.emit()
 				_timer = recovery_time
 				state = State.RECOVER
@@ -135,4 +145,6 @@ func _set_facing(direction: int) -> void:
 func _find_target() -> Node2D:
 	if not is_instance_valid(_target):
 		_target = get_tree().get_first_node_in_group(target_group) as Node2D
+	if _target != null and territory.has_area() and not territory.has_point(_target.global_position):
+		return null
 	return _target
