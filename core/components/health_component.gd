@@ -41,6 +41,11 @@ func take_hit(amount: int) -> bool:
 	return true
 
 
+## ¿Está ahora mismo en invulnerabilidad (tras un golpe)?
+func is_invulnerable() -> bool:
+	return _invulnerable_timer > 0.0
+
+
 ## Gasta una carga para curar del todo. Devuelve false si no procede.
 func use_heal_charge() -> bool:
 	if heal_charges <= 0 or health >= max_health:

@@ -7,16 +7,17 @@ extends Node2D
 ## nodo Tiles). Este script pone las entidades del juego en los marcadores:
 ##   A = Ancla de Memoria, E 1 2 3 4 = enemigos (ver ENEMIES), R = objeto rompible decorativo (no
 ##   reaparece: ver core/objects/breakable_prop.gd), I = inscripción legible
-##   (ver core/objects/readable.gd), d / j / w = habilidad (dash, doble salto,
-##   salto de pared) que se recuerda al tocarla.
+##   (ver core/objects/readable.gd), i = inscripción con el texto `note` de la sala,
+##   d / j / w = habilidad (dash, doble salto, salto de pared) que se recuerda al
+##   tocarla, ^ v = pinchos fijos (suelo, techo) y ~ - = pinchos que salen y se
+##   retraen (los dos grupos alternan; ver core/objects/hazard.gd).
 ## El marcador P (inicio del jugador) no lo usa la sala: lo busca el mundo, que
 ## es quien crea al jugador.
 ## Cada entidad se coloca con los pies en la parte de abajo de su celda.
 ##
-## Nota: hoy solo hay una inscripción, con el texto fijado en su propia escena
-## (game/environment/inscription.tscn). Si una sala necesitara varias con textos
-## distintos, este script tendría que asignarles el texto por posición o por un
-## marcador numerado (I1, I2...); no hace falta esa complicación todavía.
+## Inscripciones: `I` es la de El Último Umbral (su texto está en
+## game/environment/inscription.tscn); `i` toma el texto de `note`, uno por sala.
+## La leyenda completa de marcadores está en docs/vertical-slice.md.
 
 const EnemyScene := preload("res://game/enemy/enemy.tscn")
 const LanceroScene := preload("res://game/enemy/enemy_lancero.tscn")
@@ -29,6 +30,7 @@ const BreakableCrateScene := preload("res://game/environment/breakable_crate.tsc
 const BreakableBarrelScene := preload("res://game/environment/breakable_barrel.tscn")
 const InscriptionScene := preload("res://game/environment/inscription.tscn")
 const AbilityPickupScene := preload("res://game/ability_pickup/ability_pickup.tscn")
+const SpikesScene := preload("res://game/environment/spikes.tscn")
 const DecorSheet := preload("res://game/environment/decor_sheet.png")
 
 const CELL := 16.0
@@ -77,10 +79,23 @@ const DECOR := {
 }
 const DECOR_FRAMES := 13
 
+## Pinchos: marcador -> [giro en grados, periodo del ciclo (0 = fijos), desfase].
+## Los que pulsan están activos el 40 % del ciclo y avisan 0,4 s antes de salir.
+const SPIKES := {
+	"^": [0.0, 0.0, 0.0],
+	"v": [180.0, 0.0, 0.0],
+	"~": [0.0, 2.4, 0.0],
+	"-": [0.0, 2.4, 0.5],
+}
+const SPIKES_HALF_HEIGHT := 8.0
+
 ## Nombre de la sala: se anuncia al entrar por primera vez y sale en el mapa.
 @export var title: String = ""
 ## Si se ve el cielo con el fondo de colinas (false en salas bajo tierra).
 @export var has_sky: bool = true
+## Texto de las inscripciones del marcador `i` (cada sala dice lo suyo; la `I`
+## mayúscula es la de El Último Umbral, con su texto en la escena).
+@export_multiline var note: String = ""
 
 @onready var tiles: TextTileMap = $Tiles
 
@@ -99,6 +114,21 @@ func _ready() -> void:
 			_place_decor(DECOR[symbol], at)
 	for at in tiles.markers.get("I", []):
 		_place(InscriptionScene.instantiate(), at, INSCRIPTION_HALF_HEIGHT)
+	for at in tiles.markers.get("i", []):
+		var note_stone := InscriptionScene.instantiate()
+		note_stone.text = note
+		_place(note_stone, at, INSCRIPTION_HALF_HEIGHT)
+	for symbol in SPIKES:
+		for at in tiles.markers.get(symbol, []):
+			var spikes := SpikesScene.instantiate()
+			var info: Array = SPIKES[symbol]
+			spikes.rotation_degrees = info[0]
+			if info[1] > 0.0:
+				spikes.period = info[1]
+				spikes.phase = info[2]
+				spikes.active_fraction = 0.4
+				spikes.warning_time = 0.4
+			_place(spikes, at, SPIKES_HALF_HEIGHT)
 	for symbol in ENEMIES:
 		for at in tiles.markers.get(symbol, []):
 			var spawner := EntitySpawner.new()

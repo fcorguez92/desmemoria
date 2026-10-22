@@ -55,7 +55,7 @@ inscripción (que el jugador elige leer, no se le impone):
 ## Fuera del alcance de esta pasada (decidido a propósito)
 
 - Personajes no jugadores y diálogo, jefe final, tienda o mejoras nuevas.
-- Reinicio de enemigos limitado a la zona (con cuatro salas pequeñas aún no hace falta).
+- Reinicio de enemigos limitado a la zona (con ocho salas, de momento no hace falta).
 - Que los objetos rompibles reaparezcan al reiniciar el mundo: no afectan a la
   partida, así que quedan rotos hasta recargar el nivel.
 
@@ -66,7 +66,12 @@ inscripción (que el jugador elige leer, no se le impone):
   madera; `P` inicio del jugador, `A` Ancla de Memoria, `E` cascarón (tajo), `1` lancero (estocada larga), `2` arrojador (esquirlas a distancia), `3` coloso (mazazo lento) y `4` acechador (embestida), `R` urna
   rompible, `I` inscripción legible, `d` / `j` / `w` recuerdo de dash / doble
   salto / salto de pared; `Q` caja rompible, `O` barril rompible (aguanta 2 golpes);
-  `.` vacío. Marcadores de **decorado** sin función (sprites de `decor.sprite`, sin
+  `.` vacío. `i` inscripción con el texto `note` de su sala; `^` y `v` pinchos fijos
+  (en el suelo y colgando del techo), `~` y `-` pinchos que salen y se retraen
+  (los dos grupos alternan). En una **sala de jefe** (`game/boss/boss_room.gd`):
+  `b` dónde duerme el jefe, `t` línea que dispara la pelea, `[` celdas de la reja de
+  entrada (se cierra al empezar), `]` celdas de la reja de salida (cerrada hasta
+  vencer) y `r` dónde aparece la recompensa. Marcadores de **decorado** sin función (sprites de `decor.sprite`, sin
   colisión): `Y` árbol muerto, `U` columna rota, `H` hierba (delante del jugador),
   `Z` zarza, `K` huesos y escombros (delante), `F` estandarte y `N` cadenas y `q`
   enredaderas (cuelgan del techo o de un tablón: el marcador va en la celda de
@@ -92,9 +97,9 @@ inscripción (que el jugador elige leer, no se le impone):
   no suelta nada ni afecta a la partida.
 - `game/environment/inscription.tscn` — una piedra con un texto (`core/objects/readable.gd`).
   Con Z al alcance, el jugador lo lee en el HUD el tiempo que tarde en leerse
-  (según su longitud); no afecta a la partida. Hoy solo hay una, con el texto
-  fijado en la propia escena (ver la nota en `room.gd` sobre qué
-  cambiaría si una zona necesitara varias con textos distintos).
+  (según su longitud); no afecta a la partida. La de El Último Umbral (marcador
+  `I`) lleva el texto en su escena; las demás salas usan el marcador `i`, que
+  toma el texto del campo `note` de su sala.
 - El carro volcado y el saco reventado de la cabaña, y las marcas de arrastre
   junto al foso, son polígonos fijos dentro de `ultimo_umbral.tscn` (nodo
   `SetDressing`): decorado propio de esta zona, sin colisión, no un objeto

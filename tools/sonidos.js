@@ -398,6 +398,8 @@ const VOICES = {
   arrojador: { f0: 200, formants: [[420, 110, 1], [1800, 260, 0.6]], rough: 38, depth: 0.5, breath: 0.7, size: 0.85 },
   coloso: { f0: 56, formants: [[280, 90, 1], [560, 140, 0.6]], rough: 16, depth: 0.7, breath: 0.35, size: 1.7 },
   acechador: { f0: 175, formants: [[700, 160, 1], [1500, 260, 0.6]], rough: 46, depth: 0.65, breath: 0.55, size: 0.8 },
+  // armadura vacía enorme de un Custodio: más grave y grande que el coloso, hueca y con resonancia metálica
+  centinela: { f0: 38, formants: [[190, 70, 1], [400, 110, 0.6], [95, 40, 0.8]], rough: 11, depth: 0.7, breath: 0.4, size: 1.55, ring: true },
 };
 const EVENTS = {
   alert: { variants: 1, make: (v, k) => ({ f0a: v.f0, f0b: v.f0 * 0.72, dur: 0.65 * v.size, hump: v.f0 * 0.1, attack: 0.1, release: 0.25 }) },
@@ -409,16 +411,115 @@ for (const [name, v] of Object.entries(VOICES)) {
   for (const [ev, e] of Object.entries(EVENTS)) {
     def(name + '_' + ev, e.variants, (i, r) => {
       const o = voice(Object.assign({ rough: v.rough, depth: v.depth, breath: v.breath, formants: v.formants }, e.make(v, i)), r);
-      return lp(sat(o, 1.3), name === 'coloso' ? 1800 : 3200);
+      if (v.ring) { // resonancia de casco hueco; al morir, además, chatarra que cae
+        const big = ev === 'die' ? 0.5 : 0.28;
+        mix(o, env(bell(1.4, 118 + i * 9, [1, 1.51, 2.32, 3.4], [0.5, 0.35, 0.22, 0.12], [1, 0.6, 0.4, 0.2]), 0.01, 0.4), big);
+        if (ev === 'die') for (let k = 0; k < 10; k++) mix(o, env(bp(noise(0.06, r), 700 + r() * 2600, 4), 0.0005, 0.02), 0.35, 0.25 + r() * 1.2);
+      }
+      return lp(sat(o, 1.3), v.ring ? 1500 : name === 'coloso' ? 1800 : 3200);
     });
   }
 }
 
+// --- jefe (centinela), armaduras, trampas y entorno ---
+def('boss_slam', 2, (i, r) => {
+  const len = 1.3, o = buf(len);
+  mix(o, sat(env(tone(len, t => 24 + 48 * Math.exp(-t * 13)), 0.002, 0.34), 1.9), 1.0);
+  mix(o, env(tone(len, t => 70 + 90 * Math.exp(-t * 20) + i * 6), 0.001, 0.07), 0.6);
+  mix(o, env(lp(noise(len, r), 1000), 0.002, 0.24), 0.9);
+  mix(o, env(bp(noise(len, r), 520, 1.0), 0.001, 0.1), 0.4);
+  for (let k = 0; k < 14; k++) mix(o, env(bp(noise(0.06, r), 600 + r() * 2200, 3), 0.0005, 0.016), 0.25, 0.04 + r() * 0.7);
+  return snap(lp(o, 3000), r, 0.35, 1100);
+});
+def('boss_leap', 2, (i, r) => {
+  const len = 0.7, o = buf(len);
+  mix(o, env(tone(len, t => 34 + 50 * Math.exp(-t * 14)), 0.001, 0.12), 1.0);
+  mix(o, env(bp(noise(len, r), t => 650 * Math.exp(-t * 4) + 140, 0.9), 0.001, 0.2), 0.9);
+  mix(o, env(lp(noise(len, r), 500), 0.001, 0.16), 0.5);
+  for (let k = 0; k < 4; k++) mix(o, env(bp(noise(0.05, r), 1500 + r() * 2000, 4), 0.0005, 0.012), 0.2, 0.02 + r() * 0.2);
+  return snap(lp(o, 2600), r, 0.25, 900);
+});
+def('boss_land', 2, (i, r) => {
+  const len = 1.4, o = buf(len);
+  mix(o, sat(env(tone(len, t => 22 + 42 * Math.exp(-t * 12)), 0.002, 0.3), 1.8), 1.0);
+  mix(o, env(lp(noise(len, r), 800), 0.002, 0.2), 0.7);
+  mix(o, env(tone(len, 96 + i * 8), 0.001, 0.05), 0.4);
+  for (let k = 0; k < 9; k++) mix(o, bell(0.3, 1500 + r() * 2800, [1, 2.76], [0.05 + r() * 0.06, 0.03], [1, 0.4], 0.0008), 0.12, 0.02 + r() * 0.7);
+  return snap(lp(o, 4500), r, 0.3, 1200);
+});
+def('armor_hit', 3, (i, r) => {
+  const len = 0.35, o = buf(len);
+  mix(o, bell(len, 560 + i * 60, [1, 2.76, 5.4, 8.9], [0.07, 0.04, 0.02, 0.012], [1, 0.6, 0.3, 0.15], 0.0005), 0.9);
+  mix(o, env(hp(noise(len, r), 2500), 0.0003, 0.006), 0.5);
+  mix(o, env(tone(len, t => 110 + 80 * Math.exp(-t * 40)), 0.001, 0.025), 0.7);
+  return lp(o, 6500);
+});
+def('armor_break', 1, (i, r) => {
+  const len = 0.85, o = buf(len);
+  for (let k = 0; k < 16; k++) mix(o, env(bp(noise(0.06, r), 300 + r() * 2400, 3), 0.0005, 0.018), 0.55, r() * 0.3);
+  mix(o, env(tone(len, t => 60 + 70 * Math.exp(-t * 25)), 0.001, 0.08), 0.8);
+  mix(o, env(lp(noise(len, r), 1500), 0.001, 0.07), 0.6);
+  [0.03, 0.14].forEach((at, k) => mix(o, bell(0.4, 480 + k * 130, [1, 2.76, 5.4], [0.08, 0.05, 0.025], [1, 0.5, 0.25], 0.0005), 0.55, at));
+  for (let k = 0; k < 9; k++) mix(o, bell(0.2, 1200 + r() * 2600, [1, 2.76], [0.04, 0.02], [1, 0.4], 0.0005), 0.14, 0.3 + r() * 0.5);
+  return snap(lp(o, 5500), r, 0.3);
+});
+def('rock_fall', 2, (i, r) => {
+  const len = 0.45, o = buf(len);
+  mix(o, env(bp(noise(len, r), t => 2400 - 1500 * Math.min(t / 0.35, 1) - i * 200, 4), 0.04, 0.2), 1.0);
+  mix(o, env(lp(noise(len, r), 600), 0.05, 0.15), 0.25);
+  return lp(o, 4500);
+});
+def('rock_break', 2, (i, r) => {
+  const len = 0.75, o = buf(len);
+  mix(o, env(tone(len, t => 56 + 80 * Math.exp(-t * 24)), 0.001, 0.09), 1.0);
+  mix(o, env(lp(noise(len, r), 1800), 0.001, 0.09), 0.8);
+  for (let k = 0; k < 9; k++) mix(o, env(bp(noise(0.06, r), 600 + r() * 2200, 3), 0.0005, 0.015), 0.5, r() * 0.15);
+  for (let k = 0; k < 8; k++) mix(o, env(bp(noise(0.05, r), 1500 + r() * 2200, 5), 0.0005, 0.01), 0.2, 0.15 + r() * 0.5);
+  return snap(lp(o, 4500), r, 0.3, 1200);
+});
+// reja de piedra: arrastre que raspa (modulado a unos 38 Hz) y golpe final
+const gate = (len, hit, drag, at, up, r) => {
+  const o = buf(len);
+  const g = mul(bp(noise(len, r), t => up ? 150 + 130 * t / at : 280 - 130 * t / at, 0.8), t => 0.55 + 0.45 * Math.sign(Math.sin(TAU * 38 * t)));
+  mix(o, mul(g, t => (t < at ? Math.min(t / 0.08, 1) * (up ? 1 - 0.3 * t / at : 0.6 + 0.4 * t / at) : 0)), drag);
+  mix(o, mul(tone(len, up ? 62 : 52), t => t < at ? 0.35 * Math.min(t / 0.1, 1) : 0), 0.3 * drag);
+  if (hit > 0) {
+    mix(o, sat(env(tone(len, t => 26 + 50 * Math.exp(-t * 16)), 0.002, 0.2), 1.8), hit, at);
+    mix(o, env(lp(noise(len, r), 1000), 0.002, 0.14), hit * 0.7, at);
+    snap(o, r, 0.3 * hit, 1200);
+  }
+  return o;
+};
+def('gate_close', 1, (i, r) => {
+  const len = 1.15, o = gate(len, 1.0, 0.5, 0.82, false, r);
+  mix(o, env(bp(noise(0.06, r), 1100, 3), 0.0005, 0.02), 0.2, 0.82);
+  return lp(o, 3000);
+});
+def('gate_open', 1, (i, r) => {
+  const len = 1.0, o = gate(len, 0.25, 0.4, 0.8, true, r);
+  mix(o, env(bp(noise(0.05, r), 1500, 4), 0.0005, 0.01), 0.15, 0.8);
+  return lp(o, 2600);
+});
+def('spikes_hit', 2, (i, r) => {
+  const len = 0.18, o = buf(len);
+  mix(o, env(bp(noise(len, r), 2800 + i * 500, 2), 0.0003, 0.012), 1.0);
+  mix(o, env(tone(len, 220 + i * 30), 0.001, 0.02), 0.5);
+  mix(o, env(tone(len, 90), 0.001, 0.03), 0.4);
+  return lp(o, 6000);
+});
+def('spikes_pulse', 2, (i, r) => {
+  const len = 0.22, o = buf(len);
+  [0, 0.05 + i * 0.01].forEach((at, k) => {
+    mix(o, bell(0.15, 1250 + k * 250, [1, 2.3, 4.1], [0.03, 0.02, 0.01], [1, 0.5, 0.25], 0.0003), 0.7, at);
+    mix(o, env(hp(noise(0.05, r), 3000), 0.0003, 0.005), 0.4, at);
+  });
+  return lp(o, 6500);
+});
 // ---------- comprobación de arranque ----------
 // Los sonidos de acción (pasos, saltos, golpes...) tienen que sonar a tope desde el
 // primer instante: si empiezan flojos y suben, se perciben tarde. Se exige que en los
 // primeros 6 ms se alcance al menos el 45 % del pico.
-const INSTANT = /^(step_|land_|jump|air_jump|wall_jump|dash|swing|parry|hit_enemy|player_hurt|enemy_(swing|thrust|slam|lunge|step)|heavy_step|shoot|shard_hit|break|ui_move|ui_accept|ui_back|ui_deny)/;
+const INSTANT = /^(step_|land_|jump|air_jump|wall_jump|dash|swing|parry|hit_enemy|player_hurt|enemy_(swing|thrust|slam|lunge|step)|heavy_step|shoot|shard_hit|break|boss_(slam|leap|land)|armor_hit|spikes_|rock_break|ui_move|ui_accept|ui_back|ui_deny)/;
 function onsetRatio(b) {
   const n = Math.round(0.006 * SR);
   let head = 0, peak = 0;

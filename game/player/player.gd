@@ -34,6 +34,9 @@ const STEP_AFTER_LAND_SECONDS := 0.25
 const SLIDE_PROBE_DISTANCE := 56.0
 ## Y cuánto por debajo cuenta como "suelo" (más allá es un foso).
 const SLIDE_PROBE_DEPTH := 100.0
+## A cada lado, cuántos píxeles del centro debe haber suelo para guardar el
+## "último suelo seguro" (ver _on_firm_ground).
+const FIRM_GROUND_HALF_WIDTH := 9.0
 ## Para textos que hay que leer (inscripciones): tiempo mínimo y por carácter,
 ## a un ritmo de lectura tranquilo (unos 15 caracteres por segundo).
 const MIN_READING_SECONDS := 4.0
@@ -89,7 +92,10 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
-	respawn.track_ground(self)
+	# El "último suelo" solo cuenta si es firme (no en el filo de un borde, donde
+	# volver sería caerse otra vez) y no está sobre unos pinchos.
+	if is_on_floor() and not _overlaps_hazard() and _on_firm_ground():
+		respawn.track_ground(self)
 	motor.step(self, delta)
 
 	# Con la guardia alzada no se puede atacar.
@@ -124,6 +130,45 @@ func take_hit(damage: int, from_direction: int, attacker: Node = null) -> void:
 		return
 	if health.take_hit(damage):
 		knockback.apply(from_direction)
+
+
+## Contrato "peligroso": lo llama core/objects/hazard.gd mientras se toca. Hace
+## daño (si no se está en invulnerabilidad) y devuelve al último suelo seguro, en
+## vez de matar por caer: así un tramo de plataformas castiga sin obligar a
+## repetir todo el camino desde el Ancla.
+func hazard_hit(damage: int, _hazard: Node = null) -> void:
+	var lethal := health.health - damage <= 0 and not health.is_invulnerable()
+	if health.take_hit(damage):
+		Sfx.play(&"spikes_hit", null, -4.0)
+		screen_shake.shake(5.0, 0.12)
+	if lethal:
+		return
+	global_position = respawn.last_grounded_position
+	velocity = Vector2.ZERO
+	dash.is_dashing = false
+	knockback.is_active = false
+	_peak_fall_speed = 0.0
+
+
+## ¿Hay suelo bajo los dos lados del cuerpo (no a medias sobre un borde)?
+func _on_firm_ground() -> bool:
+	var space := get_world_2d().direct_space_state
+	for side in [-FIRM_GROUND_HALF_WIDTH, FIRM_GROUND_HALF_WIDTH]:
+		var from := global_position + Vector2(side, 20.0)
+		var query := PhysicsRayQueryParameters2D.create(from, from + Vector2(0.0, 12.0), 1, [get_rid()])
+		if space.intersect_ray(query).is_empty():
+			return false
+	return true
+
+
+## ¿Está el cuerpo del jugador sobre alguna zona peligrosa? (Con un margen de
+## una celda de 16 px alrededor de la forma del jugador.)
+func _overlaps_hazard() -> bool:
+	for hazard in get_tree().get_nodes_in_group(&"hazard"):
+		var offset := ((hazard as Node2D).global_position - global_position).abs()
+		if offset.x < 20.0 and offset.y < 32.0:
+			return true
+	return false
 
 
 ## Contrato de checkpoint: lo llama core/objects/checkpoint.gd.
@@ -314,7 +359,8 @@ func die() -> void:
 	_spawn_echo(respawn.last_grounded_position, ecos)
 
 	ecos = 0
-	health.reset_health()
+	# Como al descansar: vida y frascos al máximo.
+	health.restore()
 	respawn.respawn(self)
 	_update_hud()
 	_reset_world()

@@ -1,0 +1,24 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://game/boss/shockwave.gd" id="1_projectile"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_wave"]
+size = Vector2(38, 30)
+
+[node name="Shockwave" type="Area2D" groups=["boss_debris"]]
+z_index = 4
+script = ExtResource("1_projectile")
+speed = 380.0
+lifetime = 2.2
+reflect_group = &"enemy"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("RectangleShape2D_wave")
+
+[node name="Dust" type="Polygon2D" parent="."]
+color = Color(0.64, 0.6, 0.55, 0.9)
+polygon = PackedVector2Array(-20, 15, -10, -3, 0, -15, 12, -7, 20, 15)
+
+[node name="DustCore" type="Polygon2D" parent="."]
+color = Color(0.82, 0.78, 0.7, 0.9)
+polygon = PackedVector2Array(-8, 15, -2, 0, 5, -7, 10, 15)

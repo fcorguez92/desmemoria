@@ -73,6 +73,20 @@ func _run() -> void:
 	await _test_dash_crosses_the_terraces_gap()
 	await _test_climbing_back_out_of_the_cistern()
 	await _test_tower_needs_double_jump()
+	await _test_dash_is_once_per_air_time()
+	await _test_spikes_hurt_and_return_to_safe_ground()
+	await _test_pulsing_hazards_cycle()
+	await _test_the_way_to_the_boss()
+	await _test_boss_phases_and_reward()
+	await _test_boss_attacks_and_parry()
+	await _test_boss_planks_and_rocks()
+	await _test_boss_does_not_stay_on_top_of_the_player()
+	await _test_boss_waves_follow_the_ground_and_dust_needs_ground()
+	await _test_enemies_only_act_in_their_own_room()
+	await _test_boss_resets_and_stays_dead()
+	await _test_boss_death_survives_the_player_dying()
+	await _test_dash_puzzle_needs_dash()
+	await _test_the_bridge_ends_in_a_lookout()
 	await _test_minimap_and_pause_map()
 	await _test_save_slot()
 	await _test_autosave_triggers()
@@ -104,9 +118,11 @@ func _test_death_drops_echo_at_last_ground() -> void:
 	var ground: Vector2 = _player.respawn.last_grounded_position
 	_player.add_ecos(4)
 	_player.global_position = Vector2(300, 100)
+	_player.health.heal_charges = 0
 	_player.health.take_hit(99)
 	_check(_player.ecos == 0, "los Ecos se pierden al morir")
 	_check(_player.health.health == 5, "la vida se restaura al reaparecer")
+	_check(_player.health.heal_charges == _player.health.max_heal_charges, "y las curaciones se recargan del todo")
 	_check(is_instance_valid(_player.active_echo), "aparece un Eco")
 	_check(_player.active_echo.ecos_held == 4, "el Eco guarda los Ecos perdidos")
 	_check(_player.active_echo.global_position == ground, "el Eco está en el último suelo pisado")
@@ -970,12 +986,12 @@ func _test_scenery_is_dense_and_harmless() -> void:
 ## píxeles a la derecha del jugador (que se coloca en x = 60: a su izquierda hay un
 ## muro y a la derecha, más allá de x = 250, la cabaña, que pararía los proyectiles).
 func _spawn_enemy_next_to_player(scene_path: String, distance: float) -> Node2D:
-	_player.global_position = Vector2(60.0, 296.0)
+	_player.global_position = Vector2(100.0, 296.0)
 	_player.velocity = Vector2.ZERO
 	var enemy: Node2D = load(scene_path).instantiate()
 	_room.add_child(enemy)
 	var half_height: float = enemy.get_node("CollisionShape2D").shape.size.y / 2.0
-	enemy.global_position = Vector2(60.0 + distance, 320.0 - half_height)
+	enemy.global_position = Vector2(100.0 + distance, 320.0 - half_height)
 	enemy.ai._home_x = enemy.global_position.x
 	return enemy
 
@@ -1670,7 +1686,7 @@ func _test_world_is_made_of_connected_rooms() -> void:
 	print("\n[El mundo: varias salas conectadas, un solo jugador]")
 	await _load_world()
 	var rooms: Array = _level.get_node("Rooms").get_children()
-	_check(rooms.size() == 4, "hay cuatro salas")
+	_check(rooms.size() == 8, "hay ocho salas")
 	var overlaps := false
 	for i in rooms.size():
 		_check(not rooms[i].title.is_empty(), "%s tiene nombre" % rooms[i].name)
@@ -1688,16 +1704,16 @@ func _test_world_is_made_of_connected_rooms() -> void:
 	for id in data.markers:
 		if String(id).begins_with("anchor_"):
 			anchors += 1
-	_check(anchors == 4, "las cuatro Anclas están marcadas en el mapa (se ven al pasar cerca)")
+	_check(anchors == 8, "las ocho Anclas están marcadas en el mapa (se ven al pasar cerca)")
 	_check(_player.hud.message_label.text.is_empty(), "la sala de inicio no se anuncia")
 	var dash_pickup := 0
 	var jump_pickup := 0
 	for room in rooms:
 		for child in room.get_children():
 			if child is AbilityPickup:
-				dash_pickup += 1 if child.ability_id == &"dash" and room.name == "Cisterna" else 0
+				dash_pickup += 1 if child.ability_id == &"dash" else 0
 				jump_pickup += 1 if child.ability_id == &"double_jump" and room.name == "TorreDeRiego" else 0
-	_check(dash_pickup == 1 and jump_pickup == 1, "el dash está en la Cisterna y el doble salto en la Torre de Riego")
+	_check(dash_pickup == 0 and jump_pickup == 1, "el dash no está tirado por el mundo (lo suelta el jefe) y el doble salto está en la Torre de Riego")
 
 
 func _test_walking_into_the_next_room() -> void:
@@ -1797,12 +1813,8 @@ func _test_dash_crosses_the_terraces_gap() -> void:
 
 
 func _test_climbing_back_out_of_the_cistern() -> void:
-	print("\n[De la Cisterna se sale subiendo por los tablones, y allí está el dash]")
+	print("\n[De la Cisterna se sale subiendo por los tablones]")
 	await _load_world()
-	_player.global_position = _standing_on("Cisterna", 58, 22)
-	_player.velocity = Vector2.ZERO
-	await _wait(10)
-	_check(_player.has_ability(&"dash"), "tocar el objeto del fondo de la Cisterna recuerda el dash")
 	# Cada salto empieza encima del escalón anterior:
 	# [col de inicio, fila de inicio, dirección, col de destino, fila de destino].
 	var steps := [
@@ -2138,3 +2150,694 @@ func _test_menu_list_survives_leaving_the_tree() -> void:
 	_check(spy.got == 0, "y la tecla quedó marcada como usada (antes, el error lo impedía)")
 	spy.queue_free()
 	menu.queue_free()
+
+
+# --- Primer jefe, trampas y el puzle del dash -----------------------------------
+
+## Un cuerpo de pruebas que cuenta cuántas veces lo toca una zona peligrosa.
+class HazardDummy extends CharacterBody2D:
+	var hits: int = 0
+
+	func hazard_hit(_damage: int, _hazard: Node = null) -> void:
+		hits += 1
+
+
+func _test_dash_is_once_per_air_time() -> void:
+	await _fresh_level("Dash: uno por salto en el aire; al pisar suelo se recarga")
+	_player.unlock_ability(&"dash")
+	# Muy arriba, para tener tiempo de caída de sobra entre dos dashes.
+	_player.global_position = Vector2(300.0, -900.0)
+	_player.velocity = Vector2.ZERO
+	await _wait(3)
+	Input.action_press(&"dash")
+	await _wait(3)
+	Input.action_release(&"dash")
+	await _wait(1)
+	_check(_player.dash.is_dashing, "el primer dash en el aire funciona")
+	await _wait(32)
+	_check(not _player.dash.is_dashing and not _player.is_on_floor(), "pasados el dash y su enfriamiento seguimos en el aire")
+	Input.action_press(&"dash")
+	await _wait(3)
+	Input.action_release(&"dash")
+	await _wait(1)
+	_check(not _player.dash.is_dashing, "el segundo dash en el mismo salto no sale")
+	await _stand_at(300.0)
+	await _wait(30)
+	Input.action_press(&"dash")
+	await _wait(3)
+	Input.action_release(&"dash")
+	await _wait(1)
+	_check(_player.dash.is_dashing, "al pisar suelo el dash vuelve a estar disponible")
+
+
+func _test_spikes_hurt_and_return_to_safe_ground() -> void:
+	print("\n[Pinchos: hacen daño y devuelven al último suelo seguro, sin matar por caer]")
+	await _load_world()
+	var galerias: Node2D = _level.get_node("Rooms/GaleriasBajas")
+	await _clear_enemies(galerias)
+	# Se cruza el foso de pinchos caminando: de pie en la baldosa 12, antes del foso (14-19).
+	_player.global_position = _standing_on("GaleriasBajas", 22, 26)
+	_player.velocity = Vector2.ZERO
+	await _wait(15)
+	_check(_level.current_room == galerias and _player.is_on_floor(), "se está de pie junto al foso de pinchos")
+	var before: int = _player.health.health
+	var edge_x: float = _player.global_position.x
+	# Unos pasos hacia el foso y soltar: cae y los pinchos lo devuelven.
+	Input.action_press(&"ui_right")
+	await _wait(12)
+	Input.action_release(&"ui_right")
+	await _wait(30)
+	_check(_player.health.health == before - 1, "caer en los pinchos quita 1 de vida")
+	_check(_player.active_echo == null, "pero no mata ni deja un Eco")
+	_check(_player.is_on_floor() and _player.global_position.x < _cell("GaleriasBajas", 25, 0).x and absf(_player.global_position.x - edge_x) < 80.0, "y devuelve al último suelo seguro, antes del foso (pos=%s suelo=%s ultimo=%s)" % [_player.global_position, _player.is_on_floor(), _player.respawn.last_grounded_position])
+
+	# Con la vida justa, sí mata.
+	_player.health.health = 1
+	await _wait(40)
+	Input.action_press(&"ui_right")
+	await _wait(12)
+	Input.action_release(&"ui_right")
+	await _wait(30)
+	_check(_player.active_echo != null, "con 1 de vida los pinchos matan (queda un Eco)")
+
+
+func _test_pulsing_hazards_cycle() -> void:
+	await _fresh_level("Pinchos pulsantes: salen, avisan y se retraen; solo hacen daño al salir")
+	var dummy := HazardDummy.new()
+	var shape := CollisionShape2D.new()
+	shape.shape = RectangleShape2D.new()
+	(shape.shape as RectangleShape2D).size = Vector2(10, 10)
+	dummy.add_child(shape)
+	dummy.add_to_group("player")
+	_level.add_child(dummy)
+	dummy.global_position = Vector2(2000.0, 2000.0)
+	var spikes: Hazard = load("res://game/environment/spikes.tscn").instantiate()
+	spikes.period = 2.0
+	spikes.active_fraction = 0.5
+	spikes.warning_time = 0.4
+	_level.add_child(spikes)
+	spikes.global_position = dummy.global_position
+	await _wait(3)
+	_check(spikes.state == Hazard.State.ACTIVE, "empieza activa (fase 0)")
+	var seen := {}
+	for i in 150:
+		await physics_frame
+		seen[spikes.state] = true
+	_check(seen.has(Hazard.State.ACTIVE) and seen.has(Hazard.State.WARNING) and seen.has(Hazard.State.RETRACTED), "en 2,5 s pasa por activa, aviso y retraída")
+	_check(dummy.hits > 0, "hizo daño mientras estaba activa")
+	var hits_now := dummy.hits
+	# Esperar a que esté retraída y comprobar que ya no cuenta.
+	while spikes.state != Hazard.State.RETRACTED:
+		await physics_frame
+	var at_retract: int = dummy.hits
+	await _wait(10)
+	_check(spikes.state == Hazard.State.RETRACTED and dummy.hits == at_retract and hits_now <= at_retract, "retraída no hace daño")
+	var offset: Hazard = load("res://game/environment/spikes.tscn").instantiate()
+	offset.period = 2.0
+	offset.active_fraction = 0.5
+	offset.warning_time = 0.4
+	offset.phase = 0.5
+	_level.add_child(offset)
+	offset.global_position = Vector2(3000.0, 3000.0)
+	_check(offset.state == Hazard.State.RETRACTED, "con medio ciclo de desfase empieza retraída")
+
+
+func _test_the_way_to_the_boss() -> void:
+	print("\n[De la Cisterna se llega, caminando, al Aljibe pasando por las Galerías]")
+	await _load_world()
+	await _clear_enemies(_level.get_node("Rooms/GaleriasBajas"))
+	_player.health.max_health = 99
+	_player.health.health = 99
+	# Puerta este de la Cisterna: fila 17-21, columnas 62-63; la sala siguiente empieza ahí.
+	_player.global_position = _standing_on("Cisterna", 118, 22)
+	_player.velocity = Vector2.ZERO
+	await _wait(10)
+	Input.action_press(&"ui_right")
+	await _wait(50)
+	Input.action_release(&"ui_right")
+	await _wait(6)
+	_check(_level.current_room.name == "GaleriasBajas" and _player.is_on_floor() and _player.active_echo == null, "la puerta de la Cisterna lleva a las Galerías Bajas")
+	_check(_level.map_data.is_visited(&"GaleriasBajas"), "y se descubre la sala")
+	var anchor := _anchor_in("GaleriasBajas")
+	_check(anchor != null, "las Galerías tienen un Ancla antes del Aljibe")
+	_player.global_position = _standing_on("GaleriasBajas", 106, 26)
+	_player.velocity = Vector2.ZERO
+	await _wait(10)
+	Input.action_press(&"ui_right")
+	await _wait(50)
+	Input.action_release(&"ui_right")
+	await _wait(6)
+	_check(_level.current_room.name == "Aljibe" and _player.is_on_floor(), "la puerta de las Galerías lleva al Aljibe")
+
+
+func _arena() -> Node2D:
+	return _level.get_node("Rooms/Aljibe")
+
+
+## Mete al jugador en el Aljibe, pasada la línea del disparador, con vida de sobra
+## para que los ataques del jefe no interfieran con lo que se comprueba.
+func _enter_arena(tough: bool = true) -> void:
+	_player.global_position = _standing_on("Aljibe", 14, 30)
+	_player.velocity = Vector2.ZERO
+	if tough:
+		_player.health.max_health = 99
+		_player.health.health = 99
+	await _wait(8)
+
+
+func _test_boss_phases_and_reward() -> void:
+	print("\n[El Centinela: armadura, núcleo expuesto, tres fases y la recompensa]")
+	await _load_world()
+	var arena := _arena()
+	var boss: Node = arena.boss
+	_check(is_instance_valid(boss) and boss.state == boss.State.DORMANT, "duerme hasta que el jugador entra")
+	_check(boss.armor_hp == 8 and boss.core_hp == 15 and boss.phase == 0, "fase 1: armadura 8 y núcleo 15")
+	boss.take_hit(5, 1)
+	_check(boss.armor_hp == 8, "dormido no recibe daño")
+	var entry_open := true
+	for gate in arena._entry_gates:
+		entry_open = entry_open and not gate.closed
+	var exit_closed := true
+	for gate in arena._exit_gates:
+		exit_closed = exit_closed and gate.closed
+	_check(entry_open and exit_closed, "la reja de entrada está abierta y la de salida cerrada")
+	var dash_pickups := 0
+	for child in arena.get_children():
+		dash_pickups += 1 if child is AbilityPickup else 0
+	_check(dash_pickups == 0, "todavía no hay recompensa")
+
+	await _enter_arena()
+	var entry_closed := true
+	for gate in arena._entry_gates:
+		entry_closed = entry_closed and gate.closed
+	_check(boss.is_fighting() and entry_closed, "al cruzar la línea despierta y se cierra la reja de entrada")
+	_check(arena._bar.visible, "aparece su barra de vida")
+	await _wait(110)
+
+	# Fase 1: la armadura primero; el núcleo no se toca hasta romperla.
+	for i in 7:
+		boss.take_hit(1, 1)
+	_check(boss.armor_hp == 1 and boss.core_hp == 15 and boss.state != boss.State.STAGGER, "la armadura gasta puntos pero no se aparta ni toca el núcleo")
+	boss.take_hit(1, 1)
+	_check(boss.state == boss.State.STAGGER and boss.armor_hp == 0, "al romperla queda expuesto")
+	boss.take_hit(1, 1)
+	_check(boss.core_hp == 14, "expuesto, sí pierde núcleo")
+	for i in 4:
+		boss.take_hit(1, 1)
+	_check(boss.core_hp == 10 and boss.phase == 1 and boss.armor_hp == 9, "al bajar de la marca pasa a la fase 2 con armadura nueva")
+	_check(boss.state == boss.State.GETUP, "y se levanta")
+	await _wait(60)
+	_check(boss.state in [boss.State.RAGE_WINDUP, boss.State.RAGE_STRIKE, boss.State.RAGE_GAP], "la fase 2 empieza con su furia de mazazos")
+	var waves := 0
+	for i in 400:
+		await physics_frame
+		for node in get_nodes_in_group(&"boss_debris"):
+			waves += 1 if node is Projectile else 0
+	_check(waves > 0, "la furia suelta ondas de polvo")
+	_check(boss.state in [boss.State.IDLE, boss.State.WALK, boss.State.RECOVER, boss.State.SLAM_WINDUP, boss.State.SLAM_STRIKE, boss.State.LEAP_CROUCH, boss.State.LEAP_AIR], "tras la furia vuelve a pelear normal")
+
+	# Hacerle daño en la armadura no reinicia la pelea ni la pone en marcha sola.
+	for i in 9:
+		boss.take_hit(1, 1)
+	_check(boss.state == boss.State.STAGGER, "romper la armadura de la fase 2 lo deja expuesto otra vez")
+	# Ni el exceso de golpes pasa de fase en fase: el suelo de la fase 2 es 5.
+	for i in 12:
+		boss.take_hit(1, 1)
+	_check(boss.core_hp == 5 and boss.phase == 2 and boss.armor_hp == 10, "el núcleo no baja de la marca de la fase: no se salta ninguna")
+	await _wait(60)
+	for i in 400:
+		await physics_frame
+	for i in 10:
+		boss.take_hit(1, 1)
+	_check(boss.state == boss.State.STAGGER, "fase 3: otra vez armadura y núcleo")
+
+	var defeated := [false]
+	arena.boss_defeated.connect(func() -> void: defeated[0] = true)
+	var ecos_before: int = _player.ecos
+	for i in 6:
+		boss.take_hit(1, 1)
+	_check(boss.state == boss.State.DYING, "con el núcleo a 0 muere")
+	await _wait(130)
+	_check(defeated[0] and arena.is_defeated() and arena.boss == null, "su muerte se avisa y la sala queda vencida")
+	_check(_player.ecos == ecos_before + 40, "suelta 40 Ecos")
+	var open := true
+	for gate in arena._entry_gates + arena._exit_gates:
+		open = open and not gate.closed
+	_check(open, "todas las rejas se abren")
+	var reward: AbilityPickup = null
+	for child in arena.get_children():
+		if child is AbilityPickup:
+			reward = child
+	_check(reward != null and reward.ability_id == &"dash", "aparece el recuerdo del dash")
+	await _wait(4)
+	_check("Aljibe" in _saved().get("bosses", []), "se guarda que el jefe está vencido")
+	_player.global_position = reward.global_position
+	await _wait(6)
+	_check(_player.has_ability(&"dash"), "al tocarlo se recuerda el dash")
+
+
+func _test_boss_attacks_and_parry() -> void:
+	print("\n[El Centinela: mazazo con onda, parry que lo expone, onda devuelta, salto y rocas]")
+	await _load_world()
+	var arena := _arena()
+	var boss: Node = arena.boss
+	await _enter_arena()
+	await _wait(110)
+	# Que no decida solo: se le fuerza cada ataque.
+	boss.state = boss.State.RECOVER
+	boss._timer = 100.0
+	boss.global_position.x = _cell("Aljibe", 36, 29).x
+	_player.global_position = _standing_on("Aljibe", 22, 30)
+	_player.velocity = Vector2.ZERO
+	await _wait(10)
+	boss._set_facing(-1)
+	var health_before: int = _player.health.health
+	boss._start_slam()
+	_check(boss.state == boss.State.SLAM_WINDUP, "el mazazo empieza con un aviso")
+	var windup: float = boss._timer
+	_check(windup > 0.5, "que dura más de medio segundo (%.2f s)" % windup)
+	# El golpe llega en el fotograma de impacto del mazazo, un poco después del aviso:
+	# al empezar el tajo todavía no hay daño ni onda.
+	await _wait(int(windup * 60.0) + 3)
+	var early_waves := 0
+	for node in get_nodes_in_group(&"boss_debris"):
+		early_waves += 1 if node is Projectile else 0
+	_check(boss.state == boss.State.SLAM_STRIKE and early_waves == 0 and _player.health.health == health_before, "al empezar el tajo aún no hay golpe: llega cuando el mazo toca el suelo")
+	await _wait(13)
+	_check(_player.health.health <= health_before - 2 or boss.state == boss.State.SLAM_STRIKE, "el mazazo pega fuerte a quien está al alcance")
+	var wave: Projectile = null
+	for node in get_nodes_in_group(&"boss_debris"):
+		if node is Projectile:
+			wave = node
+	_check(wave != null and wave.target_group == &"player", "suelta una onda de polvo contra el jugador")
+	_check(wave != null and wave.reflect_group == &"enemy", "que un parry devuelve contra él")
+	# Onda devuelta: le hace el doble.
+	var armor_before: int = boss.armor_hp
+	boss.take_hit(1, 1, wave)
+	_check(boss.armor_hp == armor_before - 2, "una onda devuelta le quita 2 de armadura")
+
+	# Parry en el mazazo: queda expuesto sin romper la armadura.
+	boss.state = boss.State.SLAM_STRIKE
+	var armor_now: int = boss.armor_hp
+	boss.on_parried(0.0)
+	_check(boss.state == boss.State.STAGGER and boss.armor_hp == armor_now, "un parry lo expone sin gastar armadura")
+	boss.take_hit(1, 1)
+	_check(boss.core_hp == 14, "y el núcleo recibe daño")
+	boss._timer = 0.0
+	await _wait(2)
+	_check(boss.state == boss.State.GETUP and boss.phase == 0 and boss.armor_hp == armor_now, "al levantarse sigue en la misma fase con la armadura que tenía")
+
+	# El salto cae junto al jugador y hace daño rasante; saltar lo evita.
+	boss.state = boss.State.RECOVER
+	boss._timer = 100.0
+	boss.global_position = Vector2(_cell("Aljibe", 52, 29).x, boss.global_position.y)
+	_player.global_position = _standing_on("Aljibe", 22, 30)
+	_player.velocity = Vector2.ZERO
+	await _wait(10)
+	boss._face_player()
+	boss._start_leap()
+	_check(boss.state == boss.State.LEAP_CROUCH, "el salto empieza agachándose")
+	await _wait(int(boss._timer * 60.0) + 3)
+	_check(boss.state == boss.State.LEAP_AIR, "y despega")
+	var land_x: float = _player.global_position.x + boss.LEAP_STANDOFF
+	var landed := false
+	for i in 90:
+		await physics_frame
+		if boss.state != boss.State.LEAP_AIR:
+			landed = true
+			break
+	_check(landed and absf(boss.global_position.x - land_x) < 70.0, "cae junto al jugador (a ~90 px, no encima)")
+
+	# Rocas: aviso en el suelo y luego caen.
+	var rocks: Array = []
+	boss._drop_rocks(2, _cell("Aljibe", 0, 30).y - 8.0)
+	for node in get_nodes_in_group(&"boss_debris"):
+		if node.has_method("start") and not node is Projectile:
+			rocks.append(node)
+	_check(rocks.size() >= 2, "caen rocas del techo")
+	_check(rocks.size() > 0 and not rocks[0]._falling, "con aviso antes de caer")
+	await _wait(60)
+	await _wait(60)
+	var all_gone := true
+	for rock in rocks:
+		all_gone = all_gone and (not is_instance_valid(rock) or rock.is_queued_for_deletion())
+	_check(all_gone, "y se rompen al llegar al suelo")
+
+
+func _test_boss_death_survives_the_player_dying() -> void:
+	print("
+[Si el jugador muere mientras el jefe agoniza, la victoria no se pierde]")
+	await _load_world()
+	var arena := _arena()
+	var boss: Node = arena.boss
+	await _enter_arena()
+	await _wait(110)
+	boss._enter_stagger(3.0)
+	boss._rage_left = 0
+	boss.core_hp = 1
+	boss.phase = 2
+	boss.take_hit(1, 1)
+	_check(boss.state == boss.State.DYING, "el jefe empieza a morir")
+	_player.die()
+	await _wait(4)
+	# (Lejos del Aljibe la sala deja de procesar; al volver, termina de morir.)
+	_player.global_position = _standing_on("Aljibe", 14, 30)
+	_player.velocity = Vector2.ZERO
+	await _wait(150)
+	_check(arena.is_defeated() and arena.boss == null, "aunque el jugador muera en ese momento, el jefe queda vencido")
+	var rewards := 0
+	for child in arena.get_children():
+		rewards += 1 if child is AbilityPickup and not child.is_queued_for_deletion() else 0
+	_check(rewards == 1, "y la recompensa está en la sala")
+
+
+func _test_boss_planks_and_rocks() -> void:
+	print("\n[El jefe baja de los tablones y salta hasta ellos; las rocas caen hasta el suelo que haya debajo]")
+	await _load_world()
+	var arena := _arena()
+	var boss: Node = arena.boss
+	await _enter_arena()
+	await _wait(110)
+	boss.state = boss.State.RECOVER
+	boss._timer = 100.0
+	var floor_top: float = _cell("Aljibe", 0, 30).y - 8.0
+	var plank_top: float = _cell("Aljibe", 0, 23).y - 8.0
+	# Sobre el tablón (columnas 12-21 de la fila 23), con el jugador abajo: baja.
+	boss.global_position = Vector2(_cell("Aljibe", 16, 0).x, plank_top - boss.HALF_HEIGHT - 1.0)
+	boss.velocity = Vector2.ZERO
+	_player.global_position = _standing_on("Aljibe", 30, 30)
+	_player.velocity = Vector2.ZERO
+	await _wait(20)
+	_check(absf(boss.feet_y() - plank_top) < 3.0, "el jefe se apoya en el tablón (feet=%s tablón=%s)" % [boss.feet_y(), plank_top])
+	boss.state = boss.State.IDLE
+	boss._timer = 100.0
+	await _wait(60)
+	_check(absf(boss.feet_y() - floor_top) < 3.0, "con el jugador debajo, baja del tablón hasta el suelo (feet=%s suelo=%s)" % [boss.feet_y(), floor_top])
+	# Si el jugador está en su mismo tablón, se queda.
+	boss.global_position = Vector2(_cell("Aljibe", 14, 0).x, plank_top - boss.HALF_HEIGHT - 1.0)
+	boss.velocity = Vector2.ZERO
+	_player.global_position = _standing_on("Aljibe", 19, 23)
+	_player.velocity = Vector2.ZERO
+	await _wait(20)
+	boss.state = boss.State.IDLE
+	boss._timer = 100.0
+	await _wait(40)
+	_check(absf(boss.feet_y() - plank_top) < 3.0, "con el jugador en su tablón, no baja")
+
+	# El salto llega hasta un jugador que está en un tablón alto.
+	boss.state = boss.State.RECOVER
+	boss._timer = 100.0
+	boss.global_position = Vector2(_cell("Aljibe", 30, 0).x, floor_top - boss.HALF_HEIGHT)
+	boss.velocity = Vector2.ZERO
+	_player.global_position = _standing_on("Aljibe", 48, 23)
+	_player.velocity = Vector2.ZERO
+	await _wait(20)
+	boss._face_player()
+	boss._start_leap()
+	await _wait(int(boss._timer * 60.0) + 3)
+	await _wait(75)
+	_check(absf(boss.feet_y() - plank_top) < 3.0, "el salto sube hasta el tablón del jugador (feet=%s tablón=%s)" % [boss.feet_y(), plank_top])
+
+	# Rocas: sin tablón debajo llegan al suelo aunque el jefe esté más alto; sobre un tablón se rompen en él.
+	var rock_scene: PackedScene = load("res://game/boss/falling_rock.tscn")
+	var ceiling: float = _cell("Aljibe", 0, 0).y + 8.0
+	var open_rock: Node = rock_scene.instantiate()
+	arena.add_child(open_rock)
+	open_rock.start(Vector2(_cell("Aljibe", 30, 0).x, ceiling + 24.0), plank_top)
+	var covered_rock: Node = rock_scene.instantiate()
+	arena.add_child(covered_rock)
+	covered_rock.start(Vector2(_cell("Aljibe", 16, 0).x, ceiling + 24.0), floor_top)
+	_check(absf(open_rock._floor_y - floor_top) < 2.0, "una roca sin nada debajo cae hasta el suelo, aunque el jefe esté en un tablón (%s)" % open_rock._floor_y)
+	_check(absf(covered_rock._floor_y - plank_top) < 2.0, "y sobre un tablón se rompe en el tablón (%s)" % covered_rock._floor_y)
+	open_rock.queue_free()
+	covered_rock.queue_free()
+
+
+func _test_boss_does_not_stay_on_top_of_the_player() -> void:
+	print("\n[Si el jefe cae encima del jugador, no se queda subido a su cabeza]")
+	await _load_world()
+	var arena := _arena()
+	var boss: Node = arena.boss
+	await _enter_arena()
+	await _wait(110)
+	boss.state = boss.State.RECOVER
+	boss._timer = 100.0
+	var floor_top: float = _cell("Aljibe", 0, 30).y - 8.0
+	boss.global_position = Vector2(_cell("Aljibe", 40, 0).x, floor_top - boss.HALF_HEIGHT)
+	boss.velocity = Vector2.ZERO
+	_player.global_position = _standing_on("Aljibe", 24, 30)
+	_player.velocity = Vector2.ZERO
+	await _wait(10)
+	boss._face_player()
+	boss._start_leap()
+	await _wait(int(boss._timer * 60.0) + 3)
+	# En pleno vuelo, el jugador se mete justo bajo el sitio de caída.
+	await _wait(20)
+	_player.global_position = Vector2(boss.global_position.x + boss.velocity.x * 0.45, _player.global_position.y)
+	_player.velocity = Vector2.ZERO
+	await _wait(90)
+	_check(absf(boss.feet_y() - floor_top) < 3.0, "el jefe acaba en el suelo, no subido al jugador (feet=%s suelo=%s)" % [boss.feet_y(), floor_top])
+	await _wait(60)
+	_check(absf(boss.global_position.x - _player.global_position.x) >= boss.HALF_WIDTH + 12.0 and boss._ghosted == null, "y se aparta: ya no se atraviesan")
+
+
+func _test_boss_waves_follow_the_ground_and_dust_needs_ground() -> void:
+	print("\n[La onda cae de los tablones al suelo y sigue; el polvo solo sale sobre suelo; no golpea sobre el vacío]")
+	await _load_world()
+	var arena := _arena()
+	var boss: Node = arena.boss
+	await _enter_arena()
+	await _wait(110)
+	boss.state = boss.State.RECOVER
+	boss._timer = 100.0
+	var floor_top: float = _cell("Aljibe", 0, 30).y - 8.0
+	var plank_top: float = _cell("Aljibe", 0, 23).y - 8.0
+	var plank_right: float = _cell("Aljibe", 22, 0).x - 8.0
+	# Una onda que sale del borde derecho del tablón (columnas 12-21) hacia la derecha.
+	var wave: Projectile = load("res://game/boss/shockwave.tscn").instantiate()
+	arena.add_child(wave)
+	wave.global_position = Vector2(plank_right - 30.0, plank_top - 16.0)
+	wave.launch(Vector2.RIGHT)
+	await _wait(8)
+	_check(absf(wave.global_position.y - (plank_top - 16.0)) < 4.0, "corre pegada al tablón mientras hay tablón")
+	await _wait(45)
+	_check(is_instance_valid(wave) and wave.global_position.x > plank_right and absf(wave.global_position.y - (floor_top - 16.0)) < 4.0, "al acabarse el tablón cae al suelo de abajo y sigue avanzando (x=%s y=%s)" % [wave.global_position.x, wave.global_position.y])
+	var before: float = wave.global_position.x
+	await _wait(10)
+	_check(is_instance_valid(wave) and wave.global_position.x > before, "y continúa por el suelo")
+	wave.queue_free()
+
+	# Polvo: sobre el tablón solo donde hay tablón.
+	var dust_script: Script = load("res://game/boss/impact_dust.gd")
+	var plank_center: float = _cell("Aljibe", 16, 0).x + 8.0
+	dust_script.spawn(arena, plank_center, plank_top, 150.0)
+	var dust: Node2D = null
+	for child in arena.get_children():
+		if child.get_script() == dust_script:
+			dust = child
+	var inside := dust != null
+	if dust:
+		for puff in dust._puffs:
+			inside = inside and absf(puff.x) <= 96.0
+	_check(dust != null and not dust._puffs.is_empty() and inside, "el polvo de un aterrizaje en un tablón no sale fuera de él")
+	if dust:
+		dust.queue_free()
+	dust_script.spawn(arena, _cell("Aljibe", 32, 0).x, floor_top, 150.0)
+	var floor_dust: Node2D = null
+	for child in arena.get_children():
+		if child.get_script() == dust_script and child != dust:
+			floor_dust = child
+	_check(floor_dust != null and floor_dust._puffs.size() >= 9, "y sobre el suelo sale con todo su ancho")
+
+	# No golpea con el mazo en el aire: desde un tablón (el mazo cae fuera) salta o baja.
+	boss.global_position = Vector2(plank_center, plank_top - boss.HALF_HEIGHT - 1.0)
+	boss.velocity = Vector2.ZERO
+	_player.global_position = _standing_on("Aljibe", 24, 23 + 7)
+	await _wait(15)
+	boss._set_facing(1)
+	_check(not boss._slam_supported(), "desde un tablón estrecho el mazo cae fuera de él: no hay golpe posible")
+	boss.state = boss.State.IDLE
+	boss._timer = 0.0
+	boss._last_was_leap = false
+	boss._decide()
+	_check(boss.state == boss.State.LEAP_CROUCH or boss.state == boss.State.WALK, "y en vez de golpear en el aire, se recoloca")
+	boss.global_position = Vector2(_cell("Aljibe", 36, 0).x, floor_top - boss.HALF_HEIGHT)
+	boss.velocity = Vector2.ZERO
+	await _wait(15)
+	boss._set_facing(-1)
+	_check(boss._slam_supported(), "en el suelo, el mazazo sí tiene dónde caer")
+
+
+func _test_enemies_only_act_in_their_own_room() -> void:
+	print("\n[Los enemigos solo actúan dentro de su sala, y no nada más entrar en ella]")
+	await _load_world()
+	_player.health.max_health = 99
+	_player.health.health = 99
+	var terrazas: Node2D = _level.get_node("Rooms/TerrazasSecas")
+	var east_enemies: Array = []
+	for child in terrazas.get_children():
+		if child is EntitySpawner and is_instance_valid(child.instance) and child.global_position.x > terrazas.global_position.x + 50.0 * 16.0:
+			east_enemies.append(child.instance)
+	_check(not east_enemies.is_empty(), "hay un enemigo en el lado este de las Terrazas")
+	# El jugador está en la Torre, al otro lado de la puerta, a unas baldosas del enemigo.
+	_player.global_position = _standing_on("TorreDeRiego", 3, 40)
+	_player.velocity = Vector2.ZERO
+	await _wait(90)
+	var calm := true
+	for enemy in east_enemies:
+		calm = calm and enemy.ai.state == PatrolChaseAI.State.PATROL
+	_check(calm, "desde la sala de al lado no lo persigue ni lo ataca")
+	# Recién entrado en la sala (junto a la puerta) todavía no lo nota.
+	_player.global_position = _standing_on("TerrazasSecas", 62, 20)
+	_player.velocity = Vector2.ZERO
+	await _wait(60)
+	calm = true
+	for enemy in east_enemies:
+		calm = calm and enemy.ai.state == PatrolChaseAI.State.PATROL
+	_check(calm, "y recién cambiado de sala, junto a la puerta, tampoco")
+	# Ya dentro, sí.
+	_player.global_position = _standing_on("TerrazasSecas", 52, 20)
+	_player.velocity = Vector2.ZERO
+	await _wait(60)
+	var woke := false
+	for enemy in east_enemies:
+		woke = woke or enemy.ai.state != PatrolChaseAI.State.PATROL
+	_check(woke, "dentro de su sala sí actúa con normalidad")
+
+
+func _test_boss_resets_and_stays_dead() -> void:
+	print("\n[El jefe: si se muere el jugador se reinicia; vencido, sigue vencido tras cargar]")
+	await _load_world()
+	var arena := _arena()
+	await _enter_arena(false)
+	_check(arena.boss.is_fighting(), "la pelea está en marcha")
+	arena.boss.armor_hp = 3
+	_player.die()
+	await _wait(6)
+	_check(is_instance_valid(arena.boss) and arena.boss.state == arena.boss.State.DORMANT and arena.boss.armor_hp == 8, "al morir el jugador el jefe vuelve a dormir con todo")
+	var entry_open := true
+	for gate in arena._entry_gates:
+		entry_open = entry_open and not gate.closed
+	_check(entry_open and not arena._bar.visible, "se abre la reja y se oculta la barra")
+
+	# Vencido: partida guardada y cargada.
+	arena.boss.queue_free()
+	arena.mark_defeated()
+	_level.save_game()
+	await _load_world(true)
+	var again := _arena()
+	_check(again.is_defeated() and again.boss == null, "cargada la partida, el jefe sigue vencido")
+	var pickups := 0
+	for child in again.get_children():
+		pickups += 1 if child is AbilityPickup and not child.is_queued_for_deletion() else 0
+	_check(pickups == 1, "y su recompensa sigue esperando si no se había recogido")
+	_player.unlock_ability(&"dash")
+	_level.save_game()
+	await _load_world(true)
+	pickups = 0
+	for child in _arena().get_children():
+		pickups += 1 if child is AbilityPickup and not child.is_queued_for_deletion() else 0
+	_check(pickups == 0, "recogida, no vuelve a aparecer")
+
+
+## Repite en el motor, fotograma a fotograma, una maniobra pensada con
+## `tests/puzzle_plans.json` (generada con un simulador de los saltos). Devuelve
+## si acaba de pie. Las pulsaciones de salto y dash se adelantan un fotograma
+## porque Input solo las marca "recién pulsadas" en el siguiente.
+func _replay_plan(plan: Dictionary, start: Vector2) -> bool:
+	_player.global_position = start
+	_player.velocity = Vector2.ZERO
+	_player.dash.is_dashing = false
+	await _wait(12)
+	var delay: int = plan.delay
+	var held := {}
+	var left_floor := false
+	for f in range(-1, 220):
+		var direction := 0
+		if f >= 0:
+			direction = plan.d1 if (f < delay or f - delay < int(plan.k)) else plan.d2
+		var jump_held := f + 1 >= delay and f + 1 - delay < int(plan.hold)
+		var dash_next: bool = plan.dashAt != null and f + 1 == int(plan.dashAt)
+		if plan.dashAt != null and f == int(plan.dashAt) and int(plan.dashDir) != 0:
+			direction = int(plan.dashDir)
+		var wanted := { &"ui_right": direction > 0, &"ui_left": direction < 0, &"ui_accept": jump_held, &"dash": dash_next }
+		for action in wanted:
+			# Solo al cambiar: repetir action_press cada fotograma anula el corte del salto.
+			if held.get(action, false) != wanted[action]:
+				held[action] = wanted[action]
+				if wanted[action]:
+					Input.action_press(action)
+				else:
+					Input.action_release(action)
+		await physics_frame
+		if f >= 0:
+			if not _player.is_on_floor():
+				left_floor = true
+			elif left_floor:
+				break
+	for action in held:
+		Input.action_release(action)
+	await _wait(8)
+	return _player.is_on_floor()
+
+
+func _test_dash_puzzle_needs_dash() -> void:
+	print("\n[El puzle del dash: cada tramo se supera con la maniobra prevista y no sin dash]")
+	await _load_world()
+	var plans: Array = JSON.parse_string(FileAccess.get_file_as_string("res://tests/puzzle_plans.json"))
+	_check(plans.size() >= 9, "hay %d maniobras de referencia (la Chimenea y la Pasarela)" % plans.size())
+	_player.unlock_ability(&"dash")
+	var failures := []
+	for entry in plans:
+		var room: Node2D = _level.get_node("Rooms/" + entry.room)
+		_level._enter_room(room, false, false)
+		var start: Vector2 = room.global_position + Vector2(entry.sx, entry.from.row * 16.0 - 24.0)
+		var stood: bool = await _replay_plan(entry.plan, start)
+		var target_y: float = room.global_position.y + entry.to.row * 16.0 - 24.0
+		var x0: float = room.global_position.x + entry.to.c0 * 16.0 - 4.0
+		var x1: float = room.global_position.x + (entry.to.c1 + 1) * 16.0 + 4.0
+		var good: bool = stood and absf(_player.global_position.y - target_y) < 6.0 and _player.global_position.x >= x0 and _player.global_position.x <= x1
+		if not good:
+			failures.append("%s fila %d -> %d (acabó en %s)" % [entry.room, entry.from.row, entry.to.row, _player.global_position])
+	_check(failures.is_empty(), "las maniobras de referencia llegan a su destino%s" % ("" if failures.is_empty() else ": fallan " + str(failures)))
+	# Sin el dash, la primera no llega: cae en los pinchos y vuelve.
+	var first: Dictionary = plans[0]
+	var room_a: Node2D = _level.get_node("Rooms/" + first.room)
+	_level._enter_room(room_a, false, false)
+	_player.dash.unlocked = false
+	_player.health.max_health = 99
+	_player.health.health = 99
+	var start_a: Vector2 = room_a.global_position + Vector2(first.sx, first.from.row * 16.0 - 24.0)
+	await _replay_plan(first.plan, start_a)
+	await _wait(20)
+	var far_x: float = room_a.global_position.x + first.to.c0 * 16.0
+	_check(_player.global_position.x < far_x - 32.0 and _player.health.health == 98 and _player.active_echo == null, "sin dash el primer foso no se cruza: cae en los pinchos (1 de vida) y vuelve al suelo")
+
+
+func _test_the_bridge_ends_in_a_lookout() -> void:
+	print("\n[La salida alta de la Chimenea da a la Pasarela, que acaba en un mirador con Ancla]")
+	await _load_world()
+	_player.global_position = _standing_on("Chimenea", 34, 8)
+	_player.velocity = Vector2.ZERO
+	await _wait(10)
+	Input.action_press(&"ui_right")
+	await _wait(40)
+	Input.action_release(&"ui_right")
+	await _wait(6)
+	_check(_level.current_room.name == "Pasarela" and _player.is_on_floor(), "se sale de la Chimenea a la Pasarela caminando")
+	_check(_anchor_in("Pasarela") != null, "al final de la Pasarela hay un Ancla")
+	_player.global_position = _standing_on("Pasarela", 90, 8)
+	_player.velocity = Vector2.ZERO
+	await _wait(20)
+	Input.action_press(&"ui_right")
+	await _wait(120)
+	Input.action_release(&"ui_right")
+	_check(_player.global_position.x < _level.get_node("Rooms/Pasarela").global_position.x + 98.0 * 16.0, "el mirador acaba en una pared: de momento no se sigue más allá")
+
+
+## Quita los enemigos de una sala (para pruebas que no tratan de combatir).
+func _clear_enemies(room: Node) -> void:
+	for child in room.get_children():
+		if child is EntitySpawner:
+			child.queue_free()
+	await _wait(2)

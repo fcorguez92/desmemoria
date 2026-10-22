@@ -44,7 +44,7 @@ de una a otra caminando, cayendo o saltando, sin pantallas de carga ni cortes.
   mapas ni cartógrafos.
 
 **Para ampliar el mundo** con una sala nueva:
-1. Dibujar su `.map` (mínimo 54 columnas, el ancho de la pantalla; si es más
+1. Dibujar su `.map` (lo normal es 54 columnas o más, el ancho de la pantalla; una sala vertical estrecha, como La Chimenea con 34, se centra con la cámara; si es más
    baja de 31 filas, la cámara enseña lo que hay encima de ella).
 2. Copiar una escena de sala (p. ej. `terrazas_secas.tscn`) cambiando `map_file`,
    `title` y `has_sky` (false bajo tierra o bajo techo).
@@ -54,40 +54,65 @@ de una a otra caminando, cayendo o saltando, sin pantallas de carga ni cortes.
 4. Añadir a `tests/smoke_test.gd` una prueba de que se llega a ella y de que se
    puede volver (que no deje al jugador atrapado).
 
-Cuando el mundo sea grande, tener todas las salas cargadas a la vez dejará de
-ser barato; entonces se cargarán solo la sala actual y sus vecinas. Hoy son
-cuatro salas pequeñas y no hace falta.
+Hoy son ocho salas, todas cargadas a la vez; solo la actual y sus vecinas
+procesan (ver `world.gd`). Si el mundo crece mucho, habrá que cargarlas y
+descargarlas, pero hoy no hace falta.
 
 ## El mundo construido hoy
 
 ```
-                                           ┌──────────────┐
-                                           │ La Torre de  │
-                                           │    Riego     │
-┌──────────────────┬──────────────────────┤ (doble salto,│
-│ El Último Umbral │  Las Terrazas Secas  │  cornisa con │
-│ (inicio, Anclas) │  ════ foso ════      │  Ancla)      │
-└──────────────────┼───────┤      ├───────┴──────────────┘
-                   │     La Cisterna      │
-                   │    (Ancla, dash)     │
-                   └──────────────────────┘
+                        ┌────────────┐
+┌─────────────────┬─────┤ La Torre de│                                       ┌─ La Pasarela ─ El Mirador
+│ El Último Umbral│Terra│   Riego    │                          La Chimenea ─┘  (3 huecos, solo con dash)
+│ (inicio, Anclas)│zas  └────────────┘                               ▲
+└─────────────────┴──┬──┘                                            │ recuerdo del dash
+                     │ La Cisterna ─► Las Galerías Bajas ─► El Aljibe (jefe)
+                     │ (128, Ancla)   (112, Ancla, pinchos)   (arena cerrada)
 ```
 
-1. **El Último Umbral** — la zona de inicio (ver `vertical-slice.md`). Su borde
-   derecho, antes abierto al vacío, continúa ahora hacia el Cinturón Yermo.
-2. **Las Terrazas Secas** — primera sala del Cinturón Yermo: bancales de cultivo
-   abandonados y la torre rota de una acequia. Un foso de 20 baldosas no se
-   puede saltar sin dash; caer en él no mata, lleva a La Cisterna.
-3. **La Cisterna** — depósito subterráneo de agua, ya seco. Ancla junto a la
-   entrada, dos Cascarones y, al fondo, el recuerdo del **dash**. Una escalera de
-   tablones devuelve al borde oeste del foso: no se puede quedar atrapado.
-4. **La Torre de Riego** — interior de una torre de riego, al otro lado del
-   foso. Escalera de tablones hasta el recuerdo del **doble salto**; con él se
-   alcanza una cornisa alta con un Ancla. Su pared derecha queda cerrada: es el
-   sitio natural para la siguiente ampliación del Cinturón Yermo.
+El recorrido sigue el ritmo de un primer tramo de Hollow Knight (un pueblo, una
+caída a una zona subterránea, un banco justo antes del primer jefe y el poder que
+da, probado enseguida en un pasaje exigente). Los enemigos **solo actúan dentro de su sala** y cuando el jugador lleva unas 4 baldosas dentro de ella (`ROOM_ENTRY_MARGIN` en `enemy.gd`, `PatrolChaseAI.territory`): no te pegan recién cambiado de sala ni desde la de al lado a través de la puerta. Además, ningún enemigo se coloca a menos de ~10 baldosas de una puerta. Las salas del tramo son **largas**
+(la Cisterna 128 baldosas, las Galerías 112) y los enemigos van separados unas
+14 o 18 baldosas, para que cada encuentro sea suyo y no un montón.
 
-Es el primer bucle metroidvania del mundo real: ves un foso que no puedes
-cruzar, caes, encuentras el dash abajo, vuelves y lo cruzas.
+1. **El Último Umbral** — la zona de inicio (ver `vertical-slice.md`). Su borde
+   derecho continúa hacia el Cinturón Yermo.
+2. **Las Terrazas Secas** — primera sala del Cinturón Yermo. Un foso de 20
+   baldosas no se puede saltar sin dash; caer en él no mata, lleva a La Cisterna.
+3. **La Cisterna** (128×31) — depósito subterráneo seco. Se aterriza en una zona
+   tranquila bajo el foso; una escalera de tablones devuelve a él (no se puede
+   quedar atrapado). Hacia el este, un lancero, un cascarón, un arrojador sobre un
+   tablón y un acechador, y al final, junto a la puerta, un **Ancla**.
+4. **Las Galerías Bajas** (112×34) — el tramo largo antes del jefe, en un salón
+   alto: un cascarón, un foso de pinchos, otro cascarón, una galería alta con un
+   arrojador, un acechador, un lancero, un coloso, una hilera de pinchos que salen y
+   se retraen y, justo antes de la puerta, un **Ancla** y una inscripción que anuncia
+   al Custodio.
+5. **El Aljibe** (64×33) — la **arena** del **Centinela Hueco** (ver `jefes.md`).
+   Es una sala aparte, con su propia puerta de entrada y de salida: al cruzar la línea
+   de la sala, **caen dos rastrillos de hierro** (uno por puerta) y no se puede huir
+   hasta vencerlo. Al vencerlo se abren y aparece el recuerdo del **dash**.
+6. **La Chimenea** (40×69) — el puzle del dash: un eje abierto, sin techos, con
+   escalones anchos y **tres cruces de 16 baldosas que solo se salvan con dash**
+   (saltar y dash en el aire; solo cabe uno por salto). Cada fallo cuesta caer a un
+   escalón inferior o a los pinchos (1 de daño y de vuelta al último suelo firme), no
+   volver al Ancla. Tiene un **Ancla** al acabar el primer cruce y otra a mitad.
+7. **La Pasarela de los Mensajeros** (100×24) — al aire libre, a lo alto del mundo:
+   tres huecos de 17 baldosas sobre un abismo de pinchos, todos con dash, hasta **El
+   Mirador**, con un **Ancla** y una inscripción. Allí se acaba el camino por ahora:
+   es el sitio natural para ampliar el mundo hacia el este.
+8. **La Torre de Riego** — al otro lado del foso de las Terrazas. Escalera de
+   tablones hasta el recuerdo del **doble salto**; con él se alcanza la cornisa
+   del Ancla. Su pared derecha queda cerrada.
+
+Es el primer bucle metroidvania del mundo real, ahora más largo: ves un foso que
+no puedes cruzar, caes, abres el camino bajo tierra con un jefe, vuelves con el
+dash y cruzas ese mismo foso; y el puzle del dash pone a prueba lo aprendido.
+
+Cómo se comprueba que el puzle se puede resolver (y solo con dash): las
+maniobras de referencia están en `tests/puzzle_plans.json` y la prueba de humo
+las repite en el motor (ver `jefes.md` y `docs/arquitectura.md#verificación`).
 
 ## Pendiente de definir en próximas sesiones de diseño
 
