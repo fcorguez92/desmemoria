@@ -375,3 +375,10 @@ Cada entrada: qué se decidió, por qué, qué alternativas se descartaron y por
 **Por qué**: a 864×486 píxeles de pantalla, un salto de 180 px ocupa un 37 % del alto y una distancia de 17 baldosas más de la mitad del ancho: lo que sobre el papel era "margen de 10 fotogramas" era injugable con techos bajos, huecos de 4 baldosas y pinchos por todas partes. La dificultad ahora está en el cruce con dash, no en la precisión. **Pulido siguiente (2026-10-22)**: tras jugar la pelea: el jefe atravesaba al jugador al caer encima y se quedaba subido a él (ahora no choca con él durante el salto y se aparta), el polvo dibujado en la hoja salía flotando al caer en un tablón (el del aterrizaje se genera por código solo sobre suelo; el del mazazo queda pegado a la cabeza del mazo y solo se golpea si hay suelo debajo), la onda iba en línea recta (ahora sigue el suelo y cae por los bordes), y había enemigos que pegaban recién entrado en una sala o desde la de al lado (cada enemigo solo actúa si el jugador está dentro de su sala y a ~4 baldosas de sus puertas, `PatrolChaseAI.territory`). La pelea rinde de sobra (≈900 fps, 1,1 ms por fotograma con el jefe peleando; medido con ventana real), así que no hizo falta optimizar el código.
 
 **Qué queda por afinar jugando**: si el puzle se queda corto, se pueden estrechar huecos y añadir pinchos sobre los escalones con el simulador a mano.
+
+## 2026-10-22 — Corrección de esquina y huecos para saltar
+
+**Decisión**: `PlatformerMotor.correct_ceiling_corner()` (8 px por defecto, `ceiling_corner_correction`): si al subir la cabeza rozaría el borde de un techo por menos de ese margen, el cuerpo se desplaza de lado y sigue subiendo. En La Chimenea, un tablón quedaba a solo 3 baldosas bajo un bloque (el jugador mide 3): se movió, y la prueba de humo comprueba ahora que ninguna plataforma de ningún mapa queda bajo un techo a menos de 6 baldosas (salvo las puertas de los bordes).
+
+**Por qué**: el jugador se quedaba pillado al saltar en un hueco justo. La corrección de esquina es el remedio estándar de los plataformas; arreglar el mapa elimina el caso concreto, y la prueba evita que vuelva a pasar al diseñar salas nuevas.
+

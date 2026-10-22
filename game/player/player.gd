@@ -115,6 +115,7 @@ func _physics_process(delta: float) -> void:
 	knockback.step(self, delta)
 
 	_peak_fall_speed = maxf(_peak_fall_speed, velocity.y)
+	motor.correct_ceiling_corner(self, delta)
 	move_and_slide()
 	_slide_off_enemies()
 	_play_movement_sounds()
