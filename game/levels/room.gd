@@ -52,6 +52,10 @@ const TRIGGERS := {
 	"*": [ButtonScene, "boton"],
 }
 const CRACKED_WALL := "#"
+## Ciclo (`y`) y extremos de carril (`<` inicio, `>` fin) de las plataformas móviles.
+const CYCLE_MARKER := "y"
+const RAIL_START := "<"
+const RAIL_END := ">"
 
 const CELL := 16.0
 ## Mitad de la altura de cada entidad, para apoyar sus pies en la celda.
@@ -130,6 +134,12 @@ const SPIKES_HALF_HEIGHT := 8.0
 ## enlace: las compuertas leen `t:sala.canal_a`/`canal_b` y lo demás escribe
 ## `t:sala.nombre_columna_fila` (temporal). Lo permanente se nombra aquí, a mano.
 @export var links: Dictionary = {}
+## Ajustes de las piezas con ritmo o recorrido (ciclos `y` y plataformas `<`): la clave
+## es el id de la pieza (`y@12,5`; de una plataforma, el de su `<`) y el valor, un
+## diccionario de propiedades del nodo, p. ej. `{"phase": 0.5, "period": 4.0}` para
+## un ciclo o `{"mode": 1, "activation_flag": "t:sala.palanca"}` para una plataforma
+## (modo 0 continua, 1 a demanda, 2 viaje). Sin entrada, valen los de por defecto.
+@export var piece_params: Dictionary = {}
 
 @onready var tiles: TextTileMap = $Tiles
 
@@ -235,6 +245,84 @@ func _place_mechanics() -> void:
 		wall.flag_id = piece_flags(CRACKED_WALL, group, StringName("t:%s.muro_%d_%d" % [room_id(), group[0].x, group[0].y]))[0]
 		wall.position = _cell_local(group[0])
 		add_child(wall)
+	for group in tiles.marker_groups(CYCLE_MARKER):
+		var cycle := Cycle.new()
+		cycle.cells = _offsets(group)
+		cycle.position = _cell_local(group[0])
+		_apply_params(cycle, piece_id(CYCLE_MARKER, group))
+		add_child(cycle)
+	for pair in rail_pairs(tiles.marker_groups(RAIL_START), tiles.marker_groups(RAIL_END)):
+		var platform := RailPlatform.new()
+		var from := _top_center(pair[0])
+		platform.size.x = _group_width(pair[0])
+		platform.position = from + Vector2(0.0, platform.size.y / 2.0)
+		platform.end_offset = _top_center(pair[1]) - from
+		_apply_params(platform, piece_id(RAIL_START, pair[0]))
+		add_child(platform)
+
+
+## Empareja los extremos de carril: cada `<` con el `>` más cercano que quede libre
+## (se eligen primero los pares más próximos). Devuelve una lista de `[inicio, fin]`,
+## cada uno una pieza (lista de celdas). Los que sobren sin pareja se avisan.
+static func rail_pairs(starts: Array, ends: Array) -> Array:
+	var candidates: Array = []
+	for s in starts.size():
+		for e in ends.size():
+			candidates.append([_group_center(starts[s]).distance_to(_group_center(ends[e])), s, e])
+	candidates.sort_custom(func(a: Array, b: Array) -> bool: return a[0] < b[0])
+	var used_starts := {}
+	var used_ends := {}
+	var pairs: Array = []
+	for c in candidates:
+		if used_starts.has(c[1]) or used_ends.has(c[2]):
+			continue
+		used_starts[c[1]] = true
+		used_ends[c[2]] = true
+		pairs.append([starts[c[1]], ends[c[2]]])
+	if used_starts.size() < starts.size() or used_ends.size() < ends.size():
+		push_warning("room.gd: extremos de carril sin pareja (< y > deben ir en pares)")
+	return pairs
+
+
+## Centro de una pieza en celdas (media de las celdas).
+static func _group_center(group: Array) -> Vector2:
+	var sum := Vector2.ZERO
+	for cell in group:
+		sum += Vector2(cell)
+	return sum / group.size()
+
+
+## Ancho de una pieza en píxeles (su caja envolvente).
+func _group_width(group: Array) -> float:
+	var low: int = group[0].x
+	var high: int = group[0].x
+	for cell in group:
+		low = mini(low, cell.x)
+		high = maxi(high, cell.x)
+	return float(high - low + 1) * CELL
+
+
+## Punto central del borde de arriba de una pieza, en coordenadas de la sala.
+func _top_center(group: Array) -> Vector2:
+	var low: int = group[0].x
+	var high: int = group[0].x
+	var top: int = group[0].y
+	for cell in group:
+		low = mini(low, cell.x)
+		high = maxi(high, cell.x)
+		top = mini(top, cell.y)
+	var x := (float(low + high) / 2.0 + 0.5) * CELL
+	var y := float(top) * CELL
+	return tiles.to_global(Vector2(x, y)) - global_position
+
+
+## Aplica a `node` las propiedades de `piece_params[id]`, si las hay.
+func _apply_params(node: Object, id: String) -> void:
+	var params: Variant = piece_params.get(id)
+	if params is Dictionary:
+		for key in params:
+			var value: Variant = params[key]
+			node.set(key, StringName(value) if value is String and key.ends_with("flag") else value)
 
 
 ## Centro de una celda del mapa, en coordenadas de la sala.
