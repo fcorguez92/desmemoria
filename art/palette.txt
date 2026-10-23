@@ -31,3 +31,21 @@ m #15241a
 n #2c4a30
 o #587a4a
 p #9cb57a
+
+# Neutros: vacío, grises de lo olvidado y página en blanco
+0 #0a090d
+x #55555a
+y #8c8c8f
+w #efe9d6
+
+# Tierra: madera, tierra, paja
+5 #3d2a22
+6 #6b4a36
+7 #8f7d45
+
+# Cal y mar: hueso, sal, agua marina
+8 #cfc4a8
+9 #b9d6d2
+v #2f6f73
+
+# z: reservado, no se define (decisión D-02)
