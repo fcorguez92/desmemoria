@@ -76,7 +76,7 @@ Convenciones: **minúscula = mecánica o lógica; mayúscula = decorado, enemigo
 | `B` | Sillar o ladrillo labrado (arquitectura) | ✔ |
 | `C` | Remate de muro | ✔ |
 | `S` | Tablón de madera: plataforma **de un solo sentido** (se atraviesa desde abajo y por los lados; colisiona solo en una franja de 4 px en su borde superior; con abajo + salto se baja atravesándolo) | ✔ |
-| `%` | Pared lisa: sólida, el salto de pared no se agarra | nuevo (W0) |
+| `%` | Pared lisa: sólida, el salto de pared no se agarra | ✔ (W0; arte provisional: baldosa de piedra pálida; dato `smooth` en el `TileSet`) |
 | `g` | Terreno desmemoriado: toda la familia de baldosas planas y sin textura (parches grises, Archivo en blanco, Herida) | nuevo (W9) |
 | `p` | Plataforma de un solo sentido que no es de madera (repisa de piedra, reja, losa) | nuevo (W9) |
 
