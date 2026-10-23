@@ -76,7 +76,7 @@ Convenciones: **minúscula = mecánica o lógica; mayúscula = decorado, enemigo
 | `B` | Sillar o ladrillo labrado (arquitectura) | ✔ |
 | `C` | Remate de muro | ✔ |
 | `S` | Tablón de madera: plataforma **de un solo sentido** (se atraviesa desde abajo y por los lados; colisiona solo en una franja de 4 px en su borde superior; con abajo + salto se baja atravesándolo) | ✔ |
-| `%` | Pared lisa: sólida, el salto de pared no se agarra | nuevo (W0) |
+| `%` | Pared lisa: sólida, el salto de pared no se agarra | ✔ (W0; arte provisional: baldosa de piedra pálida; dato `smooth` en el `TileSet`) |
 | `g` | Terreno desmemoriado: toda la familia de baldosas planas y sin textura (parches grises, Archivo en blanco, Herida) | nuevo (W9) |
 | `p` | Plataforma de un solo sentido que no es de madera (repisa de piedra, reja, losa) | nuevo (W9) |
 
@@ -135,13 +135,13 @@ Las piezas singulares (props únicos de cada región) no usan letra: se listan e
 
 | Car. | Qué es | Estado |
 |---|---|---|
-| `#` | Muro o suelo **frágil** (se rompe a golpes, sin habilidad) | nuevo (W2) |
+| `#` | Muro o suelo **frágil** (se rompe a golpes, sin habilidad) | ✔ (W2; arte provisional: bloque gris con grieta en zigzag que se alarga) |
 | `$` | Muro o suelo **hondo** (solo se rompe con Excavar) | nuevo (W5) |
-| `=` | Compuerta, canal A (reja, tablones, piedra, cal, puente, tinta) | nuevo (W2) |
-| `+` | Compuerta, canal B | nuevo (W2) |
-| `z` | Palanca | nuevo (W2) |
-| `_` | Placa de presión | nuevo (W2) |
-| `*` | Botón en alto (se golpea saltando) | nuevo (W2) |
+| `=` | Compuerta, canal A (reja, tablones, piedra, cal, puente, tinta) | ✔ (W2; solo el vestido de reja) |
+| `+` | Compuerta, canal B | ✔ (W2) |
+| `z` | Palanca | ✔ (W2) |
+| `_` | Placa de presión | ✔ (W2) |
+| `*` | Botón en alto (se golpea saltando) | ✔ (W2) |
 | `c` | Receptor: nicho, ranura, altar (Sellos de la Puerta Sin Muro, Relevo) | nuevo (W6) |
 | `n` | Piedra de lectura (Nombrar) | nuevo (W8) |
 | `<` `>` | Extremos de un carril de plataforma móvil, barca o vagoneta | nuevo (W3) |
@@ -164,7 +164,7 @@ Las piezas singulares (props únicos de cada región) no usan letra: se listan e
 | `7` | Enemigo nuevo, rol **corredor** (carga, salto o rodadura, o rastrero) | nuevo (04) |
 | `8` | Enemigo nuevo, rol **de zona o de apoyo** (crea una zona o un estado, o da escudo) | nuevo (04) |
 | `9` | **Élite o minijefe** de la sala (uno por sala) | nuevo (04) |
-| `!` | Coleccionable: fragmento de vida o de frasco, Bolsa de Rastro, Página de Corvel, reliquia, objeto de lore (tipo e id en el campo `pickups` de la escena, en orden de lectura) | nuevo (W1) |
+| `!` | Coleccionable: fragmento de vida o de frasco, Bolsa de Rastro, Página de Corvel, reliquia, objeto de lore (tipo en el campo `pickups` de la escena como `c37f05:bag`, por posición, y `fragment` si falta; el id sale del mapa y la posición, `cisterna.c37f05`) | ✔ (W1) |
 | `@` | Personaje no jugador (PNJ; cuál, en el campo `npcs` de la escena) | nuevo (fase de PNJ) |
 
 Los enemigos `5`-`9` son **casilleros**: la escena de la sala (`enemy_set`) dice qué enemigo concreto es cada uno en esa sala (el catálogo está en la propuesta 04; el editor de combate fija cuáles entran). `1`-`4` y `E` conservan su significado en todas las salas.

@@ -22,6 +22,8 @@ var _level: Node
 var _player: Node
 ## El Último Umbral dentro del mundo (ver `_load_world()`).
 var _room: Node
+## Almacén de marcas de las pruebas de compuertas y disparadores (ver `_mech_sandbox()`).
+var _marks: FlagStore
 
 
 func _init() -> void:
@@ -55,6 +57,9 @@ func _run() -> void:
 	await _test_double_jump_reaches_high_platform()
 	await _test_wall_slide_and_wall_jump()
 	await _test_wall_jump_opens_the_shaft()
+	await _test_smooth_wall_is_not_gripped()
+	await _test_marker_groups()
+	await _test_world_checks_with_node()
 	await _test_ultimo_umbral_builds_from_text_map()
 	await _test_planks_are_one_way_platforms()
 	await _test_breakable_props()
@@ -93,6 +98,17 @@ func _run() -> void:
 	await _test_save_slot()
 	await _test_autosave_triggers()
 	await _test_loading_restores_progress()
+	await _test_flag_store()
+	await _test_collectibles_are_saved_once()
+	await _test_gate_opens_with_marks()
+	await _test_gate_never_closes_on_someone()
+	await _test_aljibe_gates_are_core_gates()
+	await _test_levers_and_buttons()
+	await _test_pressure_plate_hold_time()
+	await _test_cracked_wall_takes_three_hits()
+	await _test_cracked_wall_stays_broken_after_loading()
+	await _test_room_places_mechanics_from_markers()
+	await _test_cistern_lever_opens_the_nook()
 	await _test_title_screen()
 	await _test_pause_returns_to_title()
 	await _test_menu_list_survives_leaving_the_tree()
@@ -743,6 +759,78 @@ func _wall_probe(unlocked: bool) -> Dictionary:
 	Input.action_release("ui_accept")
 	Input.action_release("ui_left")
 	return result
+
+
+## Baldosas de prueba con la leyenda de las salas (T = piedra normal, % = pared lisa).
+func _tile_map_from_text(text: String) -> TextTileMap:
+	var map := TextTileMap.new()
+	map.tile_set = load("res://game/levels/tiles_umbral.tres")
+	map.legend = {"T": Vector2i(0, 0), "%": Vector2i(5, 0)}
+	root.add_child(map)
+	map.build(text)
+	return map
+
+
+## Las comprobaciones del mundo y del simulador de saltos se escriben en JavaScript
+## (herramientas de diseño, no del juego): si Node no está instalado se omiten.
+func _test_world_checks_with_node() -> void:
+	print("\n[Verificador del mundo y simulador de saltos (Node)]")
+	for script in ["verifica_mundo.js", "test_sim_saltos.js"]:
+		var output := []
+		var code := OS.execute("node", [ProjectSettings.globalize_path("res://tools/" + script)], output, true)
+		if code == -1:
+			print("  (omitida: Node no está disponible; ejecutar a mano node tools/%s)" % script)
+			continue
+		_check(code == 0, "tools/%s sale con código 0%s" % [script, "" if code == 0 else ": " + str(output)])
+
+
+func _test_marker_groups() -> void:
+	print("\n[Piezas de marcadores: grupos conexos]")
+	var map := _tile_map_from_text("$$.\n$$.\n$$.\n...$\n.$..\n$..$$")
+	var groups := map.marker_groups("$")
+	_check(groups.size() == 5, "un muro 2x3 es una sola pieza; las diagonales no unen (%d piezas)" % groups.size())
+	_check(groups[0].size() == 6 and groups[0][0] == Vector2i(0, 0), "la pieza 2x3 tiene 6 celdas y empieza en la primera en orden de lectura")
+	_check(groups[-1].size() == 2, "dos celdas contiguas forman una pieza")
+	_check(map.marker_groups("z").is_empty(), "un carácter ausente no da piezas")
+	map.queue_free()
+
+
+func _fall_beside_wall(wall: String) -> float:
+	var rows := PackedStringArray()
+	for i in 60:
+		rows.append(wall + wall + "..........")
+	var map := _tile_map_from_text("\n".join(rows))
+	var body := CharacterBody2D.new()
+	var shape := CollisionShape2D.new()
+	var rect := RectangleShape2D.new()
+	rect.size = Vector2(24.0, 48.0)
+	shape.shape = rect
+	body.add_child(shape)
+	var motor := PlatformerMotor.new()
+	motor.can_wall_jump = true
+	body.add_child(motor)
+	root.add_child(body)
+	body.global_position = Vector2(32.0 + 12.0, 100.0)
+	Input.action_press("ui_left")
+	var fastest := 0.0
+	for i in 40:
+		await physics_frame
+		motor.step(body, 1.0 / 60.0)
+		body.move_and_slide()
+		if i > 10:
+			fastest = maxf(fastest, body.velocity.y)
+	Input.action_release("ui_left")
+	body.queue_free()
+	map.queue_free()
+	return fastest
+
+
+func _test_smooth_wall_is_not_gripped() -> void:
+	print("\n[Pared lisa: sólida, pero no se agarra]")
+	var rough := await _fall_beside_wall("T")
+	var smooth := await _fall_beside_wall("%")
+	_check(rough <= 125.0, "junto a una pared normal, el Agarre frena la caída (%s)" % rough)
+	_check(smooth > 300.0, "junto a una pared lisa se mantiene la caída (%s)" % smooth)
 
 
 func _test_wall_jump_opens_the_shaft() -> void:
@@ -2047,6 +2135,479 @@ func _test_loading_restores_progress() -> void:
 	_check(_level.current_room == _room, "aunque lo equivocado sea la partida entera")
 
 
+func _test_flag_store() -> void:
+	print("\n[FlagStore: poner, leer, guardar, cargar e ignorar lo desconocido]")
+	var store := FlagStore.new()
+	var changes: Array[StringName] = []
+	store.changed.connect(func(id: StringName) -> void: changes.append(id))
+	_check(not store.has_flag(&"d:umbral.verja") and store.get_flag(&"d:umbral.verja", 7) == 7, "sin poner, no existe y se devuelve el valor por defecto")
+	_check(store.set_flag(&"d:umbral.verja") and store.has_flag(&"d:umbral.verja") and store.get_flag(&"d:umbral.verja") == true, "poner una marca sin valor la deja en true")
+	_check(not store.set_flag(&"d:umbral.verja") and changes.size() == 1, "ponerla otra vez no cambia nada ni vuelve a avisar")
+	_check(store.set_flag(&"p:aun.final", "sellar") and store.get_flag(&"p:aun.final") == "sellar" and changes.size() == 2, "admite valores de texto y avisa con changed")
+	_check(not store.set_flag(&"", true) and not store.set_flag(&"x:a.b", Vector2.ONE), "un id vacío o un valor que JSON no guarda se rechazan")
+	_check(not store.set_flag(&"x:a.nan", NAN) and not store.set_flag(&"x:a.inf", INF) and not store.has_flag(&"x:a.nan"), "NAN e INF se rechazan")
+	var special := FlagStore.new()
+	special.from_dict({ "x:a.nan": NAN, "x:a.inf": -INF, "x:a.ok": 1.5 })
+	_check(special.count() == 1 and special.has_flag(&"x:a.ok"), "y también al cargar")
+	special.free()
+	store.set_flag(&"t:cruce.placa")
+	_check(store.count() == 3 and store.count("d:") == 1, "count cuenta todas o por prefijo")
+	var saved := store.to_dict()
+	_check(saved.has("d:umbral.verja") and saved.has("p:aun.final") and not saved.has("t:cruce.placa"), "to_dict guarda lo permanente y no las temporales")
+	store.reset_transient()
+	_check(not store.has_flag(&"t:cruce.placa") and store.has_flag(&"d:umbral.verja"), "reset_transient borra solo las temporales")
+	var json_round_trip: Variant = JSON.parse_string(JSON.stringify(saved))
+	var loaded := FlagStore.new()
+	loaded.from_dict(json_round_trip)
+	_check(loaded.has_flag(&"d:umbral.verja") and loaded.get_flag(&"p:aun.final") == "sellar" and loaded.count() == 2, "lo guardado en JSON se carga igual")
+	loaded.from_dict({ "d:ok.a": true, "": true, "t:x.y": true, "d:mal.valor": [1], 5: true, "d:ok.b": 3.0 })
+	_check(loaded.count() == 2 and loaded.get_flag(&"d:ok.b") == 3.0, "al cargar se ignoran ids vacíos, no textuales, temporales y valores raros")
+	loaded.from_dict({ "d:existe.a": true, "d:ya_no_existe.b": true }, ["d:existe.a"])
+	_check(loaded.has_flag(&"d:existe.a") and not loaded.has_flag(&"d:ya_no_existe.b"), "con lista de ids conocidos, el desconocido se ignora")
+	loaded.from_dict(["d:lista.a", "d:lista.a"])
+	_check(loaded.count() == 1 and loaded.get_flag(&"d:lista.a") == true, "una lista de ids cuenta como marcas en true, sin duplicar")
+	loaded.from_dict("basura")
+	_check(loaded.count() == 0, "datos de otro tipo dejan el almacén vacío sin errores")
+	_check(not loaded.clear_flag(&"d:no.esta"), "borrar una marca que no existe no hace nada")
+	store.free()
+	loaded.free()
+
+
+func _test_collectibles_are_saved_once() -> void:
+	print("\n[Coleccionables: id único, se cuentan una vez y no reaparecen]")
+	await _load_world()
+	var ids := {}
+	var all_unique := true
+	for pickup in get_nodes_in_group(&"collectible"):
+		if ids.has(pickup.id) or String(pickup.id).is_empty():
+			all_unique = false
+		ids[pickup.id] = true
+	_check(not ids.is_empty() and all_unique, "todos los coleccionables del mundo tienen id y no se repiten")
+	var sample: Node = get_nodes_in_group(&"collectible")[0]
+	_check(String(sample.id) == "cisterna.c37f05" and sample.kind == &"fragment", "el id sale del mapa y la posición (cisterna.c37f05) y el tipo de la sala")
+	_check(_level.fragment_count() == 0 and _level.bag_count() == 0, "una partida nueva empieza sin fragmentos ni bolsas")
+	var cistern: Node = _level.get_node("Rooms/Cisterna")
+	cistern.pickups = PackedStringArray(["c37f05:bag"])
+	_check(cistern._collectible_kind(Vector2i(37, 5)) == &"bag" and cistern._collectible_kind(Vector2i(1, 1)) == &"fragment", "el tipo va atado a la posición del !, no al orden; sin entrada es fragmento")
+	cistern.pickups = PackedStringArray()
+
+	_level.flags.set_flag(&"d:test.puerta")
+	_level.flags.set_flag(&"t:test.placa")
+	_player.global_position = sample.global_position
+	_player.velocity = Vector2.ZERO
+	await _wait(20)
+	_check(_level.fragment_count() == 1 and not is_instance_valid(sample), "recogerlo cuenta un fragmento y lo retira")
+	await _wait(3)
+	var data := _saved()
+	_check(data.get("fragments", []) == ["cisterna.c37f05"] and data.get("bags", []) == [], "se guarda en fragments (y bags sigue vacío)")
+	_check(data.get("flags", {}).has("d:test.puerta") and not data.get("flags", {}).has("t:test.placa"), "las marcas permanentes se guardan y las temporales no")
+	_level.collected.set_flag(&"cisterna.c37f05", "fragment")
+	_check(_level.fragment_count() == 1, "el mismo id dos veces no suma")
+
+	_player.die()
+	await _wait(4)
+	_check(not _level.flags.has_flag(&"t:test.placa") and _level.flags.has_flag(&"d:test.puerta"), "al morir se reinicia lo temporal y se conserva lo permanente")
+
+	await _load_world(true)
+	await _wait(4)
+	_check(_level.fragment_count() == 1 and _level.flags.has_flag(&"d:test.puerta"), "tras cargar siguen el contador y las marcas")
+	var respawned := 0
+	for pickup in get_nodes_in_group(&"collectible"):
+		if not pickup.is_queued_for_deletion():
+			respawned += 1
+	_check(respawned == 0, "el coleccionable ya recogido no reaparece")
+
+	# Partida antigua: sin las claves nuevas carga como si no hubiera marcas.
+	SaveSlot.new(TEST_SAVE).write({ player = {}, rooms = [], bosses = [], seen = {} })
+	await _load_world(true)
+	_check(_level.fragment_count() == 0 and _level.bag_count() == 0 and _level.flags.count() == 0, "una partida sin las claves nuevas carga sin marcas ni coleccionables")
+	_check(not get_nodes_in_group(&"collectible").is_empty(), "y el coleccionable vuelve a estar en su sitio")
+	# Claves con tipos equivocados o ids repetidos.
+	SaveSlot.new(TEST_SAVE).write({ player = {}, flags = 5, fragments = ["cisterna.c37f05", "cisterna.c37f05", "sala.inventada", 3], bags = "x" })
+	await _load_world(true)
+	_check(_level.fragment_count() == 1 and _level.bag_count() == 0 and _level.flags.count() == 0, "claves con tipos equivocados, ids repetidos o ids que no existen en el mundo se toleran (solo cuenta el real)")
+
+
+# --- Compuertas, disparadores y muros frágiles (W2) --------------------------
+
+## Un nivel vacío con un almacén de marcas (grupo `flag_store`), para probar las
+## piezas sueltas sin el mundo.
+func _mech_sandbox() -> void:
+	paused = false
+	Engine.time_scale = 1.0
+	if is_instance_valid(_level):
+		_level.queue_free()
+		await process_frame
+	_level = Node2D.new()
+	root.add_child(_level)
+	_marks = FlagStore.new()
+	_marks.add_to_group(FlagStore.GROUP)
+	_level.add_child(_marks)
+	await process_frame
+
+
+func _mech_gate(requires: Array[StringName], at: Vector2, inverted: bool = false, cells: PackedVector2Array = PackedVector2Array([Vector2.ZERO])) -> Gate:
+	var gate := load("res://game/environment/reja.tscn").instantiate() as Gate
+	gate.requires = requires
+	gate.inverted = inverted
+	gate.cells = cells
+	gate.position = at
+	_level.add_child(gate)
+	return gate
+
+
+func _mech_trigger(path: String, flag: StringName, at: Vector2, toggle: bool = false, hold: float = 0.0) -> Trigger:
+	var trigger := load(path).instantiate() as Trigger
+	trigger.flag_id = flag
+	trigger.toggle = toggle
+	trigger.hold_time = hold
+	trigger.position = at
+	_level.add_child(trigger)
+	return trigger
+
+
+## Un cuerpo del grupo `player` (cuenta como quien pisa o está dentro).
+func _mech_body(at: Vector2) -> CharacterBody2D:
+	var body := CharacterBody2D.new()
+	body.add_to_group("player")
+	var shape := CollisionShape2D.new()
+	var rect := RectangleShape2D.new()
+	rect.size = Vector2(10.0, 10.0)
+	shape.shape = rect
+	body.add_child(shape)
+	body.position = at
+	_level.add_child(body)
+	return body
+
+
+func _gate_shapes_disabled(gate: Gate) -> bool:
+	return gate.get_node("StaticBody2D/CollisionShape2D").disabled
+
+
+func _test_gate_opens_with_marks() -> void:
+	print("\n[Compuerta: se abre con su marca, con \"Y\" de varias y al revés si es inversa]")
+	await _mech_sandbox()
+	_marks.set_flag(&"p:t.previa")
+	var one := _mech_gate([&"p:t.una"], Vector2(100, 100))
+	var both := _mech_gate([&"p:t.a", &"p:t.b"], Vector2(200, 100))
+	var inverse := _mech_gate([&"p:t.una"], Vector2(300, 100), true)
+	var wide := _mech_gate([&"p:t.una"], Vector2(400, 100), false, PackedVector2Array([Vector2(0, 0), Vector2(0, 16), Vector2(0, 32)]))
+	var already := _mech_gate([&"p:t.previa"], Vector2(500, 100))
+	var temporary := _mech_gate([&"t:t.temporal"], Vector2(600, 100))
+	await _wait(3)
+	_check(one.closed and both.closed and wide.closed and temporary.closed and not inverse.closed, "sin sus marcas, la normal está cerrada y la inversa abierta")
+	_check(not _gate_shapes_disabled(one) and _gate_shapes_disabled(inverse), "cerrada bloquea (colisión activa) y abierta no")
+	_check(wide._shapes.size() == 3 and wide._bars.size() == 3, "una pieza de tres celdas tiene tres formas de colisión y tres dibujos")
+	_check(not already.closed and already._tween == null, "si su marca ya estaba puesta (partida cargada), nace abierta y sin animación")
+	_marks.set_flag(&"p:t.una")
+	await _wait(3)
+	_check(not one.closed and not wide.closed and inverse.closed, "al ponerse su marca se abre (y la inversa se cierra)")
+	_check(_gate_shapes_disabled(one) and not _gate_shapes_disabled(inverse), "abierta deja pasar y la inversa cerrada bloquea")
+	_marks.set_flag(&"p:t.a")
+	await _wait(3)
+	_check(both.closed, "con \"Y\", una sola de las marcas no basta")
+	_marks.set_flag(&"p:t.b")
+	await _wait(3)
+	_check(not both.closed, "con todas las marcas se abre")
+	_marks.clear_flag(&"p:t.a")
+	await _wait(3)
+	_check(both.closed, "si una marca se borra, vuelve a cerrarse")
+	_marks.set_flag(&"t:t.temporal")
+	await _wait(3)
+	_check(not temporary.closed, "una marca temporal la abre")
+	_marks.reset()
+	await _wait(3)
+	_check(temporary.closed and not one.closed, "al reiniciar (descansar o morir) se cierra la de marca temporal y no la permanente")
+
+
+func _test_gate_never_closes_on_someone() -> void:
+	print("\n[Compuerta: nunca se cierra encima de alguien; espera a que salga]")
+	await _mech_sandbox()
+	var gate := _mech_gate([&"p:t.puerta"], Vector2(100, 100))
+	_marks.set_flag(&"p:t.puerta")
+	await _wait(3)
+	_check(not gate.closed, "abierta")
+	var body := _mech_body(Vector2(100, 100))
+	await _wait(3)
+	_check(gate.is_blocked(), "detecta a quien está dentro")
+	_marks.clear_flag(&"p:t.puerta")
+	await _wait(20)
+	_check(not gate.closed, "con el jugador dentro NO se cierra, aunque su marca haya desaparecido")
+	body.global_position = Vector2(100, 400)
+	await _wait(4)
+	_check(gate.closed and not _gate_shapes_disabled(gate), "en cuanto sale, se cierra (y bloquea)")
+
+
+func _test_aljibe_gates_are_core_gates() -> void:
+	print("\n[El Aljibe usa la compuerta de core/ y se comporta igual que antes]")
+	await _load_world()
+	var arena := _arena()
+	var gates: Array = arena._entry_gates + arena._exit_gates
+	var all_core := not gates.is_empty()
+	for gate in gates:
+		all_core = all_core and gate is Gate and gate.requires.is_empty()
+	_check(all_core, "las rejas de la arena son Gate sin marcas (no leen el almacén)")
+	await _wait(3)
+	_check(not arena._entry_gates[0].closed and arena._exit_gates[0].closed, "al empezar: entrada abierta y salida cerrada")
+	_check(not _gate_shapes_disabled(arena._exit_gates[0]) and _gate_shapes_disabled(arena._entry_gates[0]), "la cerrada bloquea de verdad y la abierta no")
+	_level.flags.set_flag(&"p:cualquiera")
+	_level.flags.reset()
+	await _wait(5)
+	_check(not arena._entry_gates[0].closed and arena._exit_gates[0].closed, "las marcas del mundo no les afectan")
+	arena._exit_gates[0].set_closed(false, false)
+	_check(not arena._exit_gates[0].closed, "set_closed sigue abriendo y cerrando a mano")
+	_check(arena._exit_gates[0].get_script().resource_path == "res://core/objects/gate.gd", "y el script es el de core/")
+
+
+func _test_levers_and_buttons() -> void:
+	print("\n[Palanca: latch y toggle, golpe o Z; botón; reinicio de lo temporal]")
+	await _mech_sandbox()
+	var latch := _mech_trigger("res://game/environment/palanca.tscn", &"d:t.palanca", Vector2(100, 100))
+	var toggled := _mech_trigger("res://game/environment/palanca.tscn", &"t:t.toggle", Vector2(300, 100), true)
+	var near := _mech_trigger("res://game/environment/palanca.tscn", &"d:t.cercana", Vector2(500, 100))
+	var button := _mech_trigger("res://game/environment/boton.tscn", &"d:t.boton", Vector2(700, 100))
+	var plate := _mech_trigger("res://game/environment/placa.tscn", &"t:t.placa_golpe", Vector2(900, 100))
+	await _wait(3)
+	_check(not latch.active and not _marks.has_flag(&"d:t.palanca"), "empieza sin accionar")
+	latch.take_hit(1, 1)
+	_check(latch.active and _marks.has_flag(&"d:t.palanca"), "un golpe acciona la palanca y escribe su marca")
+	_check(latch.witness.modulate.is_equal_approx(latch.lit_color) and latch.flip.scale.x < 0.0, "el testigo se enciende y el mango se voltea")
+	latch.take_hit(1, 1)
+	_check(latch.active and _marks.has_flag(&"d:t.palanca"), "latch: otro golpe no la desactiva")
+	toggled.take_hit(1, 1)
+	_check(toggled.active and _marks.has_flag(&"t:t.toggle"), "toggle: el primer golpe la activa")
+	toggled.take_hit(1, 1)
+	_check(not toggled.active and not _marks.has_flag(&"t:t.toggle"), "toggle: el segundo la desactiva y borra la marca")
+	_check(toggled.witness.modulate.is_equal_approx(toggled.dim_color), "y el testigo se apaga")
+	await _press_action(&"interact")
+	_check(not near.active, "Z sin nadie al alcance no hace nada")
+	var body := _mech_body(Vector2(500, 100))
+	await _wait(3)
+	await _press_action(&"interact")
+	_check(near.active and _marks.has_flag(&"d:t.cercana"), "con alguien al alcance, Z la acciona")
+	button.take_hit(1, 1)
+	button.take_hit(1, 1)
+	_check(button.active and _marks.has_flag(&"d:t.boton"), "el botón se activa de un golpe y se queda")
+	plate.take_hit(1, 1)
+	_check(not plate.active, "una placa no responde a los golpes")
+	toggled.take_hit(1, 1)
+	_check(toggled.active, "toggle activada otra vez")
+	_marks.reset()
+	await _wait(2)
+	_check(not toggled.active and latch.active and near.active and button.active, "al descansar o morir se apaga la temporal y siguen las permanentes")
+	_check(toggled.witness.modulate.is_equal_approx(toggled.dim_color), "y su testigo vuelve a apagarse")
+	body.queue_free()
+
+
+func _test_pressure_plate_hold_time() -> void:
+	print("\n[Placa de presión: activa mientras se pisa y hold_time después; abre una compuerta]")
+	await _mech_sandbox()
+	var plain := _mech_trigger("res://game/environment/placa.tscn", &"t:t.simple", Vector2(100, 100))
+	var held := _mech_trigger("res://game/environment/placa.tscn", &"t:t.retenida", Vector2(300, 100), false, 0.3)
+	var gate := _mech_gate([&"t:t.retenida"], Vector2(300, 40))
+	await _wait(3)
+	_check(not plain.active and not held.active and gate.closed, "sin nadie encima, apagadas y la compuerta cerrada")
+	var on_plain := _mech_body(Vector2(100, 100))
+	var on_held := _mech_body(Vector2(300, 100))
+	await _wait(4)
+	_check(plain.active and held.active and _marks.has_flag(&"t:t.simple") and _marks.has_flag(&"t:t.retenida"), "al pisarlas se activan y escriben su marca")
+	await _wait(3)
+	_check(not gate.closed, "la compuerta ligada se abre")
+	on_plain.global_position = Vector2(100, 600)
+	on_held.global_position = Vector2(300, 600)
+	await _wait(5)
+	_check(not plain.active and not _marks.has_flag(&"t:t.simple"), "sin hold_time se apaga al irse")
+	_check(held.active and _marks.has_flag(&"t:t.retenida") and not gate.closed, "con hold_time sigue activa un rato después de irse")
+	_check(not held.witness.modulate.is_equal_approx(held.dim_color) and not held.witness.modulate.is_equal_approx(held.lit_color), "y el testigo se va apagando (cuenta atrás)")
+	await _wait(30)
+	_check(not held.active and not _marks.has_flag(&"t:t.retenida"), "pasado hold_time se apaga y borra su marca")
+	await _wait(3)
+	_check(gate.closed, "y la compuerta se cierra")
+	on_held.global_position = Vector2(300, 100)
+	await _wait(4)
+	_check(held.active, "se puede volver a pisar")
+	on_held.global_position = Vector2(300, 600)
+	await _wait(3)
+	on_held.global_position = Vector2(300, 100)
+	await _wait(25)
+	_check(held.active, "volver a pisarla antes de que acabe reinicia la cuenta atrás")
+
+
+func _test_cracked_wall_takes_three_hits() -> void:
+	print("\n[Muro frágil: 3 golpes lo rompen, 2 no; con ataques reales]")
+	await _mech_sandbox()
+	var wall := BreakableWall.new()
+	wall.flag_id = &"s:t.muro"
+	wall.cells = PackedVector2Array([Vector2.ZERO, Vector2(0, 16)])
+	wall.position = Vector2(100, 100)
+	var cracks: Array[int] = []
+	wall.cracked.connect(func(remaining: int) -> void: cracks.append(remaining))
+	_level.add_child(wall)
+	await _wait(3)
+	_check(wall.remaining_hits == 3 and not wall.is_broken, "empieza entero con 3 golpes")
+	wall.take_hit(1, 1)
+	wall.take_hit(1, 1)
+	_check(not wall.is_broken and wall.remaining_hits == 1 and cracks == [2, 1], "con 2 golpes no se rompe: solo se agrieta")
+	_check(not _marks.has_flag(&"s:t.muro") and not wall.get_child(0).disabled, "sigue sólido y sin marca")
+	wall.take_hit(1, 1)
+	_check(wall.is_broken and _marks.has_flag(&"s:t.muro"), "el tercero lo rompe y escribe su marca")
+	await _wait(2)
+	_check(wall.get_child(0).disabled and wall.get_child(1).disabled, "rota, deja de bloquear desde el primer momento")
+	await _wait(35)
+	_check(not is_instance_valid(wall), "y desaparece entera tras un instante")
+
+	# Con el ataque real del jugador (el golpe alcanza la capa de física del muro).
+	await _load_world()
+	await _wait(5)
+	var real := BreakableWall.new()
+	real.flag_id = &"s:t.muro_real"
+	_room.add_child(real)
+	var facing: int = _player.motor.facing
+	real.global_position = _player.global_position + Vector2(26.0 * facing, 8.0)
+	await _wait(3)
+	for swing in 2:
+		Input.action_press("attack")
+		await _wait(2)
+		Input.action_release("attack")
+		await _wait(22)
+	_check(not real.is_broken and real.remaining_hits == 1, "dos ataques del jugador no lo rompen")
+	Input.action_press("attack")
+	await _wait(2)
+	Input.action_release("attack")
+	await _wait(4)
+	_check(real.is_broken and _level.flags.has_flag(&"s:t.muro_real"), "el tercero sí, y queda en las marcas del mundo")
+
+
+func _test_cracked_wall_stays_broken_after_loading() -> void:
+	print("\n[Muro frágil: roto se guarda; con marca temporal vuelve]")
+	await _load_world()
+	await _wait(3)
+	var kept := BreakableWall.new()
+	kept.flag_id = &"s:test.muro_guardado"
+	var temporary := BreakableWall.new()
+	temporary.flag_id = &"t:test.muro_temporal"
+	temporary.position = Vector2(32, 0)
+	_room.add_child(kept)
+	_room.add_child(temporary)
+	await _wait(3)
+	for i in 3:
+		kept.take_hit(1, 1)
+		temporary.take_hit(1, 1)
+	await _wait(30)
+	_level.save_game()
+	await _wait(3)
+	var flags: Dictionary = _saved().get("flags", {})
+	_check(flags.has("s:test.muro_guardado") and not flags.has("t:test.muro_temporal"), "lo roto con marca permanente se guarda y con marca temporal no")
+	_level.flags.reset()
+	_check(not _level.flags.has_flag(&"t:test.muro_temporal"), "al reiniciar se borra la marca temporal")
+	await _load_world(true)
+	await _wait(3)
+	var kept_again := BreakableWall.new()
+	kept_again.flag_id = &"s:test.muro_guardado"
+	var temporary_again := BreakableWall.new()
+	temporary_again.flag_id = &"t:test.muro_temporal"
+	temporary_again.position = Vector2(32, 0)
+	_room.add_child(kept_again)
+	_room.add_child(temporary_again)
+	await _wait(4)
+	# (Un muro que ya estaba roto en la partida cargada se retira sin animación.)
+	_check(not is_instance_valid(kept_again) or kept_again.is_queued_for_deletion(), "tras guardar y cargar, el muro roto sigue roto (no aparece)")
+	_check(is_instance_valid(temporary_again) and not temporary_again.is_broken, "y el de marca temporal vuelve a estar entero")
+
+
+func _test_room_places_mechanics_from_markers() -> void:
+	print("\n[Sala: coloca compuertas, disparadores y muros por piezas, con ids por sala y enlaces]")
+	await _mech_sandbox()
+	var file := FileAccess.open("user://prueba_mecanicas.map", FileAccess.WRITE)
+	file.store_string("..........................\n.=.+......................\n.=.+..##..................\n.=....##...z.....__..*....\nTTTTTTTTTTTTTTTTTTTTTTTTTT\n")
+	file.close()
+	var room := Node2D.new()
+	room.set_script(load("res://game/levels/room.gd"))
+	room.links = {
+		"=@1,1": ["p:prueba.a", "p:prueba.b"],
+		"z@11,3": "p:prueba.a",
+		"*@21,3": "p:prueba.b",
+	}
+	var tiles := TextTileMap.new()
+	tiles.name = "Tiles"
+	tiles.tile_set = load("res://game/levels/tiles_umbral.tres")
+	tiles.legend = { "T": Vector2i(0, 0) }
+	tiles.map_file = "user://prueba_mecanicas.map"
+	room.add_child(tiles)
+	_level.add_child(room)
+	await _wait(3)
+	var gates: Array[Gate] = []
+	var triggers := {}
+	var walls: Array[BreakableWall] = []
+	for child in room.get_children():
+		if child is Gate:
+			gates.append(child)
+		elif child is Trigger:
+			triggers[child.mode] = child
+		elif child is BreakableWall:
+			walls.append(child)
+	_check(room.room_id() == "prueba_mecanicas", "el id de la sala es el nombre del mapa")
+	_check(room.piece_id("#", tiles.marker_groups("#")[0]) == "#@6,2", "el id de una pieza es carácter@columna,fila de su primera celda")
+	_check(gates.size() == 2 and triggers.size() == 3 and walls.size() == 1, "una entidad por pieza: 2 compuertas, palanca, placa y botón, 1 muro")
+	var linked: Gate = gates[0] if gates[0].cells.size() == 3 else gates[1]
+	var channel: Gate = gates[1] if linked == gates[0] else gates[0]
+	_check(linked.cells.size() == 3 and linked.requires == [&"p:prueba.a", &"p:prueba.b"], "la compuerta de 3 celdas lee las dos marcas de sus enlaces")
+	_check(channel.cells.size() == 2 and channel.requires == [&"t:prueba_mecanicas.canal_b"], "sin enlace, la compuerta + lee el canal B temporal de su sala")
+	var lever: Trigger = triggers[Trigger.Mode.LEVER]
+	var plate: Trigger = triggers[Trigger.Mode.PLATE]
+	var button: Trigger = triggers[Trigger.Mode.BUTTON]
+	_check(lever.flag_id == &"p:prueba.a" and button.flag_id == &"p:prueba.b", "la palanca y el botón escriben la marca de su enlace")
+	_check(plate.flag_id == &"t:prueba_mecanicas.placa_17_3" and is_equal_approx(plate.scale.x, 2.0), "la placa sin enlace es temporal y la de dos celdas se ensancha")
+	_check(walls[0].flag_id == &"t:prueba_mecanicas.muro_6_2" and walls[0].cells.size() == 4, "el muro de 2x2 es una sola pieza con marca temporal por defecto")
+	_check(linked.global_position.is_equal_approx(room.global_position + Vector2(1 * 16 + 8, 1 * 16 + 8)), "cada pieza queda en el centro de su primera celda")
+	await _wait(3)
+	_check(linked.closed, "la compuerta empieza cerrada")
+	lever.take_hit(1, 1)
+	await _wait(3)
+	_check(linked.closed, "la palanca sola no basta: \"Y\" de dos marcas")
+	button.take_hit(1, 1)
+	await _wait(3)
+	_check(not linked.closed, "palanca y botón juntos la abren")
+	room.queue_free()
+	DirAccess.remove_absolute(ProjectSettings.globalize_path("user://prueba_mecanicas.map"))
+
+
+func _test_cistern_lever_opens_the_nook() -> void:
+	print("\n[Ejemplo jugable: la palanca de la Cisterna abre la reja del nicho y queda guardada]")
+	await _load_world()
+	var cistern: Node2D = _level.get_node("Rooms/Cisterna")
+	var gate: Gate = null
+	var lever: Trigger = null
+	for child in cistern.get_children():
+		if child is Gate:
+			gate = child
+		elif child is Trigger:
+			lever = child
+	_check(gate != null and lever != null, "la Cisterna tiene una compuerta y una palanca puestas por los marcadores = y z")
+	_check(gate.cells.size() == 11 and gate.requires == [&"d:cisterna.nicho"] and lever.flag_id == &"d:cisterna.nicho", "los enlaces de la escena (links) las unen por la marca d:cisterna.nicho")
+	_player.global_position = _standing_on("Cisterna", 20, 22)
+	_player.velocity = Vector2.ZERO
+	await _wait(12)
+	_check(gate.closed and not lever.active, "la reja del nicho empieza cerrada")
+	await _press_action(&"interact")
+	await _wait(4)
+	_check(lever.active and not gate.closed and _level.flags.has_flag(&"d:cisterna.nicho"), "Z en la palanca abre la reja")
+	_level.save_game()
+	await _wait(3)
+	_check(_saved().get("flags", {}).has("d:cisterna.nicho"), "queda guardado (marca permanente d:)")
+	await _load_world(true)
+	_player.global_position = _standing_on("Cisterna", 20, 22)
+	_player.velocity = Vector2.ZERO
+	await _wait(12)
+	cistern = _level.get_node("Rooms/Cisterna")
+	for child in cistern.get_children():
+		if child is Gate:
+			gate = child
+		elif child is Trigger:
+			lever = child
+	_check(not gate.closed and lever.active, "tras cargar, la reja sigue abierta y la palanca accionada")
+
+
 func _test_title_screen() -> void:
 	print("\n[Menú principal: continuar, nuevo juego, opciones]")
 	paused = false
@@ -2254,14 +2815,14 @@ func _test_no_platform_has_a_cramped_ceiling() -> void:
 		for r in rows.size():
 			for c in rows[r].length():
 				var ch := rows[r][c]
-				if not (ch in "TGBCS"):
+				if not (ch in "TGBCS%"):
 					continue
-				if r > 0 and c < rows[r - 1].length() and rows[r - 1][c] in "TGBC":
+				if r > 0 and c < rows[r - 1].length() and rows[r - 1][c] in "TGBC%":
 					continue
 				# Libre hasta el primer sólido de arriba.
 				var free := 0
 				var y := r - 1
-				while y >= 0 and (c >= rows[y].length() or not (rows[y][c] in "TGBC")):
+				while y >= 0 and (c >= rows[y].length() or not (rows[y][c] in "TGBC%")):
 					free += 1
 					y -= 1
 				if y >= 0 and free < 6 and not (c <= 1 or c >= rows[r].length() - 2):

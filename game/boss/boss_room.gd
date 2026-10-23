@@ -15,7 +15,7 @@ extends "res://game/levels/room.gd"
 ## El jefe ha muerto: se abren las rejas y aparece la recompensa.
 signal boss_defeated
 
-const GateScene := preload("res://game/boss/arena_gate.tscn")
+const GateScene := preload("res://game/environment/reja.tscn")
 const BossBarScript := preload("res://game/boss/boss_bar.gd")
 const BOSS_HALF_HEIGHT := 80.0
 
