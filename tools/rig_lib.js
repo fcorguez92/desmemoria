@@ -404,7 +404,7 @@ function render(p, S) {
   }
   if (p.lines) {
     for (let i = 0; i < p.lines; i++) {
-      const y = 18 + ((i * 17 + p.phase * 7) % 34) | 0;
+      const y = (H - 64) + 18 + ((i * 17 + p.phase * 7) % 34) | 0;
       const x0 = OX - 38 + ((i * 11) % 9), l = 10 + (i * 5) % 12;
       for (let x = x0; x < x0 + l; x++) out.set(x, y, i % 2 ? 'g' : 'f');
     }

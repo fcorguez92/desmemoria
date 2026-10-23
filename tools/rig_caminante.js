@@ -2,7 +2,7 @@
 // Uso: node tools/rig_caminante.js   (escribe art/source/player.sprite)
 const lib = require("./rig_lib");
 const { rad, add, lerp, ease, clamp, pose, figure, keyed } = lib;
-lib.setCanvas(112, 64);
+lib.setCanvas(112, 96);
 const S = lib.HERO;
 
 // ---------- animaciones ----------
