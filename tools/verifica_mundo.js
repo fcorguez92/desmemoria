@@ -2,7 +2,7 @@
 // (tests/world_manifest.json) de docs/puzles.md ("Comprobaciones automáticas").
 // Hechas hoy: C1 sin solapes, C2 alineación y anchura de las puertas, C3 aberturas
 // huérfanas, C4 manifiesto frente a world.tscn, C8 enemigos y tablones, C12
-// caracteres válidos y anchura, C13 coleccionables.
+// caracteres válidos y anchura, C13 coleccionables, C16 enlaces de las piezas.
 // Sale con código 1 si algún fallo; cada fallo dice
 // comprobación, sala, borde y fila/columna.
 //
@@ -52,6 +52,27 @@ function edgeCells(room, side) {
   return out;
 }
 const rangeText = (a, b) => (a === b ? `${a}` : `${a}-${b}`);
+
+// Piezas de marcadores de las mecánicas (= + z _ * # $): grupos conexos por lados, con
+// el id carácter@columna,fila de su primera celda en orden de lectura (como room.gd).
+function piecesOf(room) {
+  const out = new Set();
+  const seen = new Set();
+  room.rows.forEach((row, r) => [...row].forEach((c, col) => {
+    if (!'=+z_*#$'.includes(c) || seen.has(`${col},${r}`)) return;
+    out.add(`${c}@${col},${r}`);
+    const queue = [[col, r]];
+    seen.add(`${col},${r}`);
+    while (queue.length) {
+      const [x, y] = queue.pop();
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const nx = x + dx, ny = y + dy;
+        if (!seen.has(`${nx},${ny}`) && ny >= 0 && ny < room.h && room.rows[ny][nx] === c) { seen.add(`${nx},${ny}`); queue.push([nx, ny]); }
+      }
+    }
+  }));
+  return out;
+}
 
 // C12: caracteres de la leyenda de docs/vertical-slice.md.
 function legendChars() {
@@ -120,6 +141,24 @@ function main() {
   for (const room of rooms) {
     if (mapsSeen.has(room.id)) fail("C13", room.id, "", "dos salas del manifiesto con el mismo archivo .map");
     mapsSeen.add(room.id);
+  }
+
+  // C16: enlaces ("links" de la escena) de las piezas de mecánica. Cada clave debe
+  // ser el id de una pieza que existe en el mapa (carácter@columna,fila de su primera
+  // celda en orden de lectura, ver room.gd) y cada marca, tener la forma prefijo:sala.objeto.
+  for (const room of rooms) {
+    const scene = worldRooms().find((w) => sceneMap(w.scene) === room.id);
+    const text = scene ? fs.readFileSync(path.join(LEVELS, scene.scene + '.tscn'), 'utf8') : '';
+    const m = text.match(/^links = (\{[\s\S]*?\})\s*$/m);
+    if (!m) continue;
+    const pieces = piecesOf(room);
+    for (const k of m[1].matchAll(/"([^"]+)"\s*:/g)) {
+      if (!pieces.has(k[1])) fail('C16', room.id, '', `el enlace "${k[1]}" no es la primera celda de ninguna pieza del mapa`);
+    }
+    for (const v of m[1].matchAll(/"([^"]+)"/g)) {
+      if (v[1].includes('@')) continue;  // es una clave
+      if (!/^[pdsitn]:[a-z0-9_]+\.[a-z0-9_]+$/.test(v[1])) fail('C16', room.id, '', `la marca "${v[1]}" no tiene la forma prefijo:sala.objeto (minúsculas, sin acentos)`);
+    }
   }
 
   // C1: sin solapes.
