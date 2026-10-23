@@ -45,8 +45,12 @@ func try_start() -> bool:
 ## Intenta desviar un golpe. `blow_direction` es la dirección en la que viaja el
 ## golpe y `facing` la dirección a la que mira quien para: solo se desvían los
 ## golpes frontales (los que viajan hacia quien para). Devuelve true si lo desvía.
+## Si el atacante tiene una propiedad `parryable` a false, su golpe atraviesa la
+## guardia: no se desvía ni se consume la ventana.
 func try_deflect(blow_direction: int, facing: int, attacker: Node = null) -> bool:
 	if not is_active or blow_direction != -facing:
+		return false
+	if attacker != null and attacker.get(&"parryable") == false:
 		return false
 	is_active = false
 	_window_timer = 0.0
