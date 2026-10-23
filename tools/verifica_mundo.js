@@ -2,7 +2,8 @@
 // (tests/world_manifest.json) de docs/puzles.md ("Comprobaciones automáticas").
 // Hechas hoy: C1 sin solapes, C2 alineación y anchura de las puertas, C3 aberturas
 // huérfanas, C4 manifiesto frente a world.tscn, C8 enemigos y tablones, C12
-// caracteres válidos y anchura. Sale con código 1 si algún fallo; cada fallo dice
+// caracteres válidos y anchura, C13 coleccionables.
+// Sale con código 1 si algún fallo; cada fallo dice
 // comprobación, sala, borde y fila/columna.
 //
 //   node tools/verifica_mundo.js [--manifiesto ruta.json]
@@ -95,6 +96,30 @@ function main() {
     room.rows.forEach((row, r) => [...row].forEach((c, col) => { if (!valid.has(c) && !seen.has(c)) seen.set(c, `fila ${r} columna ${col}`); }));
     for (const [c, where] of seen) fail('C12', room.id, where, `carácter "${c}" que no está en la leyenda de vertical-slice.md`);
     if (room.w < MIN_WIDTH && !room.estrecha) fail('C12', room.id, '', `anchura ${room.w} < ${MIN_WIDTH} (marca "estrecha" en el manifiesto si es a propósito)`);
+  }
+
+  // C13: coleccionables "!". Su id sale de sala+columna+fila (room.gd) y por tanto es
+  // único; aquí se comprueba que el "pickups" de la escena no declare más tipos que
+  // marcadores y que cada tipo sea válido.
+  for (const room of rooms) {
+    const count = room.rows.reduce((n, row) => n + [...row].filter((c) => c === "!").length, 0);
+    const scene = worldRooms().find((w) => sceneMap(w.scene) === room.id);
+    const m = scene && fs.readFileSync(path.join(LEVELS, scene.scene + ".tscn"), "utf8").match(/^pickups = PackedStringArray((.*))$/m);
+    const entries = m ? [...m[1].matchAll(/"([^"]*)"/g)].map((k) => k[1]) : [];
+    const keys = new Set();
+    room.rows.forEach((row, r) => [...row].forEach((c, col) => { if (c === "!") keys.add(`c${String(col).padStart(2, "0")}f${String(r).padStart(2, "0")}`); }));
+    for (const e of entries) {
+      const [key, kind] = e.split(":");
+      if (!keys.has(key)) fail("C13", room.id, "", `"pickups" tiene "${e}" y no hay un "!" en esa posición`);
+      if (!["fragment", "bag", "item"].includes(kind)) fail("C13", room.id, "", `tipo de coleccionable desconocido en "${e}"`);
+    }
+  }
+
+  // C13 también: dos salas del manifiesto no pueden compartir archivo .map (los ids de coleccionables saldrían repetidos).
+  const mapsSeen = new Set();
+  for (const room of rooms) {
+    if (mapsSeen.has(room.id)) fail("C13", room.id, "", "dos salas del manifiesto con el mismo archivo .map");
+    mapsSeen.add(room.id);
   }
 
   // C1: sin solapes.

@@ -10,7 +10,8 @@ extends Node2D
 ##   (ver core/objects/readable.gd), i = inscripción con el texto `note` de la sala,
 ##   d / j / w = habilidad (dash, doble salto, salto de pared) que se recuerda al
 ##   tocarla, ^ v = pinchos fijos (suelo, techo) y ~ - = pinchos que salen y se
-##   retraen (los dos grupos alternan; ver core/objects/hazard.gd).
+##   retraen (los dos grupos alternan; ver core/objects/hazard.gd), ! = coleccionable
+##   con id guardado (fragmento de vida, Bolsa de Rastro u objeto; ver `pickups`).
 ## El marcador P (inicio del jugador) no lo usa la sala: lo busca el mundo, que
 ## es quien crea al jugador.
 ## Cada entidad se coloca con los pies en la parte de abajo de su celda.
@@ -30,6 +31,7 @@ const BreakableCrateScene := preload("res://game/environment/breakable_crate.tsc
 const BreakableBarrelScene := preload("res://game/environment/breakable_barrel.tscn")
 const InscriptionScene := preload("res://game/environment/inscription.tscn")
 const AbilityPickupScene := preload("res://game/ability_pickup/ability_pickup.tscn")
+const CollectibleScene := preload("res://game/pickups/collectible.tscn")
 const SpikesScene := preload("res://game/environment/spikes.tscn")
 const DecorSheet := preload("res://game/environment/decor_sheet.png")
 
@@ -51,6 +53,7 @@ const CRATE_HALF_HEIGHT := 7.0
 const BARREL_HALF_HEIGHT := 10.0
 const INSCRIPTION_HALF_HEIGHT := 13.0
 const PICKUP_HALF_HEIGHT := 16.0
+const COLLECTIBLE_HALF_HEIGHT := 10.0
 const ABILITY_MARKERS := {
 	"d": &"dash",
 	"j": &"double_jump",
@@ -96,6 +99,11 @@ const SPIKES_HALF_HEIGHT := 8.0
 ## Texto de las inscripciones del marcador `i` (cada sala dice lo suyo; la `I`
 ## mayúscula es la de El Último Umbral, con su texto en la escena).
 @export_multiline var note: String = ""
+## Tipo de los coleccionables `!` que no son fragmentos de vida, atado a su posición
+## y no al orden de lectura: entradas `cCCfFF:tipo` (p. ej. `c37f05:bag`), con tipo
+## `fragment`, `bag` o `item`. Sin entrada, el `!` es `fragment`. Mover un `!` en el
+## mapa cambia su id, así que su entrada debe moverse con él (C13 lo comprueba).
+@export var pickups: PackedStringArray = PackedStringArray()
 
 @onready var tiles: TextTileMap = $Tiles
 
@@ -139,6 +147,32 @@ func _ready() -> void:
 			var pickup := AbilityPickupScene.instantiate()
 			pickup.ability_id = ABILITY_MARKERS[symbol]
 			_place(pickup, at, PICKUP_HALF_HEIGHT)
+	var cells: Array = tiles.marker_cells.get("!", [])
+	for i in cells.size():
+		var collectible := CollectibleScene.instantiate()
+		collectible.id = StringName(collectible_id(cells[i]))
+		collectible.kind = _collectible_kind(cells[i])
+		_place(collectible, tiles.markers["!"][i], COLLECTIBLE_HALF_HEIGHT)
+
+
+## Id estable de un coleccionable en la celda `cell` (columna, fila de esta sala):
+## `archivo_del_mapa.cCCfFF`, p. ej. `cisterna.c37f05`. Sale de la posición, así que no
+## hay lista que mantener y escala a cualquier número de salas; solo cambia si se
+## mueve el `!` en el mapa (entonces cuenta como otro coleccionable).
+func collectible_id(cell: Vector2i) -> String:
+	return "%s.%s" % [tiles.map_file.get_file().get_basename(), _cell_key(cell)]
+
+
+func _cell_key(cell: Vector2i) -> String:
+	return "c%02df%02d" % [cell.x, cell.y]
+
+
+func _collectible_kind(cell: Vector2i) -> StringName:
+	var prefix := _cell_key(cell) + ":"
+	for entry in pickups:
+		if entry.begins_with(prefix):
+			return StringName(entry.substr(prefix.length()))
+	return &"fragment"
 
 
 ## Rectángulo de la sala en el mundo, en píxeles.

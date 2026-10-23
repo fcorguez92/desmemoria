@@ -164,7 +164,7 @@ Las piezas singulares (props únicos de cada región) no usan letra: se listan e
 | `7` | Enemigo nuevo, rol **corredor** (carga, salto o rodadura, o rastrero) | nuevo (04) |
 | `8` | Enemigo nuevo, rol **de zona o de apoyo** (crea una zona o un estado, o da escudo) | nuevo (04) |
 | `9` | **Élite o minijefe** de la sala (uno por sala) | nuevo (04) |
-| `!` | Coleccionable: fragmento de vida o de frasco, Bolsa de Rastro, Página de Corvel, reliquia, objeto de lore (tipo e id en el campo `pickups` de la escena, en orden de lectura) | nuevo (W1) |
+| `!` | Coleccionable: fragmento de vida o de frasco, Bolsa de Rastro, Página de Corvel, reliquia, objeto de lore (tipo en el campo `pickups` de la escena como `c37f05:bag`, por posición, y `fragment` si falta; el id sale del mapa y la posición, `cisterna.c37f05`) | ✔ (W1) |
 | `@` | Personaje no jugador (PNJ; cuál, en el campo `npcs` de la escena) | nuevo (fase de PNJ) |
 
 Los enemigos `5`-`9` son **casilleros**: la escena de la sala (`enemy_set`) dice qué enemigo concreto es cada uno en esa sala (el catálogo está en la propuesta 04; el editor de combate fija cuáles entran). `1`-`4` y `E` conservan su significado en todas las salas.
