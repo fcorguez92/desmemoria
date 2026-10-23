@@ -76,3 +76,9 @@ sala actual y sus vecinas (`World._activate_nearby_rooms`) y el autoguardado se 
 un fotograma al cambiar de sala. **No se ha cambiado de renderizador** (Compatibility fue
 más lento). Pendiente de medir en un equipo flojo (portátil con gráfica integrada) con
 un script de medición; si hay tirones allí, mirar vsync y la interpolación de físicas.
+
+
+## Frasco rediseñado (K03-K05)
+
+- Hecho: el frasco cura 3 vidas con un sorbo de 0,70 s (`HealthComponent.begin_heal()`); un golpe, saltar o hacer dash lo cancelan sin gastar carga; no se bebe con vida llena ni se ataca o para durante el sorbo. Topes absolutos en `game/player/stats.gd` (vida 13, frascos 5, cura 1-5, sorbo >= 0,30 s). El HUD tiñe los frascos y llena una barrita durante el sorbo.
+- Pendiente: animación de beber, Aliento (cura +1) y Aguja del Escriba (sorbo más corto) en el árbol/reliquias, y jugarlo para calibrar la sensación.
