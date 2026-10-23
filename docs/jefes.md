@@ -62,7 +62,7 @@ Duración objetivo para un jefe obligatorio sin fallos: 2,5-4 minutos (6-12 con 
 
 ### Marco técnico
 
-`game/boss/boss_room.gd` ya resuelve todo lo que no es "la pelea" y **se reutiliza tal cual** para los nueve restantes: disparador al cruzar la línea, dos rastrillos (`arena_gate`), barra (`boss_bar`), reinicio al morir o descansar, recompensa en el centro y registro en `bosses`. El único cambio: que la recompensa deje de ser solo `reward_ability` y admita **recuerdo de habilidad, Sello, llave o reliquia** (un `reward_scene` genérico). El Sello además abre una ranura de reliquia (lo decide el estado del jugador, no la sala).
+`game/boss/boss_room.gd` ya resuelve todo lo que no es "la pelea" y **se reutiliza tal cual** para los nueve restantes: disparador al cruzar la línea, dos rastrillos (`Gate` de `core/objects/gate.gd`, escena `game/environment/reja.tscn`), barra (`boss_bar`), reinicio al morir o descansar, recompensa en el centro y registro en `bosses`. El único cambio: que la recompensa deje de ser solo `reward_ability` y admita **recuerdo de habilidad, Sello, llave o reliquia** (un `reward_scene` genérico). El Sello además abre una ranura de reliquia (lo decide el estado del jugador, no la sala).
 
 **Cómo se monta un jefe:**
 
@@ -85,7 +85,7 @@ Los jefes sin armadura (todos menos el Centinela) usan **vida simple repartida e
 Armadura vacía de un Custodio de la Orden del Archivo (Oriol Maraver) que sigue guardando el Aljibe "porque nadie vino a relevarle". Dentro, en el hueco del pecho, lo que la Desmemoria dejó: una figura pálida y encorvada, Oda Bellver. Es el primer recuerdo que el jugador **no puede olvidar**: el del mensajero que cruzaba los pasos rotos. Al vencerlo suelta el recuerdo del **dash**.
 
 - Sala: **El Aljibe** (`game/levels/aljibe.map`, 64×33 baldosas: una arena propia, del tamaño de una pantalla y media, con dos tablones para esquivar). Entrada por el oeste desde las Galerías Bajas, salida por el este hacia La Chimenea. Al cruzar la línea de la sala caen **dos rastrillos de hierro** de 2×6 baldosas (temblor de cámara y sonido) que no se abren hasta vencerlo (o morir).
-- Código: `game/boss/centinela.gd` (la pelea), `boss_room.gd` (la sala), `falling_rock.gd`, `shockwave.tscn` (un `Projectile` de `core/`), `arena_gate.*` (cada celda de reja), `boss_bar.gd`.
+- Código: `game/boss/centinela.gd` (la pelea), `boss_room.gd` (la sala), `falling_rock.gd`, `shockwave.tscn` (un `Projectile` de `core/`), `core/objects/gate.gd` y `game/environment/reja.tscn` (cada celda de reja), `boss_bar.gd`.
 - Arte: `art/source/centinela.sprite` (lo genera `tools/rig_centinela.js`), 384×256 por fotograma. Es **enorme**: el cuerpo mide 112×160 (el jugador, 24×48), casi cuatro veces su altura.
 - Recompensa: dash y **40 Ecos**.
 

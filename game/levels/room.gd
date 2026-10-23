@@ -10,7 +10,8 @@ extends Node2D
 ##   (ver core/objects/readable.gd), i = inscripción con el texto `note` de la sala,
 ##   d / j / w = habilidad (dash, doble salto, salto de pared) que se recuerda al
 ##   tocarla, ^ v = pinchos fijos (suelo, techo) y ~ - = pinchos que salen y se
-##   retraen (los dos grupos alternan; ver core/objects/hazard.gd).
+##   retraen (los dos grupos alternan; ver core/objects/hazard.gd), ! = coleccionable
+##   con id guardado (fragmento de vida, Bolsa de Rastro u objeto; ver `pickups`).
 ## El marcador P (inicio del jugador) no lo usa la sala: lo busca el mundo, que
 ## es quien crea al jugador.
 ## Cada entidad se coloca con los pies en la parte de abajo de su celda.
@@ -30,8 +31,27 @@ const BreakableCrateScene := preload("res://game/environment/breakable_crate.tsc
 const BreakableBarrelScene := preload("res://game/environment/breakable_barrel.tscn")
 const InscriptionScene := preload("res://game/environment/inscription.tscn")
 const AbilityPickupScene := preload("res://game/ability_pickup/ability_pickup.tscn")
+const CollectibleScene := preload("res://game/pickups/collectible.tscn")
 const SpikesScene := preload("res://game/environment/spikes.tscn")
 const DecorSheet := preload("res://game/environment/decor_sheet.png")
+const PuzzleGateScene := preload("res://game/environment/reja.tscn")
+const LeverScene := preload("res://game/environment/palanca.tscn")
+const PlateScene := preload("res://game/environment/placa.tscn")
+const ButtonScene := preload("res://game/environment/boton.tscn")
+
+## Mecánicas de mundo (ver docs/puzles.md). Compuertas: marcador -> nombre del canal
+## (la marca por defecto de una compuerta sin enlace es `t:sala.canal_a`).
+const GATE_CHANNELS := {
+	"=": "canal_a",
+	"+": "canal_b",
+}
+## Disparadores: marcador -> [escena, nombre para el id por defecto].
+const TRIGGERS := {
+	"z": [LeverScene, "palanca"],
+	"_": [PlateScene, "placa"],
+	"*": [ButtonScene, "boton"],
+}
+const CRACKED_WALL := "#"
 
 const CELL := 16.0
 ## Mitad de la altura de cada entidad, para apoyar sus pies en la celda.
@@ -51,6 +71,7 @@ const CRATE_HALF_HEIGHT := 7.0
 const BARREL_HALF_HEIGHT := 10.0
 const INSCRIPTION_HALF_HEIGHT := 13.0
 const PICKUP_HALF_HEIGHT := 16.0
+const COLLECTIBLE_HALF_HEIGHT := 10.0
 const ABILITY_MARKERS := {
 	"d": &"dash",
 	"j": &"double_jump",
@@ -96,6 +117,19 @@ const SPIKES_HALF_HEIGHT := 8.0
 ## Texto de las inscripciones del marcador `i` (cada sala dice lo suyo; la `I`
 ## mayúscula es la de El Último Umbral, con su texto en la escena).
 @export_multiline var note: String = ""
+## Tipo de los coleccionables `!` que no son fragmentos de vida, atado a su posición
+## y no al orden de lectura: entradas `cCCfFF:tipo` (p. ej. `c37f05:bag`), con tipo
+## `fragment`, `bag` o `item`. Sin entrada, el `!` es `fragment`. Mover un `!` en el
+## mapa cambia su id, así que su entrada debe moverse con él (C13 lo comprueba).
+@export var pickups: PackedStringArray = PackedStringArray()
+## Enlaces de las piezas de mecánica (compuertas `= +`, palancas `z`, placas `_`,
+## botones `*` y muros frágiles `#`) con las marcas del mundo. La clave es el id de la
+## pieza, `carácter@columna,fila` de su primera celda en orden de lectura (p. ej.
+## `z@12,30`). El valor es el id de la marca que **escribe** (palanca, placa, botón,
+## muro) o la lista de ids que **lee** una compuerta (se abre con todas, "Y"). Sin
+## enlace: las compuertas leen `t:sala.canal_a`/`canal_b` y lo demás escribe
+## `t:sala.nombre_columna_fila` (temporal). Lo permanente se nombra aquí, a mano.
+@export var links: Dictionary = {}
 
 @onready var tiles: TextTileMap = $Tiles
 
@@ -139,6 +173,101 @@ func _ready() -> void:
 			var pickup := AbilityPickupScene.instantiate()
 			pickup.ability_id = ABILITY_MARKERS[symbol]
 			_place(pickup, at, PICKUP_HALF_HEIGHT)
+	var cells: Array = tiles.marker_cells.get("!", [])
+	for i in cells.size():
+		var collectible := CollectibleScene.instantiate()
+		collectible.id = StringName(collectible_id(cells[i]))
+		collectible.kind = _collectible_kind(cells[i])
+		_place(collectible, tiles.markers["!"][i], COLLECTIBLE_HALF_HEIGHT)
+	_place_mechanics()
+
+
+## Id de la sala en las marcas (`prefijo:sala.objeto`): el archivo del mapa sin extensión.
+func room_id() -> String:
+	return tiles.map_file.get_file().get_basename()
+
+
+## Id de una pieza de marcadores: `carácter@columna,fila` de su primera celda.
+func piece_id(symbol: String, group: Array) -> String:
+	var first: Vector2i = group[0]
+	return "%s@%d,%d" % [symbol, first.x, first.y]
+
+
+## Las marcas de una pieza según `links` (texto o lista de textos), o `fallback`.
+func piece_flags(symbol: String, group: Array, fallback: StringName) -> Array[StringName]:
+	var ids: Array[StringName] = []
+	var value: Variant = links.get(piece_id(symbol, group))
+	if value is String or value is StringName:
+		ids.append(StringName(value))
+	elif value is Array:
+		for item in value:
+			ids.append(StringName(item))
+	if ids.is_empty():
+		ids.append(fallback)
+	return ids
+
+
+## Compuertas, disparadores y muros frágiles: una entidad por **pieza** de marcadores,
+## con la marca de `links`. Nada va a mano por sala: crece con los mapas.
+func _place_mechanics() -> void:
+	for symbol in GATE_CHANNELS:
+		for group in tiles.marker_groups(symbol):
+			var gate := PuzzleGateScene.instantiate() as Gate
+			gate.cells = _offsets(group)
+			gate.requires = piece_flags(symbol, group, StringName("t:%s.%s" % [room_id(), GATE_CHANNELS[symbol]]))
+			gate.position = _cell_local(group[0])
+			add_child(gate)
+	for symbol in TRIGGERS:
+		for group in tiles.marker_groups(symbol):
+			var trigger := TRIGGERS[symbol][0].instantiate() as Trigger
+			var fallback := StringName("t:%s.%s_%d_%d" % [room_id(), TRIGGERS[symbol][1], group[0].x, group[0].y])
+			trigger.flag_id = piece_flags(symbol, group, fallback)[0]
+			trigger.position = _cell_local(group[0])
+			if trigger.mode == Trigger.Mode.PLATE:
+				# Una placa de varias celdas en fila es una sola, más ancha.
+				var width: int = group.size()
+				trigger.scale.x = width
+				trigger.position.x += (width - 1) * CELL / 2.0
+			add_child(trigger)
+	for group in tiles.marker_groups(CRACKED_WALL):
+		var wall := BreakableWall.new()
+		wall.cells = _offsets(group)
+		wall.flag_id = piece_flags(CRACKED_WALL, group, StringName("t:%s.muro_%d_%d" % [room_id(), group[0].x, group[0].y]))[0]
+		wall.position = _cell_local(group[0])
+		add_child(wall)
+
+
+## Centro de una celda del mapa, en coordenadas de la sala.
+func _cell_local(cell: Vector2i) -> Vector2:
+	return tiles.to_global(tiles.map_to_local(cell)) - global_position
+
+
+## Centros de las celdas de una pieza relativos a su primera celda (píxeles).
+func _offsets(group: Array) -> PackedVector2Array:
+	var offsets := PackedVector2Array()
+	for cell in group:
+		offsets.append(Vector2(cell - group[0]) * CELL)
+	return offsets
+
+
+## Id estable de un coleccionable en la celda `cell` (columna, fila de esta sala):
+## `archivo_del_mapa.cCCfFF`, p. ej. `cisterna.c37f05`. Sale de la posición, así que no
+## hay lista que mantener y escala a cualquier número de salas; solo cambia si se
+## mueve el `!` en el mapa (entonces cuenta como otro coleccionable).
+func collectible_id(cell: Vector2i) -> String:
+	return "%s.%s" % [tiles.map_file.get_file().get_basename(), _cell_key(cell)]
+
+
+func _cell_key(cell: Vector2i) -> String:
+	return "c%02df%02d" % [cell.x, cell.y]
+
+
+func _collectible_kind(cell: Vector2i) -> StringName:
+	var prefix := _cell_key(cell) + ":"
+	for entry in pickups:
+		if entry.begins_with(prefix):
+			return StringName(entry.substr(prefix.length()))
+	return &"fragment"
 
 
 ## Rectángulo de la sala en el mundo, en píxeles.
