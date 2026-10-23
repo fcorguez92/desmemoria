@@ -1,0 +1,18 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://core/objects/trigger.gd" id="1_trigger"]
+
+[node name="Placa" type="StaticBody2D" node_paths=PackedStringArray("witness")]
+collision_layer = 0
+collision_mask = 0
+script = ExtResource("1_trigger")
+mode = 1
+reach_rect = Rect2(-8, -16, 16, 24)
+witness = NodePath("Lamp")
+
+[node name="Base" type="Polygon2D" parent="."]
+color = Color(0.227, 0.216, 0.259, 1)
+polygon = PackedVector2Array(-8, 8, 8, 8, 8, 5, -8, 5)
+
+[node name="Lamp" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(-6, 5, 6, 5, 6, 3, -6, 3)
