@@ -144,8 +144,8 @@ Las piezas singulares (props únicos de cada región) no usan letra: se listan e
 | `*` | Botón en alto (se golpea saltando) | ✔ (W2) |
 | `c` | Receptor: nicho, ranura, altar (Sellos de la Puerta Sin Muro, Relevo) | nuevo (W6) |
 | `n` | Piedra de lectura (Nombrar) | nuevo (W8) |
-| `<` `>` | Extremos de un carril de plataforma móvil, barca o vagoneta | nuevo (W3) |
-| `y` | Ciclo (marea, tinta, ventana) | nuevo (W3) |
+| `<` `>` | Extremos de un carril de plataforma móvil, barca o vagoneta | ✔ (W3) |
+| `y` | Ciclo (marea, tinta, ventana) | ✔ (W3) |
 | `{` | Pinchos laterales pegados a una pared **izquierda** (apuntan a la derecha) | nuevo (W4) |
 | `}` | Pinchos laterales pegados a una pared **derecha** (apuntan a la izquierda) | nuevo (W4) |
 | `k` | Derribo: columna, estantería-torre, puntal | nuevo (WA, ampliación) |
