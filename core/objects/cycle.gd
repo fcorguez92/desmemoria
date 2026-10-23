@@ -19,6 +19,10 @@ extends Node2D
 ## pies al desaparecer) y, si al volver a ser sólida hay alguien de `blockers` dentro
 ## de una celda, **espera a que salga**, como la Gate.
 ##
+## Para el mapa de texto: dos marcadores `y` pegados (por un lado) forman **una sola
+## pieza** y alternan juntos; para una ola hace falta un hueco de al menos una celda
+## entre tramos.
+##
 ## Opcionalmente (`flag_id`) escribe una marca de FlagStore mientras es sólida, para
 ## que otras cosas la lean. Úsese un id temporal (`t:`): no tiene sentido guardarla.
 
@@ -61,6 +65,8 @@ var _store: FlagStore
 
 func _ready() -> void:
 	_body = StaticBody2D.new()
+	# Desaparece: no es suelo seguro al que volver (lo lee el jugador sin conocer esta clase).
+	_body.add_to_group(&"no_checkpoint")
 	add_child(_body)
 	for offset in cells:
 		var shape := CollisionShape2D.new()
@@ -86,6 +92,7 @@ func _physics_process(delta: float) -> void:
 	var want := _wants_solid(state)
 	if want != _solid and (not want or not is_blocked()):
 		_set_solid(want, true)
+	_resync_flag()
 	_update_look()
 
 
@@ -153,13 +160,25 @@ func _set_solid(value: bool, notify: bool) -> void:
 	if flag_id != &"":
 		if _store == null:
 			_store = FlagStore.find(self)
-		if _store != null:
-			if value:
-				_store.set_flag(flag_id)
-			else:
-				_store.clear_flag(flag_id)
+		_resync_flag()
 	if notify:
 		solid_changed.emit(value)
+
+
+## Si alguien borró su marca (descansar o morir borran las temporales) mientras sigue
+## sólida, la vuelve a poner: la marca refleja siempre lo que se ve.
+func _resync_flag() -> void:
+	if flag_id == &"":
+		return
+	if _store == null:
+		_store = FlagStore.find(self)
+		if _store == null:
+			return
+	if _store.has_flag(flag_id) != _solid:
+		if _solid:
+			_store.set_flag(flag_id)
+		else:
+			_store.clear_flag(flag_id)
 
 
 func _update_look() -> void:

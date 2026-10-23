@@ -117,6 +117,8 @@ func _run() -> void:
 	await _test_rail_platform_on_demand_and_flags()
 	await _test_room_places_cycles_and_rails()
 	await _test_galerias_bajas_has_the_rail_and_the_cycle()
+	await _test_moving_pieces_are_not_safe_ground()
+	await _test_cycle_flag_survives_reset_and_pairing_is_strict()
 	await _test_title_screen()
 	await _test_pause_returns_to_title()
 	await _test_menu_list_survives_leaving_the_tree()
@@ -3752,8 +3754,8 @@ func _test_room_places_cycles_and_rails() -> void:
 	var room := Node2D.new()
 	room.set_script(load("res://game/levels/room.gd"))
 	room.piece_params = {
-		"<@2,5": { "mode": 1, "activation_flag": "t:prueba.carril", "speed": 120.0 },
-		"y@13,3": { "phase": 0.5, "period": 6.0 },
+		"<@2,5": { "mode": "on_demand", "activation_flag": "t:prueba.carril", "speed": 120.0, "no_existe": 1 },
+		"y@13,3": { "phase": 0.5, "period": 6.0, "flag_id": "t:prueba.ola" },
 	}
 	var tiles := TextTileMap.new()
 	tiles.name = "Tiles"
@@ -3773,7 +3775,7 @@ func _test_room_places_cycles_and_rails() -> void:
 	_check(cycles.size() == 2 and platforms.size() == 1, "una entidad por pieza: 2 ciclos y una plataforma (el < suelto queda sin pareja)")
 	var wide: Cycle = cycles[0] if cycles[0].cells.size() == 3 else cycles[1]
 	var single: Cycle = cycles[1] if wide == cycles[0] else cycles[0]
-	_check(wide.cells.size() == 3 and wide.period == 4.0 and single.period == 6.0 and is_equal_approx(single.phase, 0.5), "piece_params aplica periodo y fase a su pieza y no a la otra")
+	_check(wide.cells.size() == 3 and wide.period == 4.0 and single.period == 6.0 and is_equal_approx(single.phase, 0.5) and single.flag_id == &"t:prueba.ola", "piece_params aplica periodo y fase a su pieza y no a la otra")
 	var rail := platforms[0]
 	_check(rail.mode == RailPlatform.Mode.ON_DEMAND and rail.activation_flag == &"t:prueba.carril" and is_equal_approx(rail.speed, 120.0), "y el modo, la marca y la velocidad a la plataforma")
 	_check(is_equal_approx(rail.size.x, 32.0), "la plataforma mide lo que el extremo < (2 celdas)")
@@ -3808,3 +3810,65 @@ func _test_galerias_bajas_has_the_rail_and_the_cycle() -> void:
 	_player.global_position.x = room.global_position.x + 49.0 * 16.0
 	await _wait(40)
 	_check(_player.is_on_floor() and _player.global_position.y < room.global_position.y + 14.0 * 16.0, "y desde allí se pasa a la repisa")
+
+
+func _test_moving_pieces_are_not_safe_ground() -> void:
+	print("\n[Ciclo y carril: no cuentan como último suelo seguro (puente de tinta sobre pinchos)]")
+	await _fresh_level("no checkpoint", false)
+	await _stand_at(200.0)
+	var ground_top: float = _player.global_position.y + 24.0
+	var spikes: Node2D = load("res://game/environment/spikes.tscn").instantiate()
+	spikes.position = Vector2(300.0, ground_top - 8.0)
+	_level.add_child(spikes)
+	var bridge := _mech_cycle_in_level(Vector2(300.0, ground_top - 80.0), 4.0, 0.5)
+	bridge.cells = PackedVector2Array([Vector2(-8, 0), Vector2(8, 0)])
+	await _wait(3)
+	var firm_x: float = _player.respawn.last_grounded_position.x
+	_player.global_position = Vector2(300.0, ground_top - 88.0 - 24.0 - 2.0)
+	_player.velocity = Vector2.ZERO
+	await _wait(30)
+	_check(_player.is_on_floor() and _player.global_position.y < ground_top - 100.0, "el jugador está de pie sobre el puente de tinta")
+	_check(absf(_player.respawn.last_grounded_position.x - firm_x) < 1.0, "pisar el puente no cambia el último suelo seguro (sigue en el suelo firme)")
+	var health_before: int = _player.health.health
+	bridge.time = 2.1  # el puente desaparece
+	await _wait(120)
+	_check(_player.health.health == health_before - 1, "cae sobre los pinchos y recibe un solo daño (sin bucle)")
+	_check(_player.is_on_floor() and absf(_player.global_position.x - firm_x) < 20.0 and _player.global_position.y > ground_top - 40.0, "y vuelve al suelo firme de verdad, no al puente")
+	var rail := _mech_rail_in_level(Vector2(600.0, ground_top - 10.0), Vector2(0, -64), RailPlatform.Mode.CONTINUOUS)
+	rail.wait_time = 5.0
+	_player.global_position = Vector2(600.0, rail.position.y - 4.0 - 24.0 - 2.0)
+	_player.velocity = Vector2.ZERO
+	await _wait(20)
+	_check(_player.is_on_floor() and absf(_player.respawn.last_grounded_position.x - 600.0) > 100.0, "tampoco una plataforma de carril")
+
+
+func _mech_cycle_in_level(at: Vector2, period: float, on_fraction: float) -> Cycle:
+	var cycle := Cycle.new()
+	cycle.period = period
+	cycle.on_fraction = on_fraction
+	cycle.position = at
+	_level.add_child(cycle)
+	return cycle
+
+
+func _test_cycle_flag_survives_reset_and_pairing_is_strict() -> void:
+	print("\n[Ciclo: la marca se resincroniza; carriles: emparejado estricto; propiedades validadas]")
+	await _mech_sandbox()
+	var cycle := _mech_cycle(Vector2(100, 100), 4.0, 0.5)
+	cycle.flag_id = &"t:prueba.sincro"
+	await _wait(3)
+	_check(_marks.has_flag(&"t:prueba.sincro"), "sólido: la marca está puesta")
+	_marks.reset_transient()
+	await _wait(3)
+	_check(cycle.is_solid() and _marks.has_flag(&"t:prueba.sincro"), "tras reiniciar (borra las temporales) y seguir sólido, la marca vuelve")
+	var room: Node2D = Node2D.new()
+	room.set_script(load("res://game/levels/room.gd"))
+	var wide: Array = [Vector2i(0, 0), Vector2i(1, 0)]
+	var narrow: Array = [Vector2i(0, 5)]
+	var pairs: Array = room.rail_pairs([wide], [narrow])
+	_check(pairs.is_empty(), "un < de 2 celdas no se empareja con un > de 1")
+	pairs = room.rail_pairs([[Vector2i(0, 0)]], [[Vector2i(3, 5)]])
+	_check(pairs.is_empty(), "ni si no están en la misma columna ni en la misma fila")
+	pairs = room.rail_pairs([[Vector2i(0, 0)]], [[Vector2i(0, 4)], [Vector2i(0, -4)]])
+	_check(pairs.size() == 1 and pairs[0][1][0] == Vector2i(0, 4), "a igual distancia gana el primero en orden de lectura (determinista)")
+	room.free()

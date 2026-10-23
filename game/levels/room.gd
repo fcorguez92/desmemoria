@@ -138,7 +138,8 @@ const SPIKES_HALF_HEIGHT := 8.0
 ## es el id de la pieza (`y@12,5`; de una plataforma, el de su `<`) y el valor, un
 ## diccionario de propiedades del nodo, p. ej. `{"phase": 0.5, "period": 4.0}` para
 ## un ciclo o `{"mode": 1, "activation_flag": "t:sala.palanca"}` para una plataforma
-## (modo 0 continua, 1 a demanda, 2 viaje). Sin entrada, valen los de por defecto.
+## (modo 0/1/2 o por nombre: "continuous", "on_demand", "travel"; una propiedad que
+## no existe se avisa). Sin entrada, valen los de por defecto.
 @export var piece_params: Dictionary = {}
 
 @onready var tiles: TextTileMap = $Tiles
@@ -261,15 +262,24 @@ func _place_mechanics() -> void:
 		add_child(platform)
 
 
-## Empareja los extremos de carril: cada `<` con el `>` más cercano que quede libre
-## (se eligen primero los pares más próximos). Devuelve una lista de `[inicio, fin]`,
-## cada uno una pieza (lista de celdas). Los que sobren sin pareja se avisan.
+## Empareja los extremos de carril: cada `<` con el `>` compatible más cercano que quede
+## libre. Dos extremos son compatibles si miden lo mismo de ancho y están alineados en
+## la misma columna (carril vertical) o en la misma fila (horizontal). Se eligen primero
+## los pares más próximos y, a igual distancia, el de menor índice (orden de lectura),
+## así que el resultado es determinista. Devuelve una lista de `[inicio, fin]`, cada uno
+## una pieza (lista de celdas). Los que sobren sin pareja se avisan.
 static func rail_pairs(starts: Array, ends: Array) -> Array:
 	var candidates: Array = []
 	for s in starts.size():
 		for e in ends.size():
-			candidates.append([_group_center(starts[s]).distance_to(_group_center(ends[e])), s, e])
-	candidates.sort_custom(func(a: Array, b: Array) -> bool: return a[0] < b[0])
+			var a: Rect2i = _group_box(starts[s])
+			var b: Rect2i = _group_box(ends[e])
+			if a.size.x == b.size.x and (a.position.x == b.position.x or a.position.y == b.position.y):
+				candidates.append([_group_center(starts[s]).distance_to(_group_center(ends[e])), s, e])
+	candidates.sort_custom(func(x: Array, y: Array) -> bool:
+		if not is_equal_approx(x[0], y[0]):
+			return x[0] < y[0]
+		return x[1] < y[1] or (x[1] == y[1] and x[2] < y[2]))
 	var used_starts := {}
 	var used_ends := {}
 	var pairs: Array = []
@@ -280,7 +290,7 @@ static func rail_pairs(starts: Array, ends: Array) -> Array:
 		used_ends[c[2]] = true
 		pairs.append([starts[c[1]], ends[c[2]]])
 	if used_starts.size() < starts.size() or used_ends.size() < ends.size():
-		push_warning("room.gd: extremos de carril sin pareja (< y > deben ir en pares)")
+		push_warning("room.gd: extremos de carril sin pareja (< y > deben ir en pares del mismo ancho y alineados)")
 	return pairs
 
 
@@ -292,14 +302,19 @@ static func _group_center(group: Array) -> Vector2:
 	return sum / group.size()
 
 
+## Caja envolvente de una pieza, en celdas.
+static func _group_box(group: Array) -> Rect2i:
+	var low: Vector2i = group[0]
+	var high: Vector2i = group[0]
+	for cell in group:
+		low = Vector2i(mini(low.x, cell.x), mini(low.y, cell.y))
+		high = Vector2i(maxi(high.x, cell.x), maxi(high.y, cell.y))
+	return Rect2i(low, high - low + Vector2i.ONE)
+
+
 ## Ancho de una pieza en píxeles (su caja envolvente).
 func _group_width(group: Array) -> float:
-	var low: int = group[0].x
-	var high: int = group[0].x
-	for cell in group:
-		low = mini(low, cell.x)
-		high = maxi(high, cell.x)
-	return float(high - low + 1) * CELL
+	return float(_group_box(group).size.x) * CELL
 
 
 ## Punto central del borde de arriba de una pieza, en coordenadas de la sala.
@@ -316,13 +331,32 @@ func _top_center(group: Array) -> Vector2:
 	return tiles.to_global(Vector2(x, y)) - global_position
 
 
-## Aplica a `node` las propiedades de `piece_params[id]`, si las hay.
+## Aplica a `node` las propiedades de `piece_params[id]`, si las hay. Una propiedad que
+## el nodo no tiene se avisa y se ignora (un error de nombre no pasa en silencio); las
+## marcas (`flag_id`, `*_flag`) se convierten a StringName y `mode` admite el nombre
+## del modo (`"on_demand"`) además del número.
 func _apply_params(node: Object, id: String) -> void:
 	var params: Variant = piece_params.get(id)
-	if params is Dictionary:
-		for key in params:
-			var value: Variant = params[key]
-			node.set(key, StringName(value) if value is String and key.ends_with("flag") else value)
+	if not params is Dictionary:
+		return
+	var known: Array[String] = []
+	for property in node.get_property_list():
+		known.append(property["name"])
+	for key in params:
+		if not known.has(key):
+			push_warning("room.gd: piece_params[%s] tiene la propiedad desconocida \"%s\"" % [id, key])
+			continue
+		var value: Variant = params[key]
+		if key == "mode" and value is String:
+			var modes: Dictionary = node.get_script().get_script_constant_map().get("Mode", {})
+			var found: Variant = modes.get(String(value).to_upper(), -1)
+			if found == -1:
+				push_warning("room.gd: piece_params[%s] tiene un modo desconocido \"%s\"" % [id, value])
+				continue
+			value = found
+		elif value is String and (key == "flag_id" or key.ends_with("_flag")):
+			value = StringName(value)
+		node.set(key, value)
 
 
 ## Centro de una celda del mapa, en coordenadas de la sala.

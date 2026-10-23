@@ -75,6 +75,7 @@ var _store: FlagStore
 
 
 func _ready() -> void:
+	add_to_group(&"no_checkpoint")  # se mueve: no es suelo seguro al que volver
 	sync_to_physics = true
 	collision_mask = 0
 	_start = position
@@ -100,6 +101,14 @@ func _physics_process(delta: float) -> void:
 	if _cooldown_left <= 0.0:
 		_decide(delta, rider)
 	_move(delta, rider)
+
+
+## TRAVEL: la interacción con alguien a bordo la manda al otro extremo. Se consume
+## el evento (como la palanca del jugador) para que no active además otra cosa.
+func _unhandled_input(event: InputEvent) -> void:
+	if mode == Mode.TRAVEL and not _moving and event.is_action_pressed(action_interact) and has_rider():
+		target_end = not target_end
+		get_viewport().set_input_as_handled()
 
 
 ## Si hay un pasajero (de `rider_groups`) apoyado encima.
@@ -136,8 +145,7 @@ func _decide(delta: float, rider: bool) -> void:
 				if _hold_left <= 0.0:
 					target_end = false
 		Mode.TRAVEL:
-			if rider and not _moving and Input.is_action_just_pressed(action_interact):
-				target_end = not target_end
+			pass  # la manda la marca (_on_flag_changed) o la interacción (_unhandled_input)
 
 
 func _move(delta: float, rider: bool) -> void:
