@@ -99,9 +99,10 @@ const SPIKES_HALF_HEIGHT := 8.0
 ## Texto de las inscripciones del marcador `i` (cada sala dice lo suyo; la `I`
 ## mayúscula es la de El Último Umbral, con su texto en la escena).
 @export_multiline var note: String = ""
-## Tipo de cada coleccionable `!` en orden de lectura (fila a fila): `fragment`
-## (fragmento de vida), `bag` (Bolsa de Rastro) o `item` (objeto). Los que falten
-## son `fragment`. El id de cada uno sale de la sala y su posición (ver `collectible_id`).
+## Tipo de los coleccionables `!` que no son fragmentos de vida, atado a su posición
+## y no al orden de lectura: entradas `cCCfFF:tipo` (p. ej. `c37f05:bag`), con tipo
+## `fragment`, `bag` o `item`. Sin entrada, el `!` es `fragment`. Mover un `!` en el
+## mapa cambia su id, así que su entrada debe moverse con él (C13 lo comprueba).
 @export var pickups: PackedStringArray = PackedStringArray()
 
 @onready var tiles: TextTileMap = $Tiles
@@ -150,7 +151,7 @@ func _ready() -> void:
 	for i in cells.size():
 		var collectible := CollectibleScene.instantiate()
 		collectible.id = StringName(collectible_id(cells[i]))
-		collectible.kind = StringName(pickups[i]) if i < pickups.size() else &"fragment"
+		collectible.kind = _collectible_kind(cells[i])
 		_place(collectible, tiles.markers["!"][i], COLLECTIBLE_HALF_HEIGHT)
 
 
@@ -159,7 +160,19 @@ func _ready() -> void:
 ## hay lista que mantener y escala a cualquier número de salas; solo cambia si se
 ## mueve el `!` en el mapa (entonces cuenta como otro coleccionable).
 func collectible_id(cell: Vector2i) -> String:
-	return "%s.c%02df%02d" % [tiles.map_file.get_file().get_basename(), cell.x, cell.y]
+	return "%s.%s" % [tiles.map_file.get_file().get_basename(), _cell_key(cell)]
+
+
+func _cell_key(cell: Vector2i) -> String:
+	return "c%02df%02d" % [cell.x, cell.y]
+
+
+func _collectible_kind(cell: Vector2i) -> StringName:
+	var prefix := _cell_key(cell) + ":"
+	for entry in pickups:
+		if entry.begins_with(prefix):
+			return StringName(entry.substr(prefix.length()))
+	return &"fragment"
 
 
 ## Rectángulo de la sala en el mundo, en píxeles.

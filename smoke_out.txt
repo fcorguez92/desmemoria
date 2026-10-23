@@ -1,0 +1,720 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+
+[Vida, invulnerabilidad y curación]
+  ok    empieza con vida completa
+  ok    un golpe quita 1 de vida
+  ok    invulnerable justo después de un golpe
+  ok    puede curarse con cargas y vida incompleta
+  ok    curar restaura vida y gasta 1 carga
+  ok    no gasta carga a vida completa
+
+[Muerte: Eco en el último suelo y pérdida de Ecos]
+  ok    los Ecos se pierden al morir
+  ok    la vida se restaura al reaparecer
+  ok    y las curaciones se recargan del todo
+  ok    aparece un Eco
+  ok    el Eco guarda los Ecos perdidos
+  ok    el Eco está en el último suelo pisado
+  ok    el Eco sigue ahí (nadie lo destruye solo)
+
+[Caída al vacío y sustitución del Eco]
+  ok    caer al vacío cuenta como muerte
+  ok    aparece un Eco tras la caída
+  ok    morir otra vez destruye el Eco anterior
+  ok    el Eco nuevo solo guarda los Ecos de la última vida
+
+[Recoger el Eco devuelve los Ecos]
+  ok    el Eco no se recoge solo al aparecer
+  ok    tocar el Eco no basta: hay que interactuar
+  ok    al estar al alcance aparece el icono del botón
+  ok    interactuar con el Eco devuelve los Ecos
+  ok    el Eco desaparece al recogerlo
+
+[Checkpoint: curar, recargar y mover el respawn]
+  ok    acercarse al checkpoint no descansa sin pulsar interactuar
+  ok    se muestra el aviso al estar al alcance
+  ok    el checkpoint cura del todo
+  ok    el checkpoint recarga las curaciones
+  ok    el checkpoint fija el respawn
+  ok    descansar abre el menú del Ancla
+  ok    el aviso se oculta al alejarse
+
+[Enemigos: vida y recompensa]
+  ok    el enemigo aún no dio Ecos con vida restante
+  ok    matar al enemigo da sus Ecos
+  ok    el enemigo muerto se elimina
+
+[IA: patrulla sin caerse de los bordes]
+  ok    el enemigo patrulla (se mueve)
+  ok    la patrulla no se aleja de su zona
+  ok    el enemigo no se cae por el borde del suelo
+
+[IA: persecución, aviso y golpe con retroceso]
+  ok    el jugador reproduce su animación de recibir un golpe
+  ok    el enemigo avisa antes de atacar
+  ok    el aviso dura lo bastante para reaccionar
+  ok    el ataque acaba dañando al jugador
+  ok    el golpe empuja al jugador lejos del enemigo
+
+[IA: el ataque se puede esquivar e interrumpir]
+  ok    alejarse durante el aviso esquiva el golpe
+  ok    un golpe recibido empuja al enemigo
+  ok    un golpe recibido cancela su ataque
+  ok    el ataque interrumpido no daña
+
+[Feedback visual del combate]
+  ok    atacar reproduce la animación de ataque del jugador (con la espada)
+  ok    el ataque alcanzó al enemigo
+  ok    un golpe que alcanza deja un chispazo
+  ok    un golpe que alcanza sacude la cámara
+  ok    el enemigo reproduce su animación de recibir un golpe
+  ok    tras el ataque el jugador recupera sus animaciones de movimiento
+  ok    el temblor termina y la cámara vuelve a su sitio
+  ok    el enemigo recupera sus animaciones de movimiento tras encajar el golpe
+  ok    el enemigo alza el arma durante el aviso
+  ok    al caer el golpe el enemigo reproduce su animación de golpe
+  ok    tras golpear, el enemigo recupera sus animaciones de movimiento
+
+[HitStop: pausa breve del tiempo al golpear]
+  ok    el tiempo empieza a velocidad normal
+  ok    activarlo escala el tiempo de inmediato, sin esperar a nada
+  ok    y lo restaura solo pasada su duración (aquí, con margen de sobra)
+  ok    un segundo golpe durante la pausa la alarga en vez de cortarla
+  ok    y al final ambos golpes dejan el tiempo restaurado
+
+[Parry: ventana, golpes frontales y aturdimiento]
+  ok    el HUD muestra los frascos de curación
+  ok    sin abrir la guardia no se desvía nada
+  ok    se puede abrir la guardia
+  ok    no se puede reabrir con la guardia ya abierta
+  ok    un golpe por la espalda no se desvía
+  ok    un golpe frontal se desvía
+  ok    desviar consume la ventana
+  ok    pasado el enfriamiento se puede volver a parar
+  ok    la ventana se cierra sola si nadie ataca
+  ok    al parar se reproduce la pose de guardia
+  ok    un parry a tiempo evita el daño
+  ok    el enemigo queda aturdido
+  ok    el aturdido recibe doble daño (3 de vida - 2 = 1)
+  ok    un parry demasiado pronto no evita el golpe
+
+[Sprites y animaciones]
+  ok    la hoja del jugador cuadra con su cuadrícula de 112x64
+  ok    la hoja del enemigo cuadra con su cuadrícula de 96x64
+  ok    quieto en el suelo usa la animación de reposo
+  ok    andando usa la animación de correr
+  ok    correr muestra fotogramas de la segunda fila de la hoja
+  ok    subiendo usa la animación de salto
+  ok    al aterrizar vuelve a reposo o correr
+  ok    el enemigo usa una de sus animaciones
+
+[Los enemigos reaparecen al descansar y al morir]
+  ok    el enemigo muerto no está
+  ok    reaparece al descansar
+  ok    reaparece con vida completa
+  ok    el enemigo herido pierde vida
+  ok    al morir el jugador se reemplaza al enemigo herido
+  ok    el enemigo nuevo tiene la vida completa
+  ok    reaparece junto a su posición original
+  ok    los tres generadores tienen un enemigo vivo
+
+[Árbol de habilidades en el Ancla]
+  ok    sin mejoras: daño 1 y 5 de vida
+  ok    la rama empieza por su primera mejora; las siguientes están bloqueadas
+  ok    no se compra sin Ecos suficientes
+  ok    una compra fallida no cobra nada
+  ok    se compra con Ecos suficientes
+  ok    comprar cobra el coste y sube un nivel
+  ok    Vitalidad sube la vida máxima y cura esa vida
+  ok    una mejora bloqueada no se puede comprar aunque sobren Ecos
+  ok    Frascos da una carga más, llena
+  ok    Filo afilado sube el daño
+  ok    Ritmo acorta la espera entre golpes
+  ok    Alcance alarga el golpe
+  ok    Guardia alarga la ventana del parry
+  ok    Impulso acorta la espera del dash
+  ok    Temple alarga la invulnerabilidad
+  ok    Contragolpe se compra al tener la anterior
+  ok    no se puede pasar del nivel máximo
+  ok    el máximo del Filo es daño 3: el arma ya no escala sin límite
+  ok    morir no pierde las mejoras
+
+[Árbol de habilidades en el menú]
+  ok    descansar abre el menú principal del Ancla
+  ok    la primera opción abre el árbol
+  ok    el árbol empieza en la primera mejora
+  ok    abajo baja por la rama
+  ok    derecha cambia de rama
+  ok    aceptar compra la mejora seleccionada, sin cerrar el menú
+  ok    el menú sigue abierto en el árbol
+  ok    Esc en el árbol vuelve al menú del Ancla
+  ok    y otro Esc lo cierra
+
+[Golpear a un enemigo se nota: número de daño, barra de vida y mayor dificultad]
+  ok    la barra de vida del enemigo está oculta mientras no le hacen daño
+  ok    al herirlo aparece su barra de vida
+  ok    y sale un número de daño sobre su cabeza
+  ok    la barra se oculta sola unos segundos después
+  ok    el cascarón ataca más rápido (aviso 0,3 s, recuperación 0,5 s)
+  ok    un enemigo desviado queda aturdido el tiempo extra que da el Contragolpe
+
+[Menú del Ancla: pausa y teclado]
+  ok    el menú empieza cerrado y el juego sin pausa
+  ok    descansar abre el menú y pausa el juego
+  ok    con el menú abierto el jugador no se mueve
+  ok    la flecha abajo mueve la selección
+  ok    el tamaño del menú no cambia al mover la selección
+  ok    mover la selección no duplica filas (ni un frame)
+  ok    la selección da la vuelta
+  ok    Esc cierra el menú y reanuda el juego
+  ok    Z sobre el árbol de habilidades lo abre sin cerrar el menú
+  ok    Z sobre Salir cierra el menú
+  ok    la opción Salir cierra el menú
+  ok    aceptar Salir no hace saltar al personaje
+  ok    Z junto al Ancla abre el menú
+  ok    cerrar con Z cierra el menú y no lo reabre
+  ok    el cursor empieza en la primera opción
+  ok    Intro sobre el árbol lo abre a la primera
+  ok    y Esc dos veces cierra el menú
+
+[Menú de pausa: abrir con Esc, personaje, controles y continuar]
+  ok    la pausa empieza cerrada
+  ok    Esc abre la pausa y detiene el juego
+  ok    se muestra la lista principal
+  ok    Esc cierra la pausa y reanuda el juego
+  ok    Personaje abre su pantalla
+  ok    muestra vida y Ecos
+  ok    muestra el daño y los frascos
+  ok    el panel mide lo mismo en Personaje que en el menú principal
+  ok    las habilidades sin recordar salen como ???
+  ok    Esc en una subpantalla vuelve al menú, sin cerrar la pausa
+  ok    Controles muestra el esquema, no la ficha del personaje
+  ok    derecha cambia de dispositivo en el esquema sin cerrar la pausa
+  ok    y lo mismo en Controles
+  ok    Intro en una subpantalla también vuelve
+  ok    la habilidad recordada aparece por su nombre
+  ok    Continuar cierra la pausa
+  ok    Continuar con Intro no hace saltar al personaje
+  ok    Esc con el menú del Ancla abierto no abre la pausa
+  ok    Esc cierra el menú del Ancla
+
+[Mando: mismos botones por posición en Xbox, PlayStation y Nintendo]
+  ok    cada acción tiene su botón del mando (saltar abajo, atacar izquierda, curar derecha, Ancla arriba, dash RT, guardia LT, pausa Start)
+  ok    el botón de curarse no abre la pausa
+  ok    con la palanca a media inclinación se corre a toda velocidad
+  ok    A / Cruz salta
+  ok    X / Cuadrado ataca
+  ok    B / Círculo cura y no abre la pausa
+  ok    LT / L2 alza la guardia
+  ok    RT / R2 hace el dash
+  ok    el dash tiene su propia animación
+  ok    Start abre la pausa
+  ok    Start la cierra
+  ok    Controles muestra el esquema de teclado y mandos
+  ok    Start cierra la pausa desde una subpantalla
+  ok    el menú del Ancla empieza en la primera opción
+  ok    inclinar la palanca hacia abajo baja una sola opción
+  ok    soltarla y volver a inclinarla baja otra
+  ok    B / Círculo cierra el menú del Ancla
+
+[Habilidades: se consiguen con objetos]
+  ok    el dash empieza bloqueado
+  ok    el doble salto empieza bloqueado
+  ok    recoger el objeto desbloquea el dash
+  ok    el objeto desaparece al recogerlo
+  ok    se muestra un mensaje con la habilidad
+  ok    el recuadro del mensaje se muestra mientras hay texto
+  ok    el recuadro se oculta al desaparecer el mensaje
+  ok    morir no pierde las habilidades
+
+[El dash abre el hueco final]
+  ok    saltar + dash alcanza la plataforma final
+  ok    pulsar dash sin haberlo conseguido no sirve
+  ok    saltar sin dash no alcanza la plataforma final
+
+[El doble salto abre la plataforma alta]
+  ok    con doble salto se alcanza la plataforma alta
+  ok    sin doble salto no se alcanza
+
+[Agarre y salto de pared]
+  ok    agarrado a la pared, la caída se ralentiza
+  ok    sin la habilidad se cae con normalidad
+  ok    saltar desde la pared empuja hacia fuera y hacia arriba
+  ok    sin la habilidad no hay salto de pared
+
+[El salto de pared abre la salida del pozo]
+  ok    con salto de pared se sale del pozo por arriba
+  ok    sin salto de pared (ni con doble salto) no se sale
+
+[Pared lisa: sólida, pero no se agarra]
+  ok    junto a una pared normal, el Agarre frena la caída (120.0)
+  ok    junto a una pared lisa se mantiene la caída (1192.5)
+
+[Piezas de marcadores: grupos conexos]
+  ok    un muro 2x3 es una sola pieza; las diagonales no unen (5 piezas)
+  ok    la pieza 2x3 tiene 6 celdas y empieza en la primera en orden de lectura
+  ok    dos celdas contiguas forman una pieza
+  ok    un carácter ausente no da piezas
+
+[Verificador del mundo y simulador de saltos (Node)]
+  ok    tools/verifica_mundo.js sale con código 0
+  ok    tools/test_sim_saltos.js sale con código 0
+
+[El Último Umbral se construye desde su mapa de texto]
+  ok    el mapa llega hasta la columna 80 y la fila 28
+  ok    hay un jugador colocado por el marcador P
+  ok    tres enemigos colocados por los marcadores (dos cascarones E y un arrojador 2)
+  ok    dos Anclas de Memoria colocadas por los marcadores A
+  ok    el jugador se apoya en el suelo del mapa
+  ok    el muro sellado del extremo izquierdo detiene al jugador
+  ok    caer al foso reaparece al jugador
+
+[Los tablones se atraviesan desde abajo y se pisan desde arriba]
+  ok    hay un tablón donde se espera (tejado de la cabaña)
+  ok    de pie bajo el tejado, sin que lo toque
+  ok    saltando desde abajo se atraviesa el tablón y se aterriza encima
+  ok    se puede estar de pie sobre el tablón
+  ok    sobre el tablón, saltar sin pulsar abajo salta
+  ok    y se vuelve a aterrizar sobre el tablón
+  ok    abajo + salto sobre el tablón lo atraviesa hacia abajo
+  ok    en suelo sólido, abajo + salto sigue saltando
+
+[Los objetos rompibles se atraviesan, se rompen al golpearlos y no afectan a la partida]
+  ok    hay objetos rompibles colocados por los marcadores R
+  ok    por defecto se rompen de un golpe
+  ok    el jugador atraviesa la urna caminando
+  ok    la urna se dibuja detrás del personaje, no encima
+  ok    un golpe lo destruye
+  ok    al romperse deja un chispazo
+  ok    romperlo no da Ecos ni cambia la vida: es solo decoración
+  ok    una vez roto ya no bloquea el paso
+
+[El entorno está cargado de decorado y objetos rompibles que no estorban]
+  ok    las salas tienen mucho decorado (193 piezas)
+  ok    hay cajas (17) y barriles (15) rompibles
+  ok    El Último Umbral tiene barriles
+  ok    un barril aguanta el primer golpe
+  ok    y se rompe con el segundo
+
+[Enemigos distintos, ataques distintos]
+  ok    el lancero alcanza al jugador desde lejos (78 px) con la lanza
+  ok    su alcance es mayor que el del cascarón
+  ok    el cascarón a 78 px aún no ataca: tiene que acercarse (su alcance es corto)
+  ok    el arrojador lanza un proyectil
+  ok    el proyectil viaja hacia el jugador
+  ok    el proyectil hiere al jugador
+  ok    el arrojador es frágil (2 de vida)
+  ok    un proyectil desviado se devuelve y pasa a herir a los enemigos
+  ok    el acechador se lanza hacia delante más de 70 px en un instante
+  ok    y la embestida hiere al jugador
+  ok    el coloso tiene 10 de vida
+  ok    su mazazo quita 2 de vida de una vez
+  ok    y avisa el golpe durante más de medio segundo
+
+[No se puede quedar uno encima de un enemigo]
+  ok    tras caer sobre enemy, el jugador acaba en el suelo y no encima (y=295)
+  ok    y a un lado del enemigo
+  ok    tras caer sobre enemy_coloso, el jugador acaba en el suelo y no encima (y=295)
+  ok    y a un lado del enemigo
+
+[Los iconos de botones se adaptan al dispositivo]
+  ok    un mando de Xbox se reconoce
+  ok    un mando de PlayStation se reconoce
+  ok    un mando de Nintendo se reconoce
+  ok    uno desconocido usa la disposición de Xbox
+  ok    en teclado, interactuar es la tecla Z
+  ok    en el mando, interactuar es el botón de arriba (Y / Triángulo / X)
+  ok    el dash es el gatillo derecho
+  ok    una acción que no existe no da icono
+  ok    se dibuja el icono de cada dispositivo
+  ok    pulsar un botón del mando cambia los iconos a los del mando
+  ok    y pulsar una tecla los devuelve al teclado
+
+[Efectos de sonido]
+  ok    el jugador prepara el reproductor de sonidos en la raíz
+  ok    existe el bus SFX con sus efectos
+  ok    el código pide muchos sonidos distintos (32)
+  ok    todos los sonidos que pide el código existen []
+  ok    el TileSet distingue piedra, musgo y madera ["moss", "stone", "wood"]
+  ok    cada material tiene su paso y su aterrizaje []
+  ok    el jugador sabe sobre qué material pisa (moss)
+  ok    las cinco voces de enemigo están completas []
+  ok    la esquirla tiene sonido de impacto
+  ok    un sonido de interfaz ocupa una voz
+  ok    el mismo sonido pedido dos veces seguidas no se apila
+  ok    un sonido que no existe se ignora sin error
+  ok    el jugador está en el suelo para la prueba de pasos
+  ok    un paso al tocar el pie el suelo
+  ok    sin contacto del pie no suena paso
+  ok    el motor avisa de un salto desde el suelo [&"ground"]
+  ok    saltar suena
+  ok    mover la selección de un menú suena
+  ok    elegir una opción desactivada suena (negado)
+  ok    romper un objeto suena
+
+[El aterrizaje suena justo al tocar el suelo]
+  ok    cae 200 px y toca el suelo
+  ok    caída de 200 px: el sonido empieza en el fotograma del contacto (contacto 20, sonido 20)
+  ok    cae 40 px y toca el suelo
+  ok    caída de 40 px: el sonido empieza en el fotograma del contacto (contacto 8, sonido 8)
+  ok    cae 14 px y toca el suelo
+  ok    caída de 14 px: el sonido empieza en el fotograma del contacto (contacto 4, sonido 4)
+
+[La inscripción se lee con Z, sin afectar a la partida]
+  ok    hay una inscripción colocada por el marcador I
+  ok    tiene un texto que leer
+  ok    se muestra el aviso al estar al alcance
+  ok    leerla muestra el texto completo en el HUD
+  ok    el texto se muestra en su recuadro translúcido
+  ok    leer no pausa el juego
+  ok    leer no da ni quita Ecos: es solo ambientación
+  ok    el aviso se oculta al alejarse
+
+[Un enemigo pegado a una pared se aparta en vez de vibrar]
+  ok    el enemigo no cambia de dirección cada frame (3 cambios en 4 s)
+  ok    el enemigo sigue patrullando en vez de quedarse pegado a la pared
+
+[MapData: zonas, descubrimiento, marcadores y dibujo de baldosas]
+  ok    area_at encuentra la zona que contiene una celda
+  ok    las zonas empiezan sin visitar y sin nada visto
+  ok    visit avisa solo la primera vez
+  ok    visitar una zona no descubre nada de ella
+  ok    reveal_around descubre lo que está cerca
+  ok    solo dentro del radio
+  ok    los límites de lo visto crecen con lo descubierto
+  ok    volver a mirar lo ya visto no descubre nada nuevo
+  ok    un mismo círculo descubre en dos zonas vecinas
+  ok    lo visto se puede exportar e importar (para guardarlo)
+  ok    repetir el mismo foco o marcador no pide redibujar
+  ok    remove_marker quita el marcador
+  ok    map_size mide el mapa de texto entero (80×28), cielo incluido
+  ok    el dibujo del mapa tiene un píxel por baldosa
+  ok    los tablones se pintan de su propio color
+
+[El mundo: varias salas conectadas, un solo jugador]
+  ok    hay ocho salas
+  ok    UltimoUmbral tiene nombre
+  ok    TerrazasSecas tiene nombre
+  ok    Cisterna tiene nombre
+  ok    TorreDeRiego tiene nombre
+  ok    GaleriasBajas tiene nombre
+  ok    Aljibe tiene nombre
+  ok    Chimenea tiene nombre
+  ok    Pasarela tiene nombre
+  ok    ninguna sala se solapa con otra
+  ok    un solo jugador en todo el mundo
+  ok    se empieza en El Último Umbral
+  ok    solo se ha visitado la sala de inicio
+  ok    en el mapa solo se ve lo que rodea al jugador, no la sala entera
+  ok    las ocho Anclas están marcadas en el mapa (se ven al pasar cerca)
+  ok    la sala de inicio no se anuncia
+  ok    el dash no está tirado por el mundo (lo suelta el jefe) y el doble salto está en la Torre de Riego
+
+[Caminando se pasa a la sala de al lado]
+  ok    la cámara está limitada al Último Umbral
+  ok    al cruzar el borde se está en Las Terrazas Secas
+  ok    el suelo continúa sin huecos entre las dos salas
+  ok    la cámara pasa a limitarse a la sala nueva
+  ok    la sala nueva cuenta como visitada y se ve en el mapa lo que la rodea
+  ok    pero no el resto de la sala
+  ok    la primera vez se anuncia su nombre
+  ok    en las Terrazas se ve el cielo
+
+[El foso de las Terrazas no mata: se cae a la Cisterna]
+  ok    caer por el foso no mata
+  ok    se aterriza en la Cisterna
+  ok    bajo tierra no se ve el cielo
+  ok    el límite de caída mortal baja con la sala
+  ok    caer al foso del Último Umbral sí mata (queda un Eco)
+
+[El foso de las Terrazas solo se cruza con el dash]
+  ok    sin dash no se llega al otro lado
+  ok    ni con carrerilla saltando en el último instante
+  ok    con dash sí
+  ok    el otro lado lleva a la Torre de Riego
+
+[De la Cisterna se sale subiendo por los tablones]
+  ok    de la fila 22 se sube al tablón de la fila 18
+  ok    de la fila 18 se sube al tablón de la fila 14
+  ok    de la fila 14 se sube al tablón de la fila 10
+  ok    de la fila 10 se sube al tablón de la fila 6
+  ok    de la fila 6 se sube al tablón de la fila 2
+  ok    del último tablón se sale al suelo de las Terrazas (suelo=true sala=TerrazasSecas pos=(1647.052, 295.9785))
+
+[La Torre de Riego: se sube por tablones y la cornisa del Ancla pide doble salto]
+  ok    de la fila 40 se sube al tablón de la fila 36
+  ok    de la fila 36 se sube al tablón de la fila 32
+  ok    de la fila 32 se sube al tablón de la fila 28
+  ok    de la fila 28 se sube al tablón de la fila 24
+  ok    de la fila 24 se sube al tablón de la fila 20
+  ok    subiendo la escalera aún no se ha tocado el doble salto
+  ok    sin doble salto no se llega a la cornisa
+  ok    el doble salto está sobre el tablón más alto
+  ok    con doble salto se llega a la cornisa del Ancla
+
+[Dash: uno por salto en el aire; al pisar suelo se recarga]
+  ok    el primer dash en el aire funciona
+  ok    pasados el dash y su enfriamiento seguimos en el aire
+  ok    el segundo dash en el mismo salto no sale
+  ok    al pisar suelo el dash vuelve a estar disponible
+
+[Corrección de esquina: no se queda pillado al rozar el borde de un techo]
+  ok    sin corrección choca con la esquina y no pasa (y=236.634262084961)
+  ok    con corrección se desplaza y pasa por encima (y=168.432983398438)
+
+[Las plataformas dejan hueco para saltar]
+  ok    ninguna plataforma queda bajo un techo a menos de 6 baldosas
+
+[Pinchos: hacen daño y devuelven al último suelo seguro, sin matar por caer]
+  ok    se está de pie junto al foso de pinchos
+  ok    caer en los pinchos quita 1 de vida
+  ok    pero no mata ni deja un Eco
+  ok    y devuelve al último suelo seguro, antes del foso (pos=(3703.0, 712.0) suelo=true ultimo=(3703.0, 712.0))
+  ok    con 1 de vida los pinchos matan (queda un Eco)
+
+[Pinchos pulsantes: salen, avisan y se retraen; solo hacen daño al salir]
+  ok    empieza activa (fase 0)
+  ok    en 2,5 s pasa por activa, aviso y retraída
+  ok    hizo daño mientras estaba activa
+  ok    retraída no hace daño
+  ok    con medio ciclo de desfase empieza retraída
+
+[De la Cisterna se llega, caminando, al Aljibe pasando por las Galerías]
+  ok    la puerta de la Cisterna lleva a las Galerías Bajas
+  ok    y se descubre la sala
+  ok    las Galerías tienen un Ancla antes del Aljibe
+  ok    la puerta de las Galerías lleva al Aljibe
+
+[El Centinela: armadura, núcleo expuesto, tres fases y la recompensa]
+  ok    duerme hasta que el jugador entra
+  ok    fase 1: armadura 8 y núcleo 15
+  ok    dormido no recibe daño
+  ok    la reja de entrada está abierta y la de salida cerrada
+  ok    todavía no hay recompensa
+  ok    al cruzar la línea despierta y se cierra la reja de entrada
+  ok    aparece su barra de vida
+  ok    la armadura gasta puntos pero no se aparta ni toca el núcleo
+  ok    al romperla queda expuesto
+  ok    expuesto, sí pierde núcleo
+  ok    al bajar de la marca pasa a la fase 2 con armadura nueva
+  ok    y se levanta
+  ok    la fase 2 empieza con su furia de mazazos
+  ok    la furia suelta ondas de polvo
+  ok    tras la furia vuelve a pelear normal
+  ok    romper la armadura de la fase 2 lo deja expuesto otra vez
+  ok    el núcleo no baja de la marca de la fase: no se salta ninguna
+  ok    fase 3: otra vez armadura y núcleo
+  ok    con el núcleo a 0 muere
+  ok    su muerte se avisa y la sala queda vencida
+  ok    suelta 40 Ecos
+  ok    todas las rejas se abren
+  ok    aparece el recuerdo del dash
+  ok    se guarda que el jefe está vencido
+  ok    al tocarlo se recuerda el dash
+
+[El Centinela: mazazo con onda, parry que lo expone, onda devuelta, salto y rocas]
+  ok    el mazazo empieza con un aviso
+  ok    que dura más de medio segundo (0.85 s)
+  ok    al empezar el tajo aún no hay golpe: llega cuando el mazo toca el suelo
+  ok    el mazazo pega fuerte a quien está al alcance
+  ok    suelta una onda de polvo contra el jugador
+  ok    que un parry devuelve contra él
+  ok    una onda devuelta le quita 2 de armadura
+  ok    un parry lo expone sin gastar armadura
+  ok    y el núcleo recibe daño
+  ok    al levantarse sigue en la misma fase con la armadura que tenía
+  ok    el salto empieza agachándose
+  ok    y despega
+  ok    cae junto al jugador (a ~90 px, no encima)
+  ok    caen rocas del techo
+  ok    con aviso antes de caer
+  ok    y se rompen al llegar al suelo
+
+[El jefe baja de los tablones y salta hasta ellos; las rocas caen hasta el suelo que haya debajo]
+  ok    el jefe se apoya en el tablón (feet=623.999755859375 tablón=624.0)
+  ok    con el jugador debajo, baja del tablón hasta el suelo (feet=735.994873046875 suelo=736.0)
+  ok    con el jugador en su tablón, no baja
+  ok    el salto sube hasta el tablón del jugador (feet=623.924011230469 tablón=624.0)
+  ok    una roca sin nada debajo cae hasta el suelo, aunque el jefe esté en un tablón (736.0)
+  ok    y sobre un tablón se rompe en el tablón (624.0)
+
+[Si el jefe cae encima del jugador, no se queda subido a su cabeza]
+  ok    el jefe acaba en el suelo, no subido al jugador (feet=735.924011230469 suelo=736.0)
+  ok    y se aparta: ya no se atraviesan
+
+[La onda cae de los tablones al suelo y sigue; el polvo solo sale sobre suelo; no golpea sobre el vacío]
+  ok    corre pegada al tablón mientras hay tablón
+  ok    al acabarse el tablón cae al suelo de abajo y sigue avanzando (x=5777.67529296875 y=720.0)
+  ok    y continúa por el suelo
+  ok    el polvo de un aterrizaje en un tablón no sale fuera de él
+  ok    y sobre el suelo sale con todo su ancho
+  ok    desde un tablón estrecho el mazo cae fuera de él: no hay golpe posible
+  ok    y en vez de golpear en el aire, se recoloca
+  ok    en el suelo, el mazazo sí tiene dónde caer
+
+[Los enemigos solo actúan dentro de su sala, y no nada más entrar en ella]
+  ok    hay un enemigo en el lado este de las Terrazas
+  ok    desde la sala de al lado no lo persigue ni lo ataca
+  ok    y recién cambiado de sala, junto a la puerta, tampoco
+  ok    dentro de su sala sí actúa con normalidad
+
+[El jefe: si se muere el jugador se reinicia; vencido, sigue vencido tras cargar]
+  ok    la pelea está en marcha
+  ok    al morir el jugador el jefe vuelve a dormir con todo
+  ok    se abre la reja y se oculta la barra
+  ok    cargada la partida, el jefe sigue vencido
+  ok    y su recompensa sigue esperando si no se había recogido
+  ok    recogida, no vuelve a aparecer
+
+[Si el jugador muere mientras el jefe agoniza, la victoria no se pierde]
+  ok    el jefe empieza a morir
+  ok    aunque el jugador muera en ese momento, el jefe queda vencido
+  ok    y la recompensa está en la sala
+
+[El puzle del dash: cada tramo se supera con la maniobra prevista y no sin dash]
+  ok    hay 11 maniobras de referencia (la Chimenea y la Pasarela)
+  ok    las maniobras de referencia llegan a su destino
+  ok    sin dash el primer foso no se cruza: cae en los pinchos (1 de vida) y vuelve al suelo
+
+[La salida alta de la Chimenea da a la Pasarela, que acaba en un mirador con Ancla]
+  ok    se sale de la Chimenea a la Pasarela caminando
+  ok    al final de la Pasarela hay un Ancla
+  ok    el mirador acaba en una pared: de momento no se sigue más allá
+
+[Minimapa en el HUD y mapa completo en la pausa]
+  ok    sin mundo (banco de pruebas) no hay minimapa
+  ok    en el mundo, el minimapa muestra el mapa del mundo
+  ok    el minimapa está en la esquina superior izquierda
+  ok    la barra de vida no lo tapa
+  ok    el minimapa está centrado en el jugador
+  ok    el Eco de la última muerte sale en el mapa
+  ok    Mapa abre su pantalla con el nombre de la sala actual
+  ok    se ve el mapa y no la lista ni el texto
+  ok    el panel mide lo mismo en Mapa que en el menú principal
+  ok    el mapa completo cabe en su recuadro
+  ok    Esc vuelve al menú de pausa
+
+[SaveSlot: escribir, leer, ignorar archivos rotos y borrar]
+  ok    sin archivo no hay partida
+  ok    se puede escribir
+  ok    se lee lo mismo que se escribió
+  ok    no queda el archivo temporal
+WARNING: Partida guardada ilegible o de otra versión, se ignora: user://partida_pruebas.json
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] read (res://core/save/save_slot.gd:47)
+       [1] _test_save_slot (res://tests/smoke_test.gd:2003)
+       [2] _run (res://tests/smoke_test.gd:96)
+       [3] _test_minimap_and_pause_map (res://tests/smoke_test.gd:1975)
+       [4] _press_action (res://tests/smoke_test.gd:1397)
+       [5] _press_event (res://tests/smoke_test.gd:1414)
+       [6] _wait (res://tests/smoke_test.gd:1474)
+  ok    un archivo roto se ignora en vez de romper el juego
+WARNING: Partida guardada ilegible o de otra versión, se ignora: user://partida_pruebas.json
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] read (res://core/save/save_slot.gd:47)
+       [1] _test_save_slot (res://tests/smoke_test.gd:2007)
+       [2] _run (res://tests/smoke_test.gd:96)
+       [3] _test_minimap_and_pause_map (res://tests/smoke_test.gd:1975)
+       [4] _press_action (res://tests/smoke_test.gd:1397)
+       [5] _press_event (res://tests/smoke_test.gd:1414)
+       [6] _wait (res://tests/smoke_test.gd:1474)
+  ok    una partida de otra versión se ignora
+  ok    erase borra la partida
+
+[Guardado automático: al cambiar de sala, al descansar y al reaparecer]
+  ok    empezar a jugar no guarda nada todavía
+  ok    al pasar a otra sala se guarda, con la sala descubierta
+  ok    al descansar en un Ancla se guarda, y ella es el punto de reaparición
+  ok    al reaparecer tras morir se guarda, con el Eco y sus Ecos
+
+[Al abrir el juego se carga la partida y se aparece en la última Ancla]
+  ok    se aparece en la última Ancla en la que se descansó
+  ok    y la cámara y la sala son las de esa Ancla
+  ok    se conservan las habilidades conseguidas, y solo esas
+  ok    se conservan las mejoras del árbol, y sus efectos
+  ok    la vida máxima mejorada se conserva y se rellena
+  ok    el Eco de la última muerte sigue esperando con sus Ecos
+  ok    en el mismo sitio
+  ok    con la vida completa
+  ok    se recuerdan las salas visitadas (no se vuelven a anunciar)
+  ok    el mapa recuerda lo explorado, y solo eso
+  ok    el recuerdo del dash ya recogido no vuelve a aparecer
+WARNING: Partida guardada ilegible o de otra versión, se ignora: user://partida_pruebas.json
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] read (res://core/save/save_slot.gd:47)
+       [1] _ready (res://game/levels/world.gd:108)
+       [2] _load_world (res://tests/smoke_test.gd:1670)
+  ok    una partida ilegible no rompe nada: se empieza de cero
+  ok    un punto de reaparición que ya no es un Ancla lleva al inicio, sin morir
+  ok    y el resto de la partida se conserva
+  ok    campos con tipos equivocados se ignoran
+  ok    aunque lo equivocado sea la partida entera
+
+[FlagStore: poner, leer, guardar, cargar e ignorar lo desconocido]
+  ok    sin poner, no existe y se devuelve el valor por defecto
+  ok    poner una marca sin valor la deja en true
+  ok    ponerla otra vez no cambia nada ni vuelve a avisar
+  ok    admite valores de texto y avisa con changed
+  ok    un id vacío o un valor que JSON no guarda se rechazan
+  ok    count cuenta todas o por prefijo
+  ok    to_dict guarda lo permanente y no las temporales
+  ok    reset_transient borra solo las temporales
+  ok    lo guardado en JSON se carga igual
+  ok    al cargar se ignoran ids vacíos, no textuales, temporales y valores raros
+  ok    con lista de ids conocidos, el desconocido se ignora
+  ok    una lista de ids cuenta como marcas en true, sin duplicar
+  ok    datos de otro tipo dejan el almacén vacío sin errores
+  ok    borrar una marca que no existe no hace nada
+
+[Coleccionables: id único, se cuentan una vez y no reaparecen]
+  ok    todos los coleccionables del mundo tienen id y no se repiten
+  ok    el id sale del mapa y la posición (cisterna.c37f05) y el tipo de la sala
+  ok    una partida nueva empieza sin fragmentos ni bolsas
+  ok    recogerlo cuenta un fragmento y lo retira
+  ok    se guarda en fragments (y bags sigue vacío)
+  ok    las marcas permanentes se guardan y las temporales no
+  ok    el mismo id dos veces no suma
+  ok    al morir se reinicia lo temporal y se conserva lo permanente
+  ok    tras cargar siguen el contador y las marcas
+  ok    el coleccionable ya recogido no reaparece
+  ok    una partida sin las claves nuevas carga sin marcas ni coleccionables
+  ok    y el coleccionable vuelve a estar en su sitio
+  ok    claves con tipos equivocados o ids repetidos se toleran
+
+[Menú principal: continuar, nuevo juego, opciones]
+  ok    el juego arranca en el menú principal
+  ok    sin partida, Continuar está desactivado y el cursor empieza en Nuevo juego
+  ok    Continuar no hace nada sin partida
+  ok    Nuevo juego sin partida empieza directamente
+  ok    con partida, el cursor empieza en Continuar
+  ok    Continuar carga la partida sin borrarla
+  ok    Nuevo juego con partida pide confirmación, con el no seleccionado
+  ok    decir que no vuelve al menú sin borrar
+  ok    Esc en la confirmación tampoco borra
+  ok    confirmar borra la partida y empieza de cero
+  ok    Opciones muestra la pantalla completa, desactivada por defecto
+  ok    Intro la activa
+  ok    y se guarda en el archivo de opciones
+  ok    Esc vuelve al menú, con el cursor en Opciones
+  ok    Controles muestra el esquema en lugar del menú
+  ok    derecha pasa al siguiente dispositivo (teclado, Xbox, PlayStation, Nintendo)
+  ok    izquierda vuelve al anterior
+  ok    Esc vuelve al menú, con el cursor en Controles
+
+[Pausa: volver al menú principal guarda la partida]
+  ok    Menú principal guarda antes de salir
+  ok    y quita la pausa
+
+[MenuList: elegir una opción que saca la lista de la escena no da errores]
+  ok    la opción elegida sacó la lista del árbol
+  ok    y la tecla quedó marcada como usada (antes, el error lo impedía)
+
+TODO OK (0 fallos)
+WARNING: 5 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+   at: cleanup (core/object/object.cpp:2536)
+ERROR: 2 resources still in use at exit (run with --verbose for details).
+   at: clear (core/io/resource.cpp:822)

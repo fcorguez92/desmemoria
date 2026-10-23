@@ -18,7 +18,7 @@
 ```
 core/         Base reutilizable: 14 componentes + 9 objetos + 2 efectos + 5 piezas de interfaz + guardado y marcas del mundo (ver core/README.md)
 game/         player, enemy, boss (el Centinela Hueco y su sala), echo, memory_anchor, ability_pickup, pickups (coleccionables `!`), environment, levels (el mundo y sus 8 salas + banco de pruebas)
-tests/        smoke_test.gd — 544 comprobaciones, todas en verde
+tests/        smoke_test.gd — 547 comprobaciones, todas en verde
 docs/         Diseño, decisiones, arquitectura y estado
 ```
 

@@ -105,9 +105,21 @@ function main() {
     const count = room.rows.reduce((n, row) => n + [...row].filter((c) => c === "!").length, 0);
     const scene = worldRooms().find((w) => sceneMap(w.scene) === room.id);
     const m = scene && fs.readFileSync(path.join(LEVELS, scene.scene + ".tscn"), "utf8").match(/^pickups = PackedStringArray((.*))$/m);
-    const kinds = m ? [...m[1].matchAll(/"([^"]*)"/g)].map((k) => k[1]) : [];
-    if (kinds.length > count) fail("C13", room.id, "", `"pickups" declara ${kinds.length} tipos y la sala solo tiene ${count} marcadores "!"`);
-    for (const k of kinds) if (!["fragment", "bag", "item"].includes(k)) fail("C13", room.id, "", `tipo de coleccionable desconocido "${k}"`);
+    const entries = m ? [...m[1].matchAll(/"([^"]*)"/g)].map((k) => k[1]) : [];
+    const keys = new Set();
+    room.rows.forEach((row, r) => [...row].forEach((c, col) => { if (c === "!") keys.add(`c${String(col).padStart(2, "0")}f${String(r).padStart(2, "0")}`); }));
+    for (const e of entries) {
+      const [key, kind] = e.split(":");
+      if (!keys.has(key)) fail("C13", room.id, "", `"pickups" tiene "${e}" y no hay un "!" en esa posición`);
+      if (!["fragment", "bag", "item"].includes(kind)) fail("C13", room.id, "", `tipo de coleccionable desconocido en "${e}"`);
+    }
+  }
+
+  // C13 también: dos salas del manifiesto no pueden compartir archivo .map (los ids de coleccionables saldrían repetidos).
+  const mapsSeen = new Set();
+  for (const room of rooms) {
+    if (mapsSeen.has(room.id)) fail("C13", room.id, "", "dos salas del manifiesto con el mismo archivo .map");
+    mapsSeen.add(room.id);
   }
 
   // C1: sin solapes.

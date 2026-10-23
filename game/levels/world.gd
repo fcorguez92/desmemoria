@@ -285,11 +285,16 @@ func _apply_save(saved: Dictionary) -> void:
 	# Claves opcionales: una partida antigua sin ellas carga sin marcas ni coleccionables.
 	flags.from_dict(saved.get("flags"))
 	collected.from_dict({})
+	# Solo cuentan los ids de coleccionables que existen en el mundo (uno que se
+	# quitó del mapa, o un id inventado, se ignora).
+	var real_ids: Array[String] = []
+	for pickup in get_tree().get_nodes_in_group(&"collectible"):
+		real_ids.append(String(pickup.id))
 	for key in ["fragments", "bags"]:
 		var ids: Variant = saved.get(key)
 		if ids is Array:
 			for id in ids:
-				if id is String:
+				if id is String and id in real_ids:
 					collected.set_flag(StringName(id), "fragment" if key == "fragments" else "bag")
 	# Los recuerdos de habilidades ya conseguidas no vuelven a aparecer.
 	for room in _rooms:

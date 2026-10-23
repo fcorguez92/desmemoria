@@ -118,4 +118,6 @@ func _is_transient(id: StringName) -> bool:
 
 
 func _is_valid_value(value: Variant) -> bool:
-	return value is bool or value is int or value is float or value is String
+	if value is float:
+		return is_finite(value)  # JSON no guarda NAN ni INF.
+	return value is bool or value is int or value is String

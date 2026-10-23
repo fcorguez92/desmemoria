@@ -2117,6 +2117,11 @@ func _test_flag_store() -> void:
 	_check(not store.set_flag(&"d:umbral.verja") and changes.size() == 1, "ponerla otra vez no cambia nada ni vuelve a avisar")
 	_check(store.set_flag(&"p:aun.final", "sellar") and store.get_flag(&"p:aun.final") == "sellar" and changes.size() == 2, "admite valores de texto y avisa con changed")
 	_check(not store.set_flag(&"", true) and not store.set_flag(&"x:a.b", Vector2.ONE), "un id vacío o un valor que JSON no guarda se rechazan")
+	_check(not store.set_flag(&"x:a.nan", NAN) and not store.set_flag(&"x:a.inf", INF) and not store.has_flag(&"x:a.nan"), "NAN e INF se rechazan")
+	var special := FlagStore.new()
+	special.from_dict({ "x:a.nan": NAN, "x:a.inf": -INF, "x:a.ok": 1.5 })
+	_check(special.count() == 1 and special.has_flag(&"x:a.ok"), "y también al cargar")
+	special.free()
 	store.set_flag(&"t:cruce.placa")
 	_check(store.count() == 3 and store.count("d:") == 1, "count cuenta todas o por prefijo")
 	var saved := store.to_dict()
@@ -2153,6 +2158,10 @@ func _test_collectibles_are_saved_once() -> void:
 	var sample: Node = get_nodes_in_group(&"collectible")[0]
 	_check(String(sample.id) == "cisterna.c37f05" and sample.kind == &"fragment", "el id sale del mapa y la posición (cisterna.c37f05) y el tipo de la sala")
 	_check(_level.fragment_count() == 0 and _level.bag_count() == 0, "una partida nueva empieza sin fragmentos ni bolsas")
+	var cistern: Node = _level.get_node("Rooms/Cisterna")
+	cistern.pickups = PackedStringArray(["c37f05:bag"])
+	_check(cistern._collectible_kind(Vector2i(37, 5)) == &"bag" and cistern._collectible_kind(Vector2i(1, 1)) == &"fragment", "el tipo va atado a la posición del !, no al orden; sin entrada es fragmento")
+	cistern.pickups = PackedStringArray()
 
 	_level.flags.set_flag(&"d:test.puerta")
 	_level.flags.set_flag(&"t:test.placa")
@@ -2186,9 +2195,9 @@ func _test_collectibles_are_saved_once() -> void:
 	_check(_level.fragment_count() == 0 and _level.bag_count() == 0 and _level.flags.count() == 0, "una partida sin las claves nuevas carga sin marcas ni coleccionables")
 	_check(not get_nodes_in_group(&"collectible").is_empty(), "y el coleccionable vuelve a estar en su sitio")
 	# Claves con tipos equivocados o ids repetidos.
-	SaveSlot.new(TEST_SAVE).write({ player = {}, flags = 5, fragments = ["a.b", "a.b", 3], bags = "x" })
+	SaveSlot.new(TEST_SAVE).write({ player = {}, flags = 5, fragments = ["cisterna.c37f05", "cisterna.c37f05", "sala.inventada", 3], bags = "x" })
 	await _load_world(true)
-	_check(_level.fragment_count() == 1 and _level.bag_count() == 0 and _level.flags.count() == 0, "claves con tipos equivocados o ids repetidos se toleran")
+	_check(_level.fragment_count() == 1 and _level.bag_count() == 0 and _level.flags.count() == 0, "claves con tipos equivocados, ids repetidos o ids que no existen en el mundo se toleran (solo cuenta el real)")
 
 
 func _test_title_screen() -> void:
