@@ -1,11 +1,11 @@
 [gd_scene load_steps=3 format=3]
 
-[ext_resource type="Script" path="res://game/boss/arena_gate.gd" id="1_gate"]
+[ext_resource type="Script" path="res://core/objects/gate.gd" id="1_gate"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_gate"]
 size = Vector2(16, 16)
 
-[node name="ArenaGate" type="Node2D"]
+[node name="Reja" type="Node2D"]
 z_index = 3
 script = ExtResource("1_gate")
 
