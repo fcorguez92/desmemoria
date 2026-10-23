@@ -59,29 +59,128 @@ inscripción (que el jugador elige leer, no se le impone):
 - Que los objetos rompibles reaparezcan al reiniciar el mundo: no afectan a la
   partida, así que quedan rotos hasta recargar el nivel.
 
+## Leyenda del mapa de texto (única, para todas las salas)
+
+Un `.map` es texto: una línea por fila, un carácter por baldosa. `.` y el espacio son vacío. Un carácter que está en la leyenda de la escena (`legend`) es una **baldosa** (con colisión); **cualquier otro carácter es un marcador**: no pone baldosa, anota su posición y `room.gd` (o el mundo) coloca ahí una entidad. Por eso **un carácter que no esté en esta tabla es un error** (se convertiría en un marcador sin avisar y dejaría un hueco): la comprobación C12 del verificador de mundo (ver `puzles.md`) lo detecta. La misma leyenda vale para todas las salas; el material de una baldosa lo decide el `TileSet` de la sala, no la letra.
+
+Convenciones: **minúscula = mecánica o lógica; mayúscula = decorado, enemigo u objeto del mundo** (con las excepciones heredadas `A E R I P Q O`). Una **pieza** es un grupo de marcadores contiguos del mismo carácter (un muro de 2×6 es una sola pieza). Los pares que comparten letra con distinta caja (`c`/`C`, `f`/`F`, `k`/`K`, `n`/`N`, `o`/`O`, `u`/`U`, `x`/`X`, `y`/`Y`) no tienen relación entre sí.
+
+**Estado:** ✔ existe en el código. Las fases (W0-W9, WA, WR) son las de `puzles.md`: **nuevo** = definitivo pero aún sin construir; **reservado** = carácter apartado para una mecánica recortada (no se usa en ningún mapa hasta que se construya).
+
+### Baldosas (con colisión)
+
+| Car. | Qué es | Estado |
+|---|---|---|
+| `T` | Suelo con piel (musgo en el Umbral) | ✔ |
+| `G` | Relleno de roca o tierra | ✔ |
+| `B` | Sillar o ladrillo labrado (arquitectura) | ✔ |
+| `C` | Remate de muro | ✔ |
+| `S` | Tablón de madera: plataforma **de un solo sentido** (se atraviesa desde abajo y por los lados; colisiona solo en una franja de 4 px en su borde superior; con abajo + salto se baja atravesándolo) | ✔ |
+| `%` | Pared lisa: sólida, el salto de pared no se agarra | nuevo (W0) |
+| `g` | Terreno desmemoriado: toda la familia de baldosas planas y sin textura (parches grises, Archivo en blanco, Herida) | nuevo (W9) |
+| `p` | Plataforma de un solo sentido que no es de madera (repisa de piedra, reja, losa) | nuevo (W9) |
+
+### Baldosas de fondo (sin colisión; capa de detrás del jugador)
+
+| Car. | Qué es | Estado |
+|---|---|---|
+| `m` | Muro trasero liso | nuevo (W9) |
+| `h` | Muro trasero con vano (arco, ventana, hornacina) | nuevo (W9) |
+| `a` | Agua (superficie animada si tiene aire encima); decorativa, no ahoga | nuevo (W9) |
+
+### Marcadores existentes
+
+| Car. | Qué es | Estado |
+|---|---|---|
+| `P` | Inicio del jugador (lo lee el mundo, no la sala) | ✔ |
+| `A` | Ancla de Memoria | ✔ |
+| `E` | Enemigo: cascarón (tajo) | ✔ |
+| `1` | Enemigo: lancero (estocada larga) | ✔ |
+| `2` | Enemigo: arrojador (esquirlas a distancia) | ✔ |
+| `3` | Enemigo: coloso (mazazo lento) | ✔ |
+| `4` | Enemigo: acechador (embestida) | ✔ |
+| `R` | Urna rompible (decoración; se atraviesa y se rompe al golpearla) | ✔ |
+| `Q` | Caja rompible | ✔ |
+| `O` | Barril rompible (aguanta 2 golpes) | ✔ |
+| `I` | Inscripción de El Último Umbral (texto en su escena) | ✔ |
+| `i` | Inscripción con el texto `note` de la sala (a partir de W1, la k-ésima `i` toma el k-ésimo texto de `notes`) | ✔ |
+| `d` `j` `w` | Recuerdo de habilidad: dash, doble salto, salto de pared (se recuerda al tocarlo) | ✔ |
+| `^` `v` | Pinchos fijos en el suelo / colgando del techo | ✔ |
+| `~` `-` | Pinchos que salen y se retraen (periodo 2,4 s, 40 % activos, aviso 0,4 s); los dos grupos alternan | ✔ |
+| `b` `t` `[` `]` `r` | Sala de jefe (`game/boss/boss_room.gd`): dónde duerme el jefe; línea que dispara la pelea (columna); celdas de la reja de entrada (se cierra al empezar); celdas de la reja de salida (cerrada hasta vencer); dónde aparece la recompensa | ✔ |
+
+### Decorado (sin función ni colisión; `decor.sprite`, 48×64)
+
+La letra es el **rol**; el dibujo concreto lo decide la región (propuesta de arte 06). Los que cuelgan (`F`, `N`, `q`) llevan el marcador en la celda de debajo.
+
+| Car. | Rol | Estado |
+|---|---|---|
+| `Y` | Árbol muerto / alzado vertical grande | ✔ |
+| `U` | Columna rota | ✔ |
+| `H` | Hierba (delante del jugador) | ✔ |
+| `Z` | Zarza seca | ✔ |
+| `K` | Huesos y escombros (delante) | ✔ |
+| `F` | Estandarte (cuelga) | ✔ |
+| `N` | Cadenas (cuelgan) | ✔ |
+| `X` | Estatua | ✔ |
+| `V` | Mojón | ✔ |
+| `L` | Poste de señal | ✔ |
+| `M` | Farol | ✔ |
+| `D` | **Arco ciego de muro** (decorado; **no** es el muro excavable: ese es `$`) | ✔ |
+| `q` | Enredaderas (cuelgan) | ✔ |
+
+Las piezas singulares (props únicos de cada región) no usan letra: se listan en un archivo `sala.props` (propuesta de arte 06 §5.1).
+
+### Mecánicas de mundo (nuevos; ver `puzles.md`)
+
+| Car. | Qué es | Estado |
+|---|---|---|
+| `#` | Muro o suelo **frágil** (se rompe a golpes, sin habilidad) | nuevo (W2) |
+| `$` | Muro o suelo **hondo** (solo se rompe con Excavar) | nuevo (W5) |
+| `=` | Compuerta, canal A (reja, tablones, piedra, cal, puente, tinta) | nuevo (W2) |
+| `+` | Compuerta, canal B | nuevo (W2) |
+| `z` | Palanca | nuevo (W2) |
+| `_` | Placa de presión | nuevo (W2) |
+| `*` | Botón en alto (se golpea saltando) | nuevo (W2) |
+| `c` | Receptor: nicho, ranura, altar (Sellos de la Puerta Sin Muro, Relevo) | nuevo (W6) |
+| `n` | Piedra de lectura (Nombrar) | nuevo (W8) |
+| `<` `>` | Extremos de un carril de plataforma móvil, barca o vagoneta | nuevo (W3) |
+| `y` | Ciclo (marea, tinta, ventana) | nuevo (W3) |
+| `{` | Pinchos laterales pegados a una pared **izquierda** (apuntan a la derecha) | nuevo (W4) |
+| `}` | Pinchos laterales pegados a una pared **derecha** (apuntan a la izquierda) | nuevo (W4) |
+| `k` | Derribo: columna, estantería-torre, puntal | nuevo (WA, ampliación) |
+| `o` | Combinación: selector de símbolos | nuevo (WA, ampliación) |
+| `)` `(` | Corriente de viento hacia la derecha / hacia la izquierda | reservado (WR, recortada) |
+| `u` | Corriente de ascenso | reservado (WR, recortada) |
+| `f` | Lámpara de grasa | reservado (WR, recortada) |
+| `x` | Plataforma o puente que solo existe con luz | reservado (WR, recortada) |
+
+### Enemigos nuevos, objetos y personajes
+
+| Car. | Qué es | Estado |
+|---|---|---|
+| `5` | Enemigo nuevo, rol **volador** (cuervo, polilla, murciélago, gaviota, vela...) | nuevo (04) |
+| `6` | Enemigo nuevo, rol **guardia** (escudo o coraza que bloquea de frente, o emboscador durmiente) | nuevo (04) |
+| `7` | Enemigo nuevo, rol **corredor** (carga, salto o rodadura, o rastrero) | nuevo (04) |
+| `8` | Enemigo nuevo, rol **de zona o de apoyo** (crea una zona o un estado, o da escudo) | nuevo (04) |
+| `9` | **Élite o minijefe** de la sala (uno por sala) | nuevo (04) |
+| `!` | Coleccionable: fragmento de vida o de frasco, Bolsa de Rastro, Página de Corvel, reliquia, objeto de lore (tipo e id en el campo `pickups` de la escena, en orden de lectura) | nuevo (W1) |
+| `@` | Personaje no jugador (PNJ; cuál, en el campo `npcs` de la escena) | nuevo (fase de PNJ) |
+
+Los enemigos `5`-`9` son **casilleros**: la escena de la sala (`enemy_set`) dice qué enemigo concreto es cada uno en esa sala (el catálogo está en la propuesta 04; el editor de combate fija cuáles entran). `1`-`4` y `E` conservan su significado en todas las salas.
+
+### Libres
+
+Letras `e s J W` y dígito `0`; símbolos `& / \ : ; ? " ' , | ` y el resto no usado. No se usan: `&` (muro de cera) y `/` `\` (pendientes) quedaron **recortados** y se dejan libres a propósito.
+
+
 ## Cómo está construida
 
-- `game/levels/ultimo_umbral.map` — el terreno como texto. Leyenda: `T` suelo con
-  musgo, `G` relleno de piedra, `B` ladrillo, `C` remate de muro, `S` tablón de
-  madera; `P` inicio del jugador, `A` Ancla de Memoria, `E` cascarón (tajo), `1` lancero (estocada larga), `2` arrojador (esquirlas a distancia), `3` coloso (mazazo lento) y `4` acechador (embestida), `R` urna
-  rompible, `I` inscripción legible, `d` / `j` / `w` recuerdo de dash / doble
-  salto / salto de pared; `Q` caja rompible, `O` barril rompible (aguanta 2 golpes);
-  `.` vacío. `i` inscripción con el texto `note` de su sala; `^` y `v` pinchos fijos
-  (en el suelo y colgando del techo), `~` y `-` pinchos que salen y se retraen
-  (los dos grupos alternan). En una **sala de jefe** (`game/boss/boss_room.gd`):
-  `b` dónde duerme el jefe, `t` línea que dispara la pelea, `[` celdas de la reja de
-  entrada (se cierra al empezar), `]` celdas de la reja de salida (cerrada hasta
-  vencer) y `r` dónde aparece la recompensa. Marcadores de **decorado** sin función (sprites de `decor.sprite`, sin
-  colisión): `Y` árbol muerto, `U` columna rota, `H` hierba (delante del jugador),
-  `Z` zarza, `K` huesos y escombros (delante), `F` estandarte y `N` cadenas y `q`
-  enredaderas (cuelgan del techo o de un tablón: el marcador va en la celda de
-  debajo), `X` estatua, `V` mojón, `L` poste, `M` farol, `D` arco ciego de muro.
-  La misma leyenda vale para todas las salas.
-  Los tablones (`S`) son **plataformas de un solo sentido**: se atraviesan desde
-  abajo y por los lados, y solo se pisan desde arriba (colisionan solo en una franja
-  fina de 4 px en su borde superior; el resto es puro decorado). Por ejemplo, se
+- `game/levels/ultimo_umbral.map` — el terreno como texto. La leyenda de caracteres
+  (baldosas, marcadores, decorado y mecánicas) es única para todas las salas y está
+  en la sección anterior. En una **sala de jefe** (`game/boss/boss_room.gd`) se usan
+  además `b` `t` `[` `]` `r`. El tablón `S` es una plataforma de un solo sentido: se
   puede pasar bajo el tejado de la cabaña o saltar a través de él para subirse.
-  Con abajo + salto sobre un tablón se baja atravesándolo (`can_drop_through` del motor).
 - `game/levels/ultimo_umbral.tscn` — un `TextTileMap` (core) con el `TileSet`
   `tiles_umbral.tres` y su leyenda.
 - `game/levels/room.gd` — el script de toda sala: coloca Anclas, enemigos, urnas,

@@ -83,6 +83,11 @@ Además hay que **jugarlo**: los tests miden reglas, no sensaciones.
 - `docs/jefes.md` — jefes: qué se toma de Hollow Knight, el Centinela Hueco, sus fases y cómo montar otro.
 - `docs/arte.md` — dirección artística (pixel art oscuro), resolución, paleta, tamaños de sprite y pipeline (sprites como texto, `tools/build_sprites.gd`).
 - `docs/sonido.md` — efectos de sonido: sintetizados por código (`tools/sonidos.js`), cómo suenan en el juego y cómo añadir uno.
+- `docs/personajes.md`, `docs/guion-maestro.md`, `docs/textos-del-juego.md` — canon: facciones, PNJ y jefes; actos, habilidades y finales; textos del juego.
+- `docs/puzles.md` — mecánicas de mundo, catálogo de puzles, secretos, reglas de márgenes y orden de implementación.
+- `docs/enemigos.md` — bestiario por región y piezas de motor para enemigos.
+- `docs/produccion.md` y `docs/produccion-arte.md` — plan maestro por hitos, orden de recorte y paquetes de arte.
+- `docs/reunion/` — archivo de las propuestas de escritores, diseñadores y artistas y de las decisiones de los editores.
 - `docs/vertical-slice.md` — diseño de El Último Umbral, la primera zona: recorrido, leyenda del mapa de texto y lo que queda fuera.
 - `docs/flujo-git.md` — ramas, commits y pull requests: cómo se trabaja con el repositorio.
 - `docs/estado.md` — en qué fase estamos, qué está validado, qué falta.
