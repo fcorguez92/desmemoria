@@ -1,6 +1,6 @@
 # Puzles y mecánicas de mundo (documento vivo)
 
-Estado: **diseño cerrado, nada construido todavía** salvo los puzles del dash (La Chimenea y La Pasarela) y los pinchos fijos y pulsantes. Unifica `docs/reunion/disenadores/02-puzles-de-movimiento.md` (el cuerpo del jugador: huecos, alturas, pozos) y `03-puzles-de-entorno-y-mecanicas.md` (las mecánicas de mundo: palancas, compuertas, piedras...), coordinados con el mapa (`mundo.md`, `01-mapa-macro.md`), el combate (`04`), la progresión (`05`) y los tilesets (`06`). Las decisiones al unificar y su porqué están en `docs/reunion/disenadores/DECISIONES-EDITOR-MUNDO.md`. La leyenda de caracteres del mapa de texto, en `vertical-slice.md`.
+Estado: **diseño cerrado; construido: la fase W0** (piezas de marcadores, pared lisa, simulador ampliado, verificador y retoque R7) y los puzles del dash (La Chimenea y La Pasarela) y los pinchos fijos y pulsantes. Unifica `docs/reunion/disenadores/02-puzles-de-movimiento.md` (el cuerpo del jugador: huecos, alturas, pozos) y `03-puzles-de-entorno-y-mecanicas.md` (las mecánicas de mundo: palancas, compuertas, piedras...), coordinados con el mapa (`mundo.md`, `01-mapa-macro.md`), el combate (`04`), la progresión (`05`) y los tilesets (`06`). Las decisiones al unificar y su porqué están en `docs/reunion/disenadores/DECISIONES-EDITOR-MUNDO.md`. La leyenda de caracteres del mapa de texto, en `vertical-slice.md`.
 
 **Qué abrir para el detalle.** Cada puzle tiene su ficha completa (Cuenta, Pasos, Enseña, Pista, Sin atasco, Recompensa) en `03` §2 con su número `Pxx`; cada sala de movimiento con su dibujo `.map` y sus márgenes simulados en `02` §5 y §6. Este documento fija **qué se construye, con qué carácter, en qué orden y qué se guarda**; si algo choca con las propuestas, manda este.
 
@@ -442,7 +442,7 @@ Impedidas, con regla y prueba: saltarse una puerta con una habilidad anterior (c
 
 ### El simulador de saltos
 
-`tools/sim_saltos.js` (`node tools/sim_saltos.js mapa.map [dash=1|0] fila_inicio col_inicio`) **hoy solo conoce el dash**: 60 fps, cápsula de 24×48, sólidos `TGBC`, tablón `S`, peligro `^ v ~ -`. Reproduce `PlatformerMotor` y `DashComponent`. Los márgenes de `02` salieron de un prototipo ampliado que se hizo en un directorio temporal y **no está en el repositorio**: hay que rehacerlo como parte de la fase W0, con estas diferencias:
+`tools/sim_saltos.js` (**ampliado en W0**; `node tools/sim_saltos.js sala.map DJW fila_inicio col_inicio [fila_meta] [--roto]`) conoce dash, doble salto, Agarre (salto de pared), `%`, `$` (sólida, o rota con `--roto`), compuertas cerradas y pinchos laterales: 60 fps, cápsula de 24×48, con los valores de `PlatformerMotor`, `DashComponent` y `player.gd`. La Chimenea real con dash da márgenes de 15 a 19 (cruce de 14 a 20 pedido). `node tools/test_sim_saltos.js` es su autoprueba. Los márgenes de `02` salieron de un prototipo temporal que no está en el repositorio; el simulador actual se reescribió desde sus especificaciones, con estas características (la lista original sigue como referencia):
 
 - Parámetros de maniobra nuevos: fotograma del segundo salto, saltos de pared (número, fotogramas agarrado antes de saltar, dirección y duración del empuje). La pared solo se agarra si se pulsa hacia ella **y la baldosa no es `%`**.
 - Sólidos: `T G B C % g $ #` y compuertas `=`/`+` cerradas; tablones `S p`; peligro `^ v ~ - { }` (los laterales con su caja girada). `$` se trata como sólido (pieza sin romper) o ausente (pieza rota).
@@ -461,7 +461,7 @@ Impedidas, con regla y prueba: saltarse una puerta con una habilidad anterior (c
 
 ### Comprobaciones automáticas (lista del mundo)
 
-Un script `tools/verifica_mundo.js` más `tests/world_manifest.json` (una entrada por sala y por puerta, hecho a mano y versionado, empezando por las salas construidas y la región que se esté haciendo). Cada fallo imprime región, sala, borde y fila y sale con código ≠ 0.
+Un script `tools/verifica_mundo.js` (**hecho en W0**: C1, C2, C3, C4, C8 y C12; `node tools/verifica_mundo.js`, la prueba de humo lo ejecuta si hay Node) más `tests/world_manifest.json` (una entrada por sala y por puerta, hecho a mano y versionado, empezando por las salas construidas y la región que se esté haciendo). Cada fallo imprime región, sala, borde y fila y sale con código ≠ 0.
 
 | # | Comprobación | Dónde | Umbral | Fase |
 |---|---|---|---|---|
