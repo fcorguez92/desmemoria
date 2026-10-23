@@ -70,6 +70,7 @@ Controles genéricos para el HUD y los menús. No saben de dónde vienen los nú
 
 | Pieza | Base | Responsabilidad |
 |---|---|---|
+| `FlagStore` | `Node` | Marcas del mundo: diccionario `id -> valor` (booleano, número o texto; `true` por defecto). `set_flag(id, valor)` (devuelve true si cambió), `get_flag(id, defecto)`, `has_flag`, `clear_flag`, `count(prefijo)`, `ids_with_value(valor, prefijo)`; señal `changed(id)` solo si el valor cambia. Los ids con `transient_prefix` (`t:`) no se guardan y `reset_transient()` / `reset()` (contrato del grupo `resettable`) los borra. `to_dict()` / `from_dict(datos, ids_conocidos)`: tolerante, ignora ids vacíos o no textuales, valores que JSON no guarda y, si se pasa una lista de conocidos, los que no estén. Genérico: no limita cuántos ids hay ni sabe qué significan; el id es `prefijo:sala.objeto` (ver `docs/puzles.md`). Quien lo usa lo añade al árbol y puede ponerlo en el grupo `flag_store` |
 | `SaveSlot` | `RefCounted` | Una partida en un archivo JSON (`SaveSlot.new("user://partida.json")`). `write(diccionario) -> bool`, `read() -> Dictionary` (vacío si no hay partida, si el archivo está roto o si es de otra `FORMAT_VERSION`), `exists()`, `erase()`. Escribe en un temporal y lo renombra, para que un cierre a mitad no estropee la partida anterior. No sabe qué se guarda: quien lo usa convierte lo que JSON no entiende (`Vector2` → `[x, y]`) y recuerda que al leer los números llegan como decimales |
 
 ## Efectos (`core/effects/`)
