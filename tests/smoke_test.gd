@@ -352,6 +352,23 @@ func _test_parry() -> void:
 	await _wait(20)
 	_check(not parry.is_active, "la ventana se cierra sola si nadie ataca")
 
+	# Aviso rojo: un ataque no parable atraviesa la guardia; el amarillo se desvía.
+	await _wait(60)
+	var red_foe: Node2D = _level.get_node("EnemySpawn1").instance
+	red_foe.parryable = false
+	_check(parry.try_start(), "se abre la guardia para el golpe rojo")
+	_check(not parry.try_deflect(-1, 1, red_foe), "un golpe no parable atraviesa la guardia")
+	_check(parry.is_active, "el golpe no parable no consume la ventana")
+	red_foe.parryable = true
+	_check(parry.try_deflect(-1, 1, red_foe), "un golpe parable se desvía como antes")
+	red_foe._on_attack_started()
+	_check(red_foe.visual.modulate == red_foe.TELEGRAPH_COLOR, "el aviso parable es amarillo")
+	red_foe._on_attack_cancelled()
+	red_foe.parryable = false
+	red_foe._on_attack_started()
+	_check(red_foe.visual.modulate == red_foe.TELEGRAPH_RED, "el aviso no parable es rojo")
+	red_foe._on_attack_cancelled()
+
 	# Parry a tiempo contra un ataque real.
 	await _fresh_level("", false, true, "EnemySpawn1")
 	var enemy: Node2D = _level.get_node("EnemySpawn1").instance
