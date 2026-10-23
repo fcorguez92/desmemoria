@@ -40,8 +40,8 @@ func _physics_process(delta: float) -> void:
 		_heal_timer -= delta
 		if _heal_timer <= 0.0:
 			_healing = false
-			use_heal_charge()
-			heal_finished.emit()
+			if use_heal_charge():
+				heal_finished.emit()
 
 
 ## Aplica daño. Devuelve false si se ignoró (invulnerable o ya sin vida).
