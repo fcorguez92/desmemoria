@@ -13,6 +13,10 @@ extends Node
 ## Quien lo usa lo añade al árbol; con `add_to_group(&"flag_store")` cualquier objeto
 ## del mundo lo encuentra con `get_tree().get_first_node_in_group(&"flag_store")`.
 
+## Grupo en el que el dueño del almacén lo registra para que lo encuentren los objetos
+## del mundo (compuertas, palancas...) sin conocer al mundo.
+const GROUP := &"flag_store"
+
 ## Se emite al cambiar una marca (puesta con otro valor o borrada). No se emite si el
 ## valor es el mismo que ya había.
 signal changed(id: StringName)
@@ -21,6 +25,14 @@ signal changed(id: StringName)
 @export var transient_prefix: String = "t:"
 
 var _flags: Dictionary = {}
+
+
+## El almacén del grupo `flag_store` del árbol de `node`, o null si aún no hay (los
+## objetos de una sala nacen antes que el almacén del mundo: lo reintentan).
+static func find(node: Node) -> FlagStore:
+	if not node.is_inside_tree():
+		return null
+	return node.get_tree().get_first_node_in_group(GROUP) as FlagStore
 
 
 ## Pone la marca `id`. Un id vacío o un valor que JSON no guardaría se ignoran.

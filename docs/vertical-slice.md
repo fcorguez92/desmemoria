@@ -135,13 +135,13 @@ Las piezas singulares (props únicos de cada región) no usan letra: se listan e
 
 | Car. | Qué es | Estado |
 |---|---|---|
-| `#` | Muro o suelo **frágil** (se rompe a golpes, sin habilidad) | nuevo (W2) |
+| `#` | Muro o suelo **frágil** (se rompe a golpes, sin habilidad) | ✔ (W2; arte provisional: bloque gris con grieta en zigzag que se alarga) |
 | `$` | Muro o suelo **hondo** (solo se rompe con Excavar) | nuevo (W5) |
-| `=` | Compuerta, canal A (reja, tablones, piedra, cal, puente, tinta) | nuevo (W2) |
-| `+` | Compuerta, canal B | nuevo (W2) |
-| `z` | Palanca | nuevo (W2) |
-| `_` | Placa de presión | nuevo (W2) |
-| `*` | Botón en alto (se golpea saltando) | nuevo (W2) |
+| `=` | Compuerta, canal A (reja, tablones, piedra, cal, puente, tinta) | ✔ (W2; solo el vestido de reja) |
+| `+` | Compuerta, canal B | ✔ (W2) |
+| `z` | Palanca | ✔ (W2) |
+| `_` | Placa de presión | ✔ (W2) |
+| `*` | Botón en alto (se golpea saltando) | ✔ (W2) |
 | `c` | Receptor: nicho, ranura, altar (Sellos de la Puerta Sin Muro, Relevo) | nuevo (W6) |
 | `n` | Piedra de lectura (Nombrar) | nuevo (W8) |
 | `<` `>` | Extremos de un carril de plataforma móvil, barca o vagoneta | nuevo (W3) |
