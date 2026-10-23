@@ -25,6 +25,8 @@ docs/         Diseño, decisiones, arquitectura y estado
 Los personajes ya usan sprites de píxeles; el entorno, los objetos siguen siendo geometría de colores planos (`Polygon2D`) sin arte final: el objetivo
 de esta fase era validar cómo se siente, no cómo se ve.
 
+Base de arte (H0-01 a H0-03, rama `art/base-pipeline`): paleta de 31 colores (`z` reservado); primitivas de rasterizado en `tools/lib/raster.js` (los rigs regeneran `art/source/` idéntico byte a byte); lienzo del Caminante a 112×96, con `Sprite2D.offset` (0, -24) y el Caminante del título subido 32 px para que los pies no se muevan. `node tools/comparar_lienzo.js <antiguo.sprite> <nuevo.sprite>` comprueba que los 58 fotogramas nuevos son idénticos a los antiguos desplazados.
+
 ## Controles actuales
 
 - Flecha izq/dcha: moverse · Espacio: saltar · Flecha arriba/abajo: mirar · Abajo + Espacio sobre un tablón: bajar atravesándolo

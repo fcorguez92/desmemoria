@@ -146,7 +146,7 @@ Valores de partida (a ajustar jugando):
 
 | Elemento | Colisión | Lienzo | Cuerpo dibujado | Notas |
 |---|---|---|---|---|
-| Jugador (Caminante) | 24×48 | **112×96** (hoy 112×64; ver D-04) | 20×44 | `Sprite2D.offset` pasa de (0, -8) a (0, -24) |
+| Jugador (Caminante) | 24×48 | **112×96** (antes 112×64; hecho en H0-03) | 20×44 | `Sprite2D.offset` es (0, -24) |
 | Enemigo pequeño | 20-28 × 24-32 | 64×48 (96×64 con arma larga) | hasta 20×28 | |
 | Enemigo mediano | 32×48 | 96×64 (144×64 con lanza) | 24×44 | Cascarón, Lancero, Arrojador |
 | Enemigo grande | 44×64 | 144×96 | hasta 44×64 | Coloso |
@@ -158,7 +158,7 @@ Valores de partida (a ajustar jugando):
 | Proyectil | pequeña | 16×16 (32×16) | — | |
 | Prop | ninguna | celda 64×64 o 128×128 | — | ver sección 11 |
 
-Cifras reales de lienzo hoy (cabecera `sheet` de cada `.sprite`): Caminante 112×64, Cascarón 96×64, Lancero 144×64, Arrojador 96×64, Coloso 144×96, Acechador 112×64, Centinela 384×256, Eco 48×64, Ancla 64×80, habilidades 48×48, decorado 48×64.
+Cifras reales de lienzo hoy (cabecera `sheet` de cada `.sprite`): Caminante 112×96, Cascarón 96×64, Lancero 144×64, Arrojador 96×64, Coloso 144×96, Acechador 112×64, Centinela 384×256, Eco 48×64, Ancla 64×80, habilidades 48×48, decorado 48×64.
 
 ## 6. Hojas, animaciones y manifiesto
 
@@ -228,7 +228,7 @@ Detalle largo en `docs/reunion/artistas/01` (sección 5) y `06` (secciones 3 y 4
 
 Cinco rasgos que no se tocan nunca: capucha puntiaguda con ribete ámbar, máscara azul en la mitad inferior del rostro, bufanda azul con inercia, daga curva empuñada del revés junto a la cadera, postura agazapada. Azul = Eco; ámbar = lo humano que sobrevive; rojo, jamás (los destellos de daño son del sistema de feedback). **No se desatura nunca.** Hoy (generado por `rig_caminante.js`): 58 fotogramas (reposo 10, correr 14, salto 4, caída 4, ataque 12, guardia 4, golpe 4, dash 6).
 
-- **Lienzo 112×96** (el golpe hacia arriba y el Golpe Hondo se salen hoy del 112×64). La colisión no cambia. Es lo primero que se hace, antes de dibujar animaciones nuevas.
+- **Lienzo 112×96** (el golpe hacia arriba y el Golpe Hondo no cabían en el antiguo 112×64; hecho en H0-03). La colisión no cambia. Es lo primero que se hace, antes de dibujar animaciones nuevas.
 - **Animaciones que faltan**, por prioridad (detalle de poses en `04`, 1.5): *alta* `land`, `wall_grab`, `wall_slide`, `wall_jump`, `double_jump`, `die`, `respawn`, `attack_up`, `attack_down`, `heal`; *media* `dig` (cuando exista Excavar), `sit`/`rest`, `remember`, `climb`, `turn`, `listen`, `name`; *baja* `idle_long`, `interact`, `parry_ok`, `crouch`, `slide`, `knockback`, `win`. Las de prioridad alta salen casi todas con poses nuevas sin tocar el esqueleto; los cambios de rig (R2 `spinPose`, R3 puño lejano, R4 objetos en mano, R6 cabeza sin máscara, R7 anclajes exportados) se hacen cuando se pide la animación que los necesita.
 - `heal`: se bebe **a través de la tela** de la máscara, sin mostrar piel (el rostro de Ansel solo se ve en el final Compartir). Decisión D-15.
 - **Evolución visual**: cambios acumulativos con dueño (Oda, Tomasa, Jacinto, el Archivo, Magda, Linde), legibles en ≥ 4 px de silueta o ≥ 2 px de acento de color, nunca rojo y sin tapar los cinco rasgos. Se hornean en el rig en **tres hojas**: inicio; tras el Doble salto (bufanda larga con punta `h` y cuerda de vigía); tras Excavar (vendas de paja en los brazos, puño de tinta, muñequera, veta azul en la hoja). El cambio de textura se hace en la gran escena de la habilidad. El **ojo ámbar** y los trapos de Nombrar (etapa E6) quedan diferidos como cuarta hoja, a decidir con el usuario tras jugar (pendiente). Finales (sprites de epílogo): Sellar (sentado), Soltar (sin arte nuevo, el sombreador lo desvanece hacia `w`), Compartir (sin máscara, el único rostro visible).
@@ -300,7 +300,7 @@ Detalle en `docs/reunion/artistas/03`.
 
 1. **Prueba de escala de grises** (apartado 3) en cada tileset, fondo, enemigo y PNJ; se hace con la vista previa en grises generada por el validador.
 2. **Validación al generar** (`build_sprites.gd`, paquetes H0-04 y H0-08), con salida 1 y mensaje en español: todos los píxeles en `palette.txt`; ninguna celda declarada vacía (< 12 píxeles opacos); ningún par de fotogramas consecutivos idéntico salvo lista `hold`; ningún píxel opaco en el borde del lienzo (salvo suelo); pies en la misma fila en `idle` y `walk` ± 1 px; cuerpo dentro de la colisión; porcentaje de contorno `1`; manifiesto coherente con el `.sprite`; presupuesto de VRAM; sin `t`/`u` en terreno, fondo ni decorado; tiras de fondo periódicas.
-3. **Prueba de humo del arte** (`tests/smoke_test.gd`, sin regenerar): existe cada hoja, el tamaño de la textura coincide con el manifiesto, cada animación que declara una escena existe en su `SheetAnimator`, cada hoja respeta su presupuesto. Sustituye a las dos comprobaciones sueltas de hoy (96×64 del enemigo, 112×64 del jugador).
+3. **Prueba de humo del arte** (`tests/smoke_test.gd`, sin regenerar): existe cada hoja, el tamaño de la textura coincide con el manifiesto, cada animación que declara una escena existe en su `SheetAnimator`, cada hoja respeta su presupuesto. Sustituye a las dos comprobaciones sueltas de hoy (96×64 del enemigo, 112×96 del jugador).
 4. **Presupuesto de VRAM**: 0,5-4 MB por hoja de criatura, ≤ 16 MB por jefe, ≤ 150 MB residentes por sala, ≤ 6 MB de fondos cargados a la vez.
 5. **Hoja de contactos por región** (enemigos, props y baldosas juntos, a escala) para revisar la coherencia, no solo cada pieza.
 6. **Jugarlo**: los tests miden reglas, no sensaciones (regla de `CLAUDE.md`). Todo hito de arte se cierra jugando la región.
@@ -309,7 +309,7 @@ Detalle en `docs/reunion/artistas/03`.
 
 | Sprite | Dibujo | Lienzo | Animaciones |
 |---|---|---|---|
-| Caminante (jugador) | 20×44, asesino agazapado y encapuchado, máscara azul, ribete ámbar en la capucha, bolsa en el cinto, capa con inercia; daga curva del revés con el puño junto a la cadera. Lo genera `rig_caminante.js` | 112×64 (pasa a 112×96) | reposo (10), correr (14, con líneas de velocidad), salto (4), caída (4), ataque (12, tajo con giro de muñeca y estela), guardia (4), golpe recibido (4), dash (6, con imágenes residuales) |
+| Caminante (jugador) | 20×44, asesino agazapado y encapuchado, máscara azul, ribete ámbar en la capucha, bolsa en el cinto, capa con inercia; daga curva del revés con el puño junto a la cadera. Lo genera `rig_caminante.js` | 112×96 | reposo (10), correr (14, con líneas de velocidad), salto (4), caída (4), ataque (12, tajo con giro de muñeca y estela), guardia (4), golpe recibido (4), dash (6, con imágenes residuales) |
 | Cascarón (enemigo, tajo) | 24×44, pálido y encorvado, sin rostro, vendas y trapos rojos; cuchillo pesado | 96×64 | reposo (8), andar (12), aviso (6), golpe (6), golpe recibido (4) |
 | Lancero (estocada larga) | yelmo oxidado con penacho rojo, hombrera, bandolera; lanza de 36 px | 144×64 | las mismas cinco |
 | Arrojador (a distancia) | encapuchado de rojo, flaco, esquirlas de hueso | 96×64 | las mismas |
