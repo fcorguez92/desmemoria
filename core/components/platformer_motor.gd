@@ -92,7 +92,7 @@ func step(body: CharacterBody2D, delta: float) -> void:
 
 	# Contacto con pared: se recuerda un instante para poder saltar "justo tarde".
 	_wall_lock_timer = maxf(_wall_lock_timer - delta, 0.0)
-	if can_wall_jump and not on_floor and body.is_on_wall():
+	if can_wall_jump and not on_floor and _touching_grippable_wall(body):
 		_wall_normal_x = int(signf(body.get_wall_normal().x))
 		_wall_timer = wall_coyote_time
 		var pressing_toward_wall := int(signf(direction)) == -_wall_normal_x
@@ -142,6 +142,32 @@ func step(body: CharacterBody2D, delta: float) -> void:
 		body.velocity.x = direction * speed
 		if direction != 0.0:
 			_set_facing(int(signf(direction)))
+
+
+## Nombre del dato de baldosa (bool) que marca una pared lisa: sólida, pero el
+## agarre y el salto de pared no se sujetan a ella (ver docs/puzles.md, T1).
+const SMOOTH_DATA := "smooth"
+
+
+## ¿Toca el cuerpo una pared a la que agarrarse? Las paredes lisas no cuentan.
+func _touching_grippable_wall(body: CharacterBody2D) -> bool:
+	if not body.is_on_wall():
+		return false
+	for i in body.get_slide_collision_count():
+		var hit := body.get_slide_collision(i)
+		if absf(hit.get_normal().x) > 0.7 and not is_smooth_surface(hit):
+			return true
+	return false
+
+
+## ¿Es la superficie de este choque una baldosa lisa (dato `smooth`)?
+static func is_smooth_surface(hit: KinematicCollision2D) -> bool:
+	var layer := hit.get_collider() as TileMapLayer
+	if layer == null or layer.tile_set == null or layer.tile_set.get_custom_data_layer_by_name(SMOOTH_DATA) == -1:
+		return false
+	var inside := hit.get_position() - hit.get_normal()
+	var data := layer.get_cell_tile_data(layer.local_to_map(layer.to_local(inside)))
+	return data != null and bool(data.get_custom_data(SMOOTH_DATA))
 
 
 ## Llamar antes de `move_and_slide()`, con la velocidad ya final: si el cuerpo sube y

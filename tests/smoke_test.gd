@@ -57,6 +57,9 @@ func _run() -> void:
 	await _test_double_jump_reaches_high_platform()
 	await _test_wall_slide_and_wall_jump()
 	await _test_wall_jump_opens_the_shaft()
+	await _test_smooth_wall_is_not_gripped()
+	await _test_marker_groups()
+	await _test_world_checks_with_node()
 	await _test_ultimo_umbral_builds_from_text_map()
 	await _test_planks_are_one_way_platforms()
 	await _test_breakable_props()
@@ -754,6 +757,78 @@ func _wall_probe(unlocked: bool) -> Dictionary:
 	Input.action_release("ui_accept")
 	Input.action_release("ui_left")
 	return result
+
+
+## Baldosas de prueba con la leyenda de las salas (T = piedra normal, % = pared lisa).
+func _tile_map_from_text(text: String) -> TextTileMap:
+	var map := TextTileMap.new()
+	map.tile_set = load("res://game/levels/tiles_umbral.tres")
+	map.legend = {"T": Vector2i(0, 0), "%": Vector2i(5, 0)}
+	root.add_child(map)
+	map.build(text)
+	return map
+
+
+## Las comprobaciones del mundo y del simulador de saltos se escriben en JavaScript
+## (herramientas de diseño, no del juego): si Node no está instalado se omiten.
+func _test_world_checks_with_node() -> void:
+	print("\n[Verificador del mundo y simulador de saltos (Node)]")
+	for script in ["verifica_mundo.js", "test_sim_saltos.js"]:
+		var output := []
+		var code := OS.execute("node", [ProjectSettings.globalize_path("res://tools/" + script)], output, true)
+		if code == -1:
+			print("  (omitida: Node no está disponible; ejecutar a mano node tools/%s)" % script)
+			continue
+		_check(code == 0, "tools/%s sale con código 0%s" % [script, "" if code == 0 else ": " + str(output)])
+
+
+func _test_marker_groups() -> void:
+	print("\n[Piezas de marcadores: grupos conexos]")
+	var map := _tile_map_from_text("$$.\n$$.\n$$.\n...$\n.$..\n$..$$")
+	var groups := map.marker_groups("$")
+	_check(groups.size() == 5, "un muro 2x3 es una sola pieza; las diagonales no unen (%d piezas)" % groups.size())
+	_check(groups[0].size() == 6 and groups[0][0] == Vector2i(0, 0), "la pieza 2x3 tiene 6 celdas y empieza en la primera en orden de lectura")
+	_check(groups[-1].size() == 2, "dos celdas contiguas forman una pieza")
+	_check(map.marker_groups("z").is_empty(), "un carácter ausente no da piezas")
+	map.queue_free()
+
+
+func _fall_beside_wall(wall: String) -> float:
+	var rows := PackedStringArray()
+	for i in 60:
+		rows.append(wall + wall + "..........")
+	var map := _tile_map_from_text("\n".join(rows))
+	var body := CharacterBody2D.new()
+	var shape := CollisionShape2D.new()
+	var rect := RectangleShape2D.new()
+	rect.size = Vector2(24.0, 48.0)
+	shape.shape = rect
+	body.add_child(shape)
+	var motor := PlatformerMotor.new()
+	motor.can_wall_jump = true
+	body.add_child(motor)
+	root.add_child(body)
+	body.global_position = Vector2(32.0 + 12.0, 100.0)
+	Input.action_press("ui_left")
+	var fastest := 0.0
+	for i in 40:
+		await physics_frame
+		motor.step(body, 1.0 / 60.0)
+		body.move_and_slide()
+		if i > 10:
+			fastest = maxf(fastest, body.velocity.y)
+	Input.action_release("ui_left")
+	body.queue_free()
+	map.queue_free()
+	return fastest
+
+
+func _test_smooth_wall_is_not_gripped() -> void:
+	print("\n[Pared lisa: sólida, pero no se agarra]")
+	var rough := await _fall_beside_wall("T")
+	var smooth := await _fall_beside_wall("%")
+	_check(rough <= 125.0, "junto a una pared normal, el Agarre frena la caída (%s)" % rough)
+	_check(smooth > 300.0, "junto a una pared lisa se mantiene la caída (%s)" % smooth)
 
 
 func _test_wall_jump_opens_the_shaft() -> void:
@@ -2265,14 +2340,14 @@ func _test_no_platform_has_a_cramped_ceiling() -> void:
 		for r in rows.size():
 			for c in rows[r].length():
 				var ch := rows[r][c]
-				if not (ch in "TGBCS"):
+				if not (ch in "TGBCS%"):
 					continue
-				if r > 0 and c < rows[r - 1].length() and rows[r - 1][c] in "TGBC":
+				if r > 0 and c < rows[r - 1].length() and rows[r - 1][c] in "TGBC%":
 					continue
 				# Libre hasta el primer sólido de arriba.
 				var free := 0
 				var y := r - 1
-				while y >= 0 and (c >= rows[y].length() or not (rows[y][c] in "TGBC")):
+				while y >= 0 and (c >= rows[y].length() or not (rows[y][c] in "TGBC%")):
 					free += 1
 					y -= 1
 				if y >= 0 and free < 6 and not (c <= 1 or c >= rows[r].length() - 2):

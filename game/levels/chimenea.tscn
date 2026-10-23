@@ -14,4 +14,4 @@ note = "Aqu√≠ descansaban los mensajeros de la Orden antes de la Pasarela. Corr√
 tile_set = ExtResource("3_tileset")
 script = ExtResource("2_tilemap")
 map_file = "res://game/levels/chimenea.map"
-legend = {"B": Vector2i(2, 0), "C": Vector2i(3, 0), "G": Vector2i(1, 0), "S": Vector2i(4, 0), "T": Vector2i(0, 0)}
+legend = {"B": Vector2i(2, 0), "C": Vector2i(3, 0), "G": Vector2i(1, 0), "%": Vector2i(5, 0), "S": Vector2i(4, 0), "T": Vector2i(0, 0)}

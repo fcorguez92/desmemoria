@@ -1,6 +1,6 @@
 # Baldosas de El Último Umbral (16x16): suelo con musgo, relleno de piedra,
-# ladrillo, remate de muro y tablón de madera. Es una hoja de una fila con una
-# baldosa por fotograma; el orden (0..4) es el de art/../game/levels/tiles_umbral.tres.
+# ladrillo, remate de muro, tablón de madera y pared lisa (provisional). Es una hoja de una fila con una
+# baldosa por fotograma; el orden (0..5) es el de art/../game/levels/tiles_umbral.tres.
 # Leyenda: ver art/palette.txt.
 
 sheet 16x16
@@ -96,9 +96,28 @@ bbbbbbbbbbbbbbbb
 aaaaaaaaaaaaaaaa
 aaaaaaaaaaaaaaaa
 
+part smooth
+2444444444444442
+2433333333333342
+2433333333333342
+2433333333333342
+2433333333333342
+2433333333333342
+2433333333333342
+2433333333333342
+2433333333333342
+2433333333333342
+2433333333333342
+2433333333333342
+2433333333333342
+2433333333333342
+2433333333333342
+2433333333333342
+
 anim tiles
 frame top
 frame fill
 frame brick
 frame cap
 frame slab
+frame smooth

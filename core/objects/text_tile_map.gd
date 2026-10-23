@@ -25,6 +25,8 @@ var markers: Dictionary = {}
 ## contar líneas vacías al final). A diferencia de `get_used_rect()`, incluye el
 ## vacío dibujado con puntos (el cielo, un foso).
 var map_size: Vector2i = Vector2i.ZERO
+## Carácter marcador -> celdas (Vector2i) en orden de lectura (fila a fila).
+var marker_cells: Dictionary = {}
 
 
 func _ready() -> void:
@@ -36,6 +38,7 @@ func _ready() -> void:
 func build(text: String) -> void:
 	clear()
 	markers.clear()
+	marker_cells.clear()
 	map_size = Vector2i.ZERO
 	var rows := text.split("\n")
 	for y in rows.size():
@@ -52,4 +55,36 @@ func build(text: String) -> void:
 			else:
 				if not markers.has(symbol):
 					markers[symbol] = []
+					marker_cells[symbol] = []
 				markers[symbol].append(to_global(map_to_local(cell)))
+				marker_cells[symbol].append(cell)
+
+
+## Agrupa los marcadores `symbol` en piezas: conjuntos conexos por lados (4 vecinos;
+## las diagonales no unen). Un muro de 2x3 marcadores es una sola pieza. Devuelve una
+## lista de piezas y cada pieza es una lista de celdas (Vector2i) en orden de lectura;
+## las piezas van ordenadas por su primera celda. Así el identificador de una pieza
+## puede ser `carácter@columna,fila` de su primera celda (ver docs/puzles.md).
+func marker_groups(symbol: String) -> Array:
+	var groups: Array = []
+	var cells: Array = marker_cells.get(symbol, [])
+	var pending := {}
+	for cell in cells:
+		pending[cell] = true
+	for first in cells:  # ya en orden de lectura
+		if not pending.has(first):
+			continue
+		var group: Array = []
+		var queue: Array = [first]
+		pending.erase(first)
+		while not queue.is_empty():
+			var cell: Vector2i = queue.pop_back()
+			group.append(cell)
+			for step in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
+				var next: Vector2i = cell + step
+				if pending.has(next):
+					pending.erase(next)
+					queue.append(next)
+		group.sort_custom(func(a: Vector2i, b: Vector2i) -> bool: return a.y < b.y or (a.y == b.y and a.x < b.x))
+		groups.append(group)
+	return groups

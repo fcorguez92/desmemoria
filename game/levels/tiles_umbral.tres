@@ -21,10 +21,16 @@ texture_region_size = Vector2i(16, 16)
 4:0/0/custom_data_0 = "wood"
 4:0/0/physics_layer_0/polygon_0/points = PackedVector2Array(-8, -8, 8, -8, 8, -4, -8, -4)
 4:0/0/physics_layer_0/polygon_0/one_way = true
+5:0/0 = 0
+5:0/0/custom_data_0 = "stone"
+5:0/0/custom_data_1 = true
+5:0/0/physics_layer_0/polygon_0/points = PackedVector2Array(-8, -8, 8, -8, 8, 8, -8, 8)
 
 [resource]
 tile_size = Vector2i(16, 16)
 physics_layer_0/collision_layer = 1
 custom_data_layer_0/name = "material"
 custom_data_layer_0/type = 4
+custom_data_layer_1/name = "smooth"
+custom_data_layer_1/type = 1
 sources/0 = SubResource("TileSetAtlasSource_umbral")
