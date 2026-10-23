@@ -16,6 +16,7 @@ const Hud := preload("res://game/ui/hud.gd")
 const AnchorMenu := preload("res://game/ui/anchor_menu.gd")
 const PauseMenu := preload("res://game/ui/pause_menu.gd")
 const Skills := preload("res://game/player/skills.gd")
+const Stats := preload("res://game/player/stats.gd")
 const GameAudio := preload("res://game/audio/game_audio.gd")
 const ABILITY_NAMES := {
 	&"dash": "Dash",
@@ -79,6 +80,10 @@ func _ready() -> void:
 	health.changed.connect(_update_hud)
 	health.damaged.connect(_on_damaged)
 	health.died.connect(die)
+	health.heal_started.connect(func(duration: float) -> void: hud.set_drinking(true, duration))
+	health.heal_finished.connect(_on_heal_finished)
+	health.heal_cancelled.connect(func() -> void: hud.set_drinking(false))
+	motor.jumped.connect(_cancel_heal_on_jump)
 	melee.hit_landed.connect(_on_hit_landed)
 	parry.parried.connect(_on_parried)
 	parry.started.connect(Sfx.play.bind(&"parry_raise", null, -12.0))
@@ -99,17 +104,22 @@ func _physics_process(delta: float) -> void:
 	motor.step(self, delta)
 
 	# Con la guardia alzada no se puede atacar.
-	if Input.is_action_just_pressed("attack") and not parry.is_active and melee.try_attack(self, motor.facing):
+	if health.is_healing():
+		velocity.x = 0.0
+	if Input.is_action_just_pressed("attack") and not parry.is_active and not health.is_healing() and melee.try_attack(self, motor.facing):
 		attack_visual.swing()
 		Sfx.play(&"swing", null, -9.0)
-	if Input.is_action_just_pressed("parry") and parry.try_start():
+	if Input.is_action_just_pressed("parry") and not health.is_healing() and parry.try_start():
 		animator.play_action("parry")
 	if Input.is_action_just_pressed("heal"):
-		if health.use_heal_charge():
-			Sfx.play(&"heal", null, -8.0)
+		# El sorbo: quieto, en el suelo y sin guardia ni retroceso.
+		if is_on_floor() and not dash.is_dashing and not knockback.is_active and not parry.is_active:
+			health.begin_heal()
 
 	# El dash pisa la velocity, así que va después del movimiento normal.
 	dash.step(self, motor.facing, delta)
+	if dash.is_dashing:
+		health.cancel_heal()
 
 	# El retroceso al recibir un golpe manda sobre todo lo demás.
 	knockback.step(self, delta)
@@ -123,6 +133,15 @@ func _physics_process(delta: float) -> void:
 
 	if respawn.is_out_of_bounds(self):
 		die()
+
+
+func _on_heal_finished() -> void:
+	hud.set_drinking(false)
+	Sfx.play(&"heal", null, -8.0)
+
+
+func _cancel_heal_on_jump(_kind: StringName) -> void:
+	health.cancel_heal()
 
 
 ## Contrato "golpeable" (ver docs/arquitectura.md).
@@ -510,6 +529,8 @@ func _apply_skills() -> void:
 	var old_flasks := health.max_heal_charges
 	health.max_health = int(Skills.stat(&"vitalidad", skills.level(&"vitalidad")))
 	health.max_heal_charges = int(Skills.stat(&"frascos", skills.level(&"frascos")))
+	health.heal_amount = Stats.heal_amount()
+	health.heal_time = Stats.heal_time()
 	health.invulnerability_time = Skills.stat(&"temple", skills.level(&"temple"))
 	if health.max_health > old_health:
 		health.health += health.max_health - old_health
