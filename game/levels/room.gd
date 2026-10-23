@@ -10,7 +10,8 @@ extends Node2D
 ##   (ver core/objects/readable.gd), i = inscripción con el texto `note` de la sala,
 ##   d / j / w = habilidad (dash, doble salto, salto de pared) que se recuerda al
 ##   tocarla, ^ v = pinchos fijos (suelo, techo) y ~ - = pinchos que salen y se
-##   retraen (los dos grupos alternan; ver core/objects/hazard.gd).
+##   retraen (los dos grupos alternan; ver core/objects/hazard.gd), ! = coleccionable
+##   con id guardado (fragmento de vida, Bolsa de Rastro u objeto; ver `pickups`).
 ## El marcador P (inicio del jugador) no lo usa la sala: lo busca el mundo, que
 ## es quien crea al jugador.
 ## Cada entidad se coloca con los pies en la parte de abajo de su celda.
@@ -30,6 +31,7 @@ const BreakableCrateScene := preload("res://game/environment/breakable_crate.tsc
 const BreakableBarrelScene := preload("res://game/environment/breakable_barrel.tscn")
 const InscriptionScene := preload("res://game/environment/inscription.tscn")
 const AbilityPickupScene := preload("res://game/ability_pickup/ability_pickup.tscn")
+const CollectibleScene := preload("res://game/pickups/collectible.tscn")
 const SpikesScene := preload("res://game/environment/spikes.tscn")
 const DecorSheet := preload("res://game/environment/decor_sheet.png")
 
@@ -51,6 +53,7 @@ const CRATE_HALF_HEIGHT := 7.0
 const BARREL_HALF_HEIGHT := 10.0
 const INSCRIPTION_HALF_HEIGHT := 13.0
 const PICKUP_HALF_HEIGHT := 16.0
+const COLLECTIBLE_HALF_HEIGHT := 10.0
 const ABILITY_MARKERS := {
 	"d": &"dash",
 	"j": &"double_jump",
@@ -96,6 +99,10 @@ const SPIKES_HALF_HEIGHT := 8.0
 ## Texto de las inscripciones del marcador `i` (cada sala dice lo suyo; la `I`
 ## mayúscula es la de El Último Umbral, con su texto en la escena).
 @export_multiline var note: String = ""
+## Tipo de cada coleccionable `!` en orden de lectura (fila a fila): `fragment`
+## (fragmento de vida), `bag` (Bolsa de Rastro) o `item` (objeto). Los que falten
+## son `fragment`. El id de cada uno sale de la sala y su posición (ver `collectible_id`).
+@export var pickups: PackedStringArray = PackedStringArray()
 
 @onready var tiles: TextTileMap = $Tiles
 
@@ -139,6 +146,20 @@ func _ready() -> void:
 			var pickup := AbilityPickupScene.instantiate()
 			pickup.ability_id = ABILITY_MARKERS[symbol]
 			_place(pickup, at, PICKUP_HALF_HEIGHT)
+	var cells: Array = tiles.marker_cells.get("!", [])
+	for i in cells.size():
+		var collectible := CollectibleScene.instantiate()
+		collectible.id = StringName(collectible_id(cells[i]))
+		collectible.kind = StringName(pickups[i]) if i < pickups.size() else &"fragment"
+		_place(collectible, tiles.markers["!"][i], COLLECTIBLE_HALF_HEIGHT)
+
+
+## Id estable de un coleccionable en la celda `cell` (columna, fila de esta sala):
+## `archivo_del_mapa.cCCfFF`, p. ej. `cisterna.c37f05`. Sale de la posición, así que no
+## hay lista que mantener y escala a cualquier número de salas; solo cambia si se
+## mueve el `!` en el mapa (entonces cuenta como otro coleccionable).
+func collectible_id(cell: Vector2i) -> String:
+	return "%s.c%02df%02d" % [tiles.map_file.get_file().get_basename(), cell.x, cell.y]
 
 
 ## Rectángulo de la sala en el mundo, en píxeles.

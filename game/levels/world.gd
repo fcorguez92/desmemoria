@@ -47,12 +47,21 @@ const MAP_PLANK_COLOR := Color(0.54, 0.33, 0.13)
 const PLANK_ATLAS := Vector2i(4, 0)
 const MAP_ANCHOR_COLOR := Color(0.3, 0.62, 0.95)
 const MAP_ECHO_COLOR := Color(0.75, 0.55, 0.95)
+## Cuántos fragmentos de vida hacen falta para una vida máxima más (la fórmula que
+## la aplica es K10 y aún no existe: de momento solo se cuentan y se notifican).
+const FRAGMENTS_PER_LIFE := 4
 
 ## Dónde se guarda la partida. Las pruebas usan otro archivo para no tocar la
 ## partida de quien juega.
 @export var save_path: String = SAVE_PATH
 
 var map_data := MapData.new()
+## Marcas permanentes del mundo (puzles, secretos, atajos, objetos de trama; ver
+## docs/puzles.md). Las temporales (prefijo t:) se reinician al descansar o morir.
+var flags := FlagStore.new()
+## Coleccionables recogidos: id -> tipo ("fragment" o "bag"). Los de tipo objeto
+## van en `flags` con prefijo "i:". Cada id cuenta una sola vez.
+var collected := FlagStore.new()
 var player: Node2D
 ## Sala en la que está el jugador (la última en la que estuvo si ahora mismo no
 ## está dentro de ninguna, p. ej. saltando por encima del techo del mapa).
@@ -88,6 +97,10 @@ func _ready() -> void:
 		for child in room.get_children():
 			if child is Checkpoint:
 				map_data.set_marker(StringName("anchor_%d" % child.get_instance_id()), child.global_position / CELL, MAP_ANCHOR_COLOR)
+	flags.add_to_group(&"flag_store")
+	flags.add_to_group(&"resettable")
+	add_child(flags)
+	add_child(collected)
 	_spawn_player()
 	if player == null:
 		return
@@ -95,6 +108,7 @@ func _ready() -> void:
 	var saved := _save_slot.read()
 	if not saved.is_empty():
 		_apply_save(saved)
+	_setup_collectibles()
 	var room := room_at(player.global_position)
 	_enter_room(room if room else _rooms[0], false, false)
 	_camera.reset_smoothing()
@@ -212,7 +226,15 @@ func save_game() -> void:
 	for room in _rooms:
 		if room.has_method(&"is_defeated") and room.is_defeated():
 			bosses.append(String(room.name))
-	_save_slot.write({ player = player.get_save_data(), rooms = rooms, bosses = bosses, seen = map_data.get_seen_data() })
+	_save_slot.write({
+		player = player.get_save_data(),
+		rooms = rooms,
+		bosses = bosses,
+		seen = map_data.get_seen_data(),
+		flags = flags.to_dict(),
+		fragments = _collected_ids(&"fragment"),
+		bags = _collected_ids(&"bag"),
+	})
 
 
 ## Guarda y vuelve al menú principal.
@@ -260,6 +282,15 @@ func _apply_save(saved: Dictionary) -> void:
 	var seen: Variant = saved.get("seen")
 	if seen is Dictionary:
 		map_data.set_seen_data(seen)
+	# Claves opcionales: una partida antigua sin ellas carga sin marcas ni coleccionables.
+	flags.from_dict(saved.get("flags"))
+	collected.from_dict({})
+	for key in ["fragments", "bags"]:
+		var ids: Variant = saved.get(key)
+		if ids is Array:
+			for id in ids:
+				if id is String:
+					collected.set_flag(StringName(id), "fragment" if key == "fragments" else "bag")
 	# Los recuerdos de habilidades ya conseguidas no vuelven a aparecer.
 	for room in _rooms:
 		for child in room.get_children():
@@ -276,3 +307,59 @@ func _is_valid_spawn(at: Vector2) -> bool:
 			if child is Checkpoint and at.distance_to(child.global_position) < 1.0:
 				return true
 	return false
+
+
+## Cuántos fragmentos de vida se han recogido (los contadores salen de los ids
+## guardados, no hay un número aparte que pueda descuadrarse).
+func fragment_count() -> int:
+	return collected.ids_with_value("fragment").size()
+
+
+## Cuántas Bolsas de Rastro se han recogido.
+func bag_count() -> int:
+	return collected.ids_with_value("bag").size()
+
+
+func _collected_ids(kind: String) -> Array[String]:
+	var ids: Array[String] = []
+	for id in collected.ids_with_value(kind):
+		ids.append(String(id))
+	ids.sort()
+	return ids
+
+
+func _is_collected(pickup: Node) -> bool:
+	if pickup.kind == &"item":
+		return flags.has_flag(StringName("i:" + pickup.id))
+	return collected.has_flag(pickup.id)
+
+
+## Los coleccionables ya recogidos no vuelven a aparecer; el resto avisan al mundo.
+func _setup_collectibles() -> void:
+	for pickup in get_tree().get_nodes_in_group(&"collectible"):
+		if _is_collected(pickup):
+			pickup.queue_free()
+		else:
+			pickup.collected.connect(_on_collectible_collected)
+
+
+## Cuenta el coleccionable (una sola vez por id), lo guarda y avisa al jugador.
+func _on_collectible_collected(pickup: Node) -> void:
+	var message := ""
+	match pickup.kind:
+		&"fragment":
+			if not collected.set_flag(pickup.id, "fragment"):
+				return
+			var count := fragment_count()
+			message = "Fragmento de vida %d/%d" % [(count - 1) % FRAGMENTS_PER_LIFE + 1, FRAGMENTS_PER_LIFE]
+		&"bag":
+			if not collected.set_flag(pickup.id, "bag"):
+				return
+			message = "Bolsa de Rastro"
+		_:
+			if not flags.set_flag(StringName("i:" + pickup.id)):
+				return
+			message = "Objeto recogido"
+	Sfx.play(&"echo_collect", null, -7.0)
+	player.announce_area(message)
+	save_game.call_deferred()

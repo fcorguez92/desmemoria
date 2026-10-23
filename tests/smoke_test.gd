@@ -96,6 +96,8 @@ func _run() -> void:
 	await _test_save_slot()
 	await _test_autosave_triggers()
 	await _test_loading_restores_progress()
+	await _test_flag_store()
+	await _test_collectibles_are_saved_once()
 	await _test_title_screen()
 	await _test_pause_returns_to_title()
 	await _test_menu_list_survives_leaving_the_tree()
@@ -2103,6 +2105,90 @@ func _test_loading_restores_progress() -> void:
 	SaveSlot.new(TEST_SAVE).write({ player = [1, 2] })
 	await _load_world(true)
 	_check(_level.current_room == _room, "aunque lo equivocado sea la partida entera")
+
+
+func _test_flag_store() -> void:
+	print("\n[FlagStore: poner, leer, guardar, cargar e ignorar lo desconocido]")
+	var store := FlagStore.new()
+	var changes: Array[StringName] = []
+	store.changed.connect(func(id: StringName) -> void: changes.append(id))
+	_check(not store.has_flag(&"d:umbral.verja") and store.get_flag(&"d:umbral.verja", 7) == 7, "sin poner, no existe y se devuelve el valor por defecto")
+	_check(store.set_flag(&"d:umbral.verja") and store.has_flag(&"d:umbral.verja") and store.get_flag(&"d:umbral.verja") == true, "poner una marca sin valor la deja en true")
+	_check(not store.set_flag(&"d:umbral.verja") and changes.size() == 1, "ponerla otra vez no cambia nada ni vuelve a avisar")
+	_check(store.set_flag(&"p:aun.final", "sellar") and store.get_flag(&"p:aun.final") == "sellar" and changes.size() == 2, "admite valores de texto y avisa con changed")
+	_check(not store.set_flag(&"", true) and not store.set_flag(&"x:a.b", Vector2.ONE), "un id vacío o un valor que JSON no guarda se rechazan")
+	store.set_flag(&"t:cruce.placa")
+	_check(store.count() == 3 and store.count("d:") == 1, "count cuenta todas o por prefijo")
+	var saved := store.to_dict()
+	_check(saved.has("d:umbral.verja") and saved.has("p:aun.final") and not saved.has("t:cruce.placa"), "to_dict guarda lo permanente y no las temporales")
+	store.reset_transient()
+	_check(not store.has_flag(&"t:cruce.placa") and store.has_flag(&"d:umbral.verja"), "reset_transient borra solo las temporales")
+	var json_round_trip: Variant = JSON.parse_string(JSON.stringify(saved))
+	var loaded := FlagStore.new()
+	loaded.from_dict(json_round_trip)
+	_check(loaded.has_flag(&"d:umbral.verja") and loaded.get_flag(&"p:aun.final") == "sellar" and loaded.count() == 2, "lo guardado en JSON se carga igual")
+	loaded.from_dict({ "d:ok.a": true, "": true, "t:x.y": true, "d:mal.valor": [1], 5: true, "d:ok.b": 3.0 })
+	_check(loaded.count() == 2 and loaded.get_flag(&"d:ok.b") == 3.0, "al cargar se ignoran ids vacíos, no textuales, temporales y valores raros")
+	loaded.from_dict({ "d:existe.a": true, "d:ya_no_existe.b": true }, ["d:existe.a"])
+	_check(loaded.has_flag(&"d:existe.a") and not loaded.has_flag(&"d:ya_no_existe.b"), "con lista de ids conocidos, el desconocido se ignora")
+	loaded.from_dict(["d:lista.a", "d:lista.a"])
+	_check(loaded.count() == 1 and loaded.get_flag(&"d:lista.a") == true, "una lista de ids cuenta como marcas en true, sin duplicar")
+	loaded.from_dict("basura")
+	_check(loaded.count() == 0, "datos de otro tipo dejan el almacén vacío sin errores")
+	_check(not loaded.clear_flag(&"d:no.esta"), "borrar una marca que no existe no hace nada")
+	store.free()
+	loaded.free()
+
+
+func _test_collectibles_are_saved_once() -> void:
+	print("\n[Coleccionables: id único, se cuentan una vez y no reaparecen]")
+	await _load_world()
+	var ids := {}
+	var all_unique := true
+	for pickup in get_nodes_in_group(&"collectible"):
+		if ids.has(pickup.id) or String(pickup.id).is_empty():
+			all_unique = false
+		ids[pickup.id] = true
+	_check(not ids.is_empty() and all_unique, "todos los coleccionables del mundo tienen id y no se repiten")
+	var sample: Node = get_nodes_in_group(&"collectible")[0]
+	_check(String(sample.id) == "cisterna.c37f05" and sample.kind == &"fragment", "el id sale del mapa y la posición (cisterna.c37f05) y el tipo de la sala")
+	_check(_level.fragment_count() == 0 and _level.bag_count() == 0, "una partida nueva empieza sin fragmentos ni bolsas")
+
+	_level.flags.set_flag(&"d:test.puerta")
+	_level.flags.set_flag(&"t:test.placa")
+	_player.global_position = sample.global_position
+	_player.velocity = Vector2.ZERO
+	await _wait(20)
+	_check(_level.fragment_count() == 1 and not is_instance_valid(sample), "recogerlo cuenta un fragmento y lo retira")
+	await _wait(3)
+	var data := _saved()
+	_check(data.get("fragments", []) == ["cisterna.c37f05"] and data.get("bags", []) == [], "se guarda en fragments (y bags sigue vacío)")
+	_check(data.get("flags", {}).has("d:test.puerta") and not data.get("flags", {}).has("t:test.placa"), "las marcas permanentes se guardan y las temporales no")
+	_level.collected.set_flag(&"cisterna.c37f05", "fragment")
+	_check(_level.fragment_count() == 1, "el mismo id dos veces no suma")
+
+	_player.die()
+	await _wait(4)
+	_check(not _level.flags.has_flag(&"t:test.placa") and _level.flags.has_flag(&"d:test.puerta"), "al morir se reinicia lo temporal y se conserva lo permanente")
+
+	await _load_world(true)
+	await _wait(4)
+	_check(_level.fragment_count() == 1 and _level.flags.has_flag(&"d:test.puerta"), "tras cargar siguen el contador y las marcas")
+	var respawned := 0
+	for pickup in get_nodes_in_group(&"collectible"):
+		if not pickup.is_queued_for_deletion():
+			respawned += 1
+	_check(respawned == 0, "el coleccionable ya recogido no reaparece")
+
+	# Partida antigua: sin las claves nuevas carga como si no hubiera marcas.
+	SaveSlot.new(TEST_SAVE).write({ player = {}, rooms = [], bosses = [], seen = {} })
+	await _load_world(true)
+	_check(_level.fragment_count() == 0 and _level.bag_count() == 0 and _level.flags.count() == 0, "una partida sin las claves nuevas carga sin marcas ni coleccionables")
+	_check(not get_nodes_in_group(&"collectible").is_empty(), "y el coleccionable vuelve a estar en su sitio")
+	# Claves con tipos equivocados o ids repetidos.
+	SaveSlot.new(TEST_SAVE).write({ player = {}, flags = 5, fragments = ["a.b", "a.b", 3], bags = "x" })
+	await _load_world(true)
+	_check(_level.fragment_count() == 1 and _level.bag_count() == 0 and _level.flags.count() == 0, "claves con tipos equivocados o ids repetidos se toleran")
 
 
 func _test_title_screen() -> void:

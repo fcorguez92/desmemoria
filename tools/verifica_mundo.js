@@ -2,7 +2,8 @@
 // (tests/world_manifest.json) de docs/puzles.md ("Comprobaciones automáticas").
 // Hechas hoy: C1 sin solapes, C2 alineación y anchura de las puertas, C3 aberturas
 // huérfanas, C4 manifiesto frente a world.tscn, C8 enemigos y tablones, C12
-// caracteres válidos y anchura. Sale con código 1 si algún fallo; cada fallo dice
+// caracteres válidos y anchura, C13 coleccionables.
+// Sale con código 1 si algún fallo; cada fallo dice
 // comprobación, sala, borde y fila/columna.
 //
 //   node tools/verifica_mundo.js [--manifiesto ruta.json]
@@ -95,6 +96,18 @@ function main() {
     room.rows.forEach((row, r) => [...row].forEach((c, col) => { if (!valid.has(c) && !seen.has(c)) seen.set(c, `fila ${r} columna ${col}`); }));
     for (const [c, where] of seen) fail('C12', room.id, where, `carácter "${c}" que no está en la leyenda de vertical-slice.md`);
     if (room.w < MIN_WIDTH && !room.estrecha) fail('C12', room.id, '', `anchura ${room.w} < ${MIN_WIDTH} (marca "estrecha" en el manifiesto si es a propósito)`);
+  }
+
+  // C13: coleccionables "!". Su id sale de sala+columna+fila (room.gd) y por tanto es
+  // único; aquí se comprueba que el "pickups" de la escena no declare más tipos que
+  // marcadores y que cada tipo sea válido.
+  for (const room of rooms) {
+    const count = room.rows.reduce((n, row) => n + [...row].filter((c) => c === "!").length, 0);
+    const scene = worldRooms().find((w) => sceneMap(w.scene) === room.id);
+    const m = scene && fs.readFileSync(path.join(LEVELS, scene.scene + ".tscn"), "utf8").match(/^pickups = PackedStringArray((.*))$/m);
+    const kinds = m ? [...m[1].matchAll(/"([^"]*)"/g)].map((k) => k[1]) : [];
+    if (kinds.length > count) fail("C13", room.id, "", `"pickups" declara ${kinds.length} tipos y la sala solo tiene ${count} marcadores "!"`);
+    for (const k of kinds) if (!["fragment", "bag", "item"].includes(k)) fail("C13", room.id, "", `tipo de coleccionable desconocido "${k}"`);
   }
 
   // C1: sin solapes.
