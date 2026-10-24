@@ -4,12 +4,24 @@ extends ModalLayer
 ## personaje) o salir. No conoce al jugador: recibe los datos con `show_state()` y
 ## avisa con señales (los datos bajan, los eventos suben; ver docs/arquitectura.md).
 ## Las entradas nuevas (tienda, viaje entre Anclas...) se añadirán aquí cuando
-## existan sus mecánicas.
+## existan sus mecánicas. "Callar un nombre" (el Paño) solo aparece si se sostiene
+## algún Nombre (ver game/names.gd): elegir uno y confirmar (con "No" por defecto)
+## pide al jugador callarlo con `silence_requested`.
 
 ## Se ha elegido comprar el siguiente nivel de una mejora del árbol.
 signal skill_requested(id: StringName)
+## Se ha confirmado callar el Nombre `id`. Quien lo atiende lo calla, paga y vuelve a
+## llamar a `show_state()` con los Ecos nuevos.
+signal silence_requested(id: StringName)
 
-const OPTION_TREE := 0
+const Names := preload("res://game/names.gd")
+
+## Qué se está mostrando.
+enum Mode { MAIN, PICK_NAME, CONFIRM_SILENCE }
+
+const ACTION_TREE := &"tree"
+const ACTION_SILENCE := &"silence"
+const ACTION_EXIT := &"exit"
 const HINTS_MAIN := [
 	{ hint = InputGlyphs.Hint.UP_DOWN },
 	{ action = &"ui_accept", hint = InputGlyphs.Hint.CHECK },
@@ -35,6 +47,15 @@ const DIRECTIONS := {
 @onready var hint_bar: InputHintBar = $Root/Panel/Content/Hint
 
 var _in_tree: bool = false
+var _mode: Mode = Mode.MAIN
+## La acción de cada entrada del menú principal (en el mismo orden).
+var _actions: Array[StringName] = []
+## Los Nombres de la lista de "Callar un nombre", y el elegido.
+var _name_ids: Array[StringName] = []
+var _chosen_name: StringName = &""
+var _ecos: int = 0
+## Aviso bajo los Ecos hasta que se cierra el menú (lo último que se ha callado).
+var _notice: String = ""
 ## Dirección -> si estaba inclinada la palanca (para contar solo la primera inclinación).
 var _held: Dictionary = {}
 
@@ -42,20 +63,23 @@ var _held: Dictionary = {}
 func _ready() -> void:
 	super()
 	menu.chosen.connect(_on_chosen)
-	menu.cancelled.connect(close)
-	menu.set_entries(PackedStringArray(["Árbol de habilidades", "Salir"]))
+	menu.cancelled.connect(_on_cancelled)
 	_show_tree(false)
+	_show_main()
 
 
 func open() -> void:
+	_notice = ""
 	_show_tree(false)
+	_show_main()
 	menu.select_first_enabled()
 	super()
 
 
 ## `skills` son los datos del árbol (ver SkillTreeView); `branches`, los nombres de sus ramas.
 func show_state(ecos: int, skills: Array, branches: PackedStringArray) -> void:
-	stats_label.text = "Ecos: %d" % ecos
+	_ecos = ecos
+	_update_header()
 	tree_view.set_skills(skills, branches)
 
 
@@ -71,11 +95,91 @@ func _show_tree(on: bool) -> void:
 	hint_bar.set_entries(HINTS_TREE if on else HINTS_MAIN)
 
 
+## Las entradas del menú principal: el árbol, "Callar un nombre" si se sostiene alguno, y salir.
+func _show_main() -> void:
+	_mode = Mode.MAIN
+	_actions = [ACTION_TREE]
+	var texts := PackedStringArray(["Árbol de habilidades"])
+	var registry := Names.find(self)
+	if registry != null and registry.held_count() > 0:
+		_actions.append(ACTION_SILENCE)
+		texts.append("Callar un nombre")
+	_actions.append(ACTION_EXIT)
+	texts.append("Salir")
+	menu.selected = 0
+	menu.set_entries(texts)
+	_update_header()
+
+
+## "Ecos: N", más el aviso o la pregunta del paso en que se esté.
+func _update_header() -> void:
+	var lines: PackedStringArray = ["Ecos: %d" % _ecos]
+	match _mode:
+		Mode.MAIN:
+			if _notice != "":
+				lines.append(_notice)
+		Mode.PICK_NAME:
+			lines.append("¿Qué nombre quieres callar?")
+		Mode.CONFIRM_SILENCE:
+			lines.append("«%s»" % Names.info(_chosen_name).title)
+			lines.append("El Hito dejará de decirlo. No se puede deshacer.")
+	stats_label.text = "\n".join(lines)
+
+
+func _show_name_list() -> void:
+	_mode = Mode.PICK_NAME
+	_name_ids = []
+	var texts := PackedStringArray()
+	var registry := Names.find(self)
+	if registry != null:
+		_name_ids = registry.held_ids()
+	for id in _name_ids:
+		texts.append(Names.info(id).title)
+	menu.selected = 0
+	menu.set_entries(texts)
+	_update_header()
+
+
+func _show_confirmation(id: StringName) -> void:
+	_mode = Mode.CONFIRM_SILENCE
+	_chosen_name = id
+	# "No" es lo primero y lo que está seleccionado: callar exige elegirlo a propósito.
+	menu.selected = 0
+	menu.set_entries(PackedStringArray(["No", "Callar"]))
+	_update_header()
+
+
 func _on_chosen(index: int) -> void:
-	if index == OPTION_TREE:
-		_show_tree(true)
-	else:
-		close()
+	match _mode:
+		Mode.MAIN:
+			match _actions[index]:
+				ACTION_TREE:
+					_show_tree(true)
+				ACTION_SILENCE:
+					_show_name_list()
+				_:
+					close()
+		Mode.PICK_NAME:
+			_show_confirmation(_name_ids[index])
+		Mode.CONFIRM_SILENCE:
+			if index == 0:
+				_show_name_list()
+				return
+			var title: String = Names.info(_chosen_name).title
+			silence_requested.emit(_chosen_name)
+			_notice = "El Hito ya no dice «%s». Tú sí lo sabes." % title
+			_show_main()
+
+
+## Atrás: de la confirmación a la lista, de la lista al menú, y del menú, cierra.
+func _on_cancelled() -> void:
+	match _mode:
+		Mode.CONFIRM_SILENCE:
+			_show_name_list()
+		Mode.PICK_NAME:
+			_show_main()
+		_:
+			close()
 
 
 ## En el árbol se navega con las flechas (o la cruceta/palanca) y se compra con aceptar.
