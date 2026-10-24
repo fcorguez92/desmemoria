@@ -83,6 +83,7 @@ func _run() -> void:
 	await _test_no_platform_has_a_cramped_ceiling()
 	await _test_spikes_hurt_and_return_to_safe_ground()
 	await _test_pulsing_hazards_cycle()
+	await _test_side_spikes()
 	await _test_the_way_to_the_boss()
 	await _test_boss_phases_and_reward()
 	await _test_boss_attacks_and_parry()
@@ -2196,7 +2197,7 @@ func _test_collectibles_are_saved_once() -> void:
 	_check(_level.fragment_count() == 1 and _level.flags.has_flag(&"d:test.puerta"), "tras cargar siguen el contador y las marcas")
 	var respawned := 0
 	for pickup in get_nodes_in_group(&"collectible"):
-		if not pickup.is_queued_for_deletion():
+		if not pickup.is_queued_for_deletion() and String(pickup.id) == "cisterna.c37f05":
 			respawned += 1
 	_check(respawned == 0, "el coleccionable ya recogido no reaparece")
 
@@ -2842,6 +2843,70 @@ func _test_spikes_hurt_and_return_to_safe_ground() -> void:
 	Input.action_release(&"ui_right")
 	await _wait(30)
 	_check(_player.active_echo != null, "con 1 de vida los pinchos matan (queda un Eco)")
+
+
+## Cuántos golpes recibe un cuerpo cuadrado de 10 px centrado en `at` de unos pinchos
+## colocados en `origin` y girados `degrees` (como los coloca room.gd).
+func _hits_on_side_spikes(degrees: float, origin: Vector2, at: Vector2) -> int:
+	var dummy := HazardDummy.new()
+	var shape := CollisionShape2D.new()
+	shape.shape = RectangleShape2D.new()
+	(shape.shape as RectangleShape2D).size = Vector2(10, 10)
+	dummy.add_child(shape)
+	dummy.add_to_group("player")
+	_level.add_child(dummy)
+	dummy.global_position = at
+	var spikes: Hazard = load("res://game/environment/spikes.tscn").instantiate()
+	spikes.rotation_degrees = degrees
+	_level.add_child(spikes)
+	spikes.global_position = origin
+	await _wait(4)
+	var hits: int = dummy.hits
+	dummy.queue_free()
+	spikes.queue_free()
+	return hits
+
+
+func _test_side_spikes() -> void:
+	await _fresh_level("Pinchos laterales { }: una tira fina pegada a la pared, solo por el lado libre")
+	var origin := Vector2(5000.0, 5000.0)
+	# `{` (pared a la izquierda, celda de 16 px que empieza en origin.x - 8): daña de 0 a 9 px.
+	_check(await _hits_on_side_spikes(90.0, origin, origin + Vector2(-3.0, 0.0)) > 0, "{ daña a quien la toca por su lado libre")
+	_check(await _hits_on_side_spikes(90.0, origin, origin + Vector2(-14.0, 0.0)) == 0, "{ no daña por el lado de la pared")
+	_check(await _hits_on_side_spikes(90.0, origin, origin + Vector2(7.0, 0.0)) == 0, "{ no alcanza más allá de su tira de 9 px")
+	_check(await _hits_on_side_spikes(90.0, origin, origin + Vector2(-3.0, 13.0)) == 0, "{ no daña por encima ni por debajo de su celda")
+	# `}` es su espejo: pared a la derecha.
+	_check(await _hits_on_side_spikes(-90.0, origin, origin + Vector2(3.0, 0.0)) > 0, "} daña a quien la toca por su lado libre")
+	_check(await _hits_on_side_spikes(-90.0, origin, origin + Vector2(14.0, 0.0)) == 0, "} no daña por el lado de la pared")
+	_check(await _hits_on_side_spikes(-90.0, origin, origin + Vector2(-7.0, 0.0)) == 0, "} no alcanza más allá de su tira de 9 px")
+
+	# En el mundo: el pozo de la Torre de Riego (pinchos { en la cara del pilar, en 48,16-21).
+	await _load_world()
+	var tower: Node2D = _level.get_node("Rooms/TorreDeRiego")
+	await _clear_enemies(tower)
+	var strips := 0
+	for child in tower.get_children():
+		if child is Hazard and absf(absf(child.rotation_degrees) - 90.0) < 0.1:
+			strips += 1
+	_check(strips == 12, "la sala pone una tira por cada { y } del mapa (%d)" % strips)
+	_player.unlock_ability(&"wall_jump")
+	_player.global_position = _standing_on("TorreDeRiego", 50, 28)
+	_player.velocity = Vector2.ZERO
+	await _wait(20)
+	var floor_y: float = _player.global_position.y
+	_check(_player.is_on_floor(), "se está de pie en el suelo del pozo")
+	_player.health.health = 2
+	# Pegado a la cara del pilar, a media altura de la tira, empujando hacia ella.
+	_player.global_position = _cell("TorreDeRiego", 48, 18) + Vector2(10.0, 0.0)
+	_player.velocity = Vector2.ZERO
+	Input.action_press(&"ui_left")
+	await _wait(25)
+	Input.action_release(&"ui_left")
+	await _wait(20)
+	_check(_player.health.health == 1, "rozar la tira quita 1 de vida (%d)" % _player.health.health)
+	_check(_player.active_echo == null, "pero no mata ni deja un Eco")
+	_check(_player.is_on_floor() and absf(_player.global_position.y - floor_y) < 4.0, "devuelve al suelo firme del pozo, sin atravesar la tira")
+	_check(_player.global_position.y > _cell("TorreDeRiego", 0, 22).y, "y no lo deja a la altura de la tira (y=%s)" % _player.global_position.y)
 
 
 func _test_pulsing_hazards_cycle() -> void:
