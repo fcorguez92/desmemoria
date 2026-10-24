@@ -486,6 +486,7 @@ Un script `tools/verifica_mundo.js` (**hecho en W0**: C1, C2, C3, C4, C8 y C12; 
 | C13 | Todo sentido único tiene camino de vuelta (C6) | script | 100 % | ídem |
 | C14 | Con 0 Sellos no se llega a HER-02; con los 3, sí | script | exacto | Herida |
 | C16 | **Enlaces de piezas**: cada clave de `links` es la primera celda de una pieza (`=`, `+`, `z`, `_`, `*`, `#`, `$`) del mapa y cada marca tiene la forma `prefijo:sala.objeto` (hecha en W2; el C13 de esta tabla sigue sin construir: el C13 del script son los coleccionables) | script | 0 | W2 |
+| C17 | **Nombres en inscripciones**: el `note_name_id` de una sala y el `name_id` de `inscription.tscn` son ids de `game/names.gd`, no se repiten, y una sala con `note_name_id` tiene su `i` en el mapa | script | 0 | K22 |
 | C15 | Presupuesto: salas por región y por función | script | ±2 respecto a `mundo.md` | continuo |
 
 La prueba de humo conserva lo que necesita el motor: techos, reproducción de maniobras, ids únicos, guardado y carga de marcas, `%` no se agarra, pinchos laterales, salidas de `$`.

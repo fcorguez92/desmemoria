@@ -101,6 +101,7 @@ func _run() -> void:
 	await _test_loading_restores_progress()
 	await _test_flag_store()
 	await _test_collectibles_are_saved_once()
+	await _test_names_registry()
 	await _test_gate_opens_with_marks()
 	await _test_gate_never_closes_on_someone()
 	await _test_aljibe_gates_are_core_gates()
@@ -3521,6 +3522,129 @@ func _test_the_bridge_ends_in_a_lookout() -> void:
 	await _wait(120)
 	Input.action_release(&"ui_right")
 	_check(_player.global_position.x < _level.get_node("Rooms/Pasarela").global_position.x + 98.0 * 16.0, "el mirador acaba en una pared: de momento no se sigue más allá")
+
+
+## Los textos de las filas de una lista de opciones.
+func _row_texts(list: MenuList) -> PackedStringArray:
+	var texts := PackedStringArray()
+	for row in list.get_children():
+		texts.append((row.get_child(1) as Label).text)
+	return texts
+
+
+## La inscripción de una sala que contiene el Nombre `id`, o null.
+func _name_stone(room_name: String, id: StringName) -> Node:
+	for child in _level.get_node("Rooms/" + room_name).get_children():
+		if child is Readable and child.get("name_id") == id:
+			return child
+	return null
+
+
+func _test_names_registry() -> void:
+	print("\n[Nombres y el Paño: registro, inscripciones, diario, callar y guardado]")
+	const Names := preload("res://game/names.gd")
+	await _load_world()
+	var names: Node = _level.names
+	var per_region := {}
+	var unique := {}
+	for entry in Names.LIST:
+		per_region[entry.region] = per_region.get(entry.region, 0) + 1
+		unique[entry.id] = true
+	_check(Names.LIST.size() == 30 and unique.size() == 30, "hay 30 Nombres con id único")
+	var five_each: bool = per_region.size() == Names.REGIONS.size()
+	for region in per_region:
+		five_each = five_each and per_region[region] == 5
+	_check(five_each, "5 por región, en las 6 regiones")
+	_check(names.read_count() == 0 and names.held_count() == 0, "una partida nueva no ha leído ninguno")
+	_check(not names.read_name(&"inventado") and names.read_count() == 0, "un id desconocido se ignora")
+
+	# Una inscripción con Nombre lo registra al leerla, y se avisa.
+	var stone := _name_stone("TorreDeRiego", &"tomasa")
+	_check(stone != null and stone.text.begins_with("Torre de Riego. Vigía: Tomasa."), "la Torre de Riego tiene la placa de Tomasa")
+	_player.global_position = stone.global_position
+	_player.velocity = Vector2.ZERO
+	await _wait(10)
+	_check(not names.is_read(&"tomasa"), "estar al lado no lo lee")
+	Input.action_press("interact")
+	await _wait(2)
+	Input.action_release("interact")
+	await _wait(2)
+	_check(names.is_held(&"tomasa") and names.held_count() == 1, "leer la placa registra a Tomasa como sostenido")
+	_check(_player.hud.message_label.text == stone.text + "\n\nNombre: Tomasa. Lo sostienes.", "se enseña la placa con el aviso del Nombre")
+	Input.action_press("interact")
+	await _wait(2)
+	Input.action_release("interact")
+	await _wait(2)
+	_check(_player.hud.message_label.text == stone.text and names.read_count() == 1, "leerla otra vez no repite el aviso ni lo cuenta dos veces")
+	var plain_stone: Node = null
+	for child in _room.get_children():
+		if child is Readable:
+			plain_stone = child
+	_check(plain_stone != null and plain_stone.name_id == &"", "las inscripciones sin name_id siguen siendo normales")
+	await _wait(3)
+	_check(_saved().get("names", {}).get("read", []) == ["tomasa"], "leer un Nombre guarda la partida")
+
+	# El diario de la pausa: solo lo leído.
+	var pause = _player.pause_menu
+	await _press_action("pause")
+	for i in pause.OPTION_NAMES:
+		await _press_action("ui_down")
+	await _press_action("ui_accept")
+	_check(pause.title_label.text == "Nombres que sostienes" and pause.info.visible, "la pausa tiene la pestaña Nombres que sostienes")
+	var text: String = pause.info_label.text
+	_check("Cinturón 1/5  ·  Tomasa" in text and "Umbral 0/5" in text and "Sostenidos: 1/30" in text, "muestra el contador por región y el total")
+	_check("Ossenna" not in text and "Oda Bellver" not in text and "Rufo" not in text, "no revela los que no se han leído")
+	await _press_action("ui_cancel")
+	await _press_action("ui_cancel")
+	_check(not pause.is_open(), "la pausa se cierra")
+
+	# El Paño: callar pide confirmación, con "No" por defecto.
+	var menu = _player.anchor_menu
+	_player.rest_at(_player.global_position)
+	_check(_row_texts(menu.menu) == PackedStringArray(["Árbol de habilidades", "Callar un nombre", "Salir"]), "con un Nombre sostenido, el menú del Ancla ofrece Callar un nombre")
+	await _press_action("ui_down")
+	await _press_action("ui_accept")
+	_check(_row_texts(menu.menu) == PackedStringArray(["Tomasa"]), "la lista ofrece los Nombres que se sostienen")
+	await _press_action("ui_accept")
+	_check(menu.menu.selected == 0 and _row_texts(menu.menu) == PackedStringArray(["No", "Callar"]), "la confirmación empieza en No")
+	_check("No se puede deshacer" in menu.stats_label.text, "avisa de que no se puede deshacer")
+	await _press_action("ui_accept")
+	_check(names.is_held(&"tomasa") and _player.ecos == 0, "aceptar el No por defecto no calla nada")
+	await _press_action("ui_cancel")
+	_check(menu.is_open() and _row_texts(menu.menu).size() == 3, "atrás vuelve al menú del Ancla sin callar")
+	await _press_action("ui_down")
+	await _press_action("ui_accept")
+	await _press_action("ui_accept")
+	await _press_action("ui_down")
+	await _press_action("ui_accept")
+	_check(_player.ecos == Names.SILENCE_REWARD and Names.SILENCE_REWARD == 50, "callar un Nombre da 50 Ecos")
+	_check(names.is_silenced(&"tomasa") and not names.is_held(&"tomasa") and names.is_read(&"tomasa"), "callado sale de sostenidos pero no de leídos")
+	_check("Ecos: 50" in menu.stats_label.text and "El Hito ya no dice «Tomasa». Tú sí lo sabes." in menu.stats_label.text, "el menú muestra los Ecos nuevos y el resultado")
+	_check(_row_texts(menu.menu) == PackedStringArray(["Árbol de habilidades", "Salir"]), "sin Nombres que sostener, la entrada desaparece")
+	_check(_saved().get("names", {}).get("silenced", []) == ["tomasa"] and _saved().get("player", {}).get("ecos") == 50, "callar guarda el Nombre y los Ecos")
+	# No se puede callar uno no leído ni volver a callar el mismo.
+	menu.silence_requested.emit(&"ossenna")
+	menu.silence_requested.emit(&"tomasa")
+	_check(_player.ecos == 50 and not names.is_read(&"ossenna"), "no se puede callar un Nombre no leído ni dos veces el mismo")
+	_check(not names.read_name(&"tomasa") and names.is_silenced(&"tomasa"), "un Nombre callado no vuelve a sostenerse al leerlo")
+	await _press_action("ui_cancel")
+	_check(not menu.is_open(), "se cierra el menú")
+	_check("Cinturón 0/5" in pause.names_text() and "Sostenidos: 0/30" in pause.names_text(), "el diario ya no cuenta al callado como sostenido")
+
+	# Guardado: ida y vuelta, partida antigua e ids desconocidos.
+	names.read_name(&"ossenna")
+	await _wait(3)
+	await _load_world(true)
+	_check(_level.names.is_silenced(&"tomasa") and _level.names.is_held(&"ossenna") and _level.names.read_count() == 2, "tras cargar siguen leídos y callados")
+	SaveSlot.new(TEST_SAVE).write({ player = {}, rooms = [], bosses = [], seen = {} })
+	await _load_world(true)
+	_check(_level.names.read_count() == 0, "una partida antigua sin la clave names carga sin Nombres")
+	SaveSlot.new(TEST_SAVE).write({ player = {}, names = { read = ["tomasa", "inventado", 3, "tomasa"], silenced = ["inventado", "ossenna"] } })
+	await _load_world(true)
+	_check(_level.names.is_held(&"tomasa") and _level.names.is_silenced(&"ossenna") and _level.names.read_count() == 2, "los ids desconocidos o de tipo equivocado se ignoran")
+	SaveSlot.new(TEST_SAVE).write({ player = {}, names = 5 })
+	await _load_world(true)
+	_check(_level.names.read_count() == 0, "una clave names con otro tipo se tolera")
 
 
 ## Quita los enemigos de una sala (para pruebas que no tratan de combatir).
