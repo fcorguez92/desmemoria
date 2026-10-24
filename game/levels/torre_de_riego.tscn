@@ -8,6 +8,8 @@
 script = ExtResource("1_room")
 title = "La Torre de Riego"
 has_sky = false
+note = "Torre de Riego. Vigía: Tomasa. Cerró la última compuerta y nadie más abrió la torre."
+note_name_id = &"tomasa"
 
 [node name="Tiles" type="TileMapLayer" parent="."]
 tile_set = ExtResource("3_tileset")

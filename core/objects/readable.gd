@@ -6,6 +6,11 @@ extends Area2D
 ## Contrato "lector": el objetivo implementa `read_text(text: String)`, que
 ## decide cómo se muestra (normalmente el HUD, un rato acorde a lo que hay que
 ## leer). No es un Checkpoint (no cambia el estado del juego, solo enseña texto).
+## Avisa con `read_by` cada vez que alguien lo lee, por si un objeto del juego
+## quiere reaccionar (p. ej. una inscripción que contiene un Nombre).
+
+## Alguien ha leído el texto.
+signal read_by(reader: Node)
 
 @export var target_group: StringName = &"player"
 @export var action_interact: StringName = &"interact"
@@ -27,6 +32,7 @@ func _physics_process(_delta: float) -> void:
 		return
 	for body in targets_in_range:
 		body.read_text(text)
+		read_by.emit(body)
 
 
 func _on_body_entered(body: Node) -> void:
