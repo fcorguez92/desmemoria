@@ -128,6 +128,10 @@ func _run() -> void:
 	await _test_galerias_bajas_has_the_rail_and_the_cycle()
 	await _test_moving_pieces_are_not_safe_ground()
 	await _test_cycle_flag_survives_reset_and_pairing_is_strict()
+	await _test_cinturon_alto_is_connected_and_named()
+	await _test_surco_ciego_niche_and_high_ledge()
+	await _test_campo_de_los_ferran_lever_opens_the_pen()
+	await _test_cruce_del_pan_plates_and_the_niche()
 	await _test_title_screen()
 	await _test_pause_returns_to_title()
 	await _test_menu_list_survives_leaving_the_tree()
@@ -1999,7 +2003,7 @@ func _test_world_is_made_of_connected_rooms() -> void:
 	print("\n[El mundo: varias salas conectadas, un solo jugador]")
 	await _load_world()
 	var rooms: Array = _level.get_node("Rooms").get_children()
-	_check(rooms.size() == 8, "hay ocho salas")
+	_check(rooms.size() == 11, "hay once salas")
 	var overlaps := false
 	for i in rooms.size():
 		_check(not rooms[i].title.is_empty(), "%s tiene nombre" % rooms[i].name)
@@ -2017,7 +2021,7 @@ func _test_world_is_made_of_connected_rooms() -> void:
 	for id in data.markers:
 		if String(id).begins_with("anchor_"):
 			anchors += 1
-	_check(anchors == 8, "las ocho Anclas están marcadas en el mapa (se ven al pasar cerca)")
+	_check(anchors == 9, "las nueve Anclas están marcadas en el mapa (se ven al pasar cerca)")
 	_check(_player.hud.message_label.text.is_empty(), "la sala de inicio no se anuncia")
 	var dash_pickup := 0
 	var jump_pickup := 0
@@ -3208,7 +3212,7 @@ func _test_ceiling_corner_correction() -> void:
 func _test_no_platform_has_a_cramped_ceiling() -> void:
 	print("\n[Las plataformas dejan hueco para saltar]")
 	var cramped := []
-	for file in ["ultimo_umbral", "terrazas_secas", "cisterna", "torre_de_riego", "galerias_bajas", "aljibe", "chimenea", "pasarela"]:
+	for file in ["ultimo_umbral", "terrazas_secas", "cisterna", "torre_de_riego", "galerias_bajas", "aljibe", "chimenea", "pasarela", "surco_ciego", "campo_de_los_ferran", "cruce_del_pan"]:
 		var rows := FileAccess.get_file_as_string("res://game/levels/%s.map" % file).split("\n", false)
 		for r in rows.size():
 			for c in rows[r].length():
@@ -3859,6 +3863,10 @@ func _replay_plan(plan: Dictionary, start: Vector2) -> bool:
 		if f >= 0:
 			direction = plan.d1 if (f < delay or f - delay < int(plan.k)) else plan.d2
 		var jump_held := f + 1 >= delay and f + 1 - delay < int(plan.hold)
+		if plan.has("dj"):
+			# Doble salto: se suelta el primero (tools/maniobras_puzle.js garantiza dj > delay + hold)
+			# y se vuelve a pulsar en el fotograma dj, mientras dure djHold.
+			jump_held = jump_held or (f + 1 >= int(plan.dj) and f + 1 - int(plan.dj) < int(plan.get("djHold", 40)))
 		var dash_next: bool = plan.dashAt != null and f + 1 == int(plan.dashAt)
 		if plan.dashAt != null and f == int(plan.dashAt) and int(plan.dashDir) != 0:
 			direction = int(plan.dashDir)
@@ -3887,8 +3895,9 @@ func _test_dash_puzzle_needs_dash() -> void:
 	print("\n[El puzle del dash: cada tramo se supera con la maniobra prevista y no sin dash]")
 	await _load_world()
 	var plans: Array = JSON.parse_string(FileAccess.get_file_as_string("res://tests/puzzle_plans.json"))
-	_check(plans.size() >= 9, "hay %d maniobras de referencia (la Chimenea y la Pasarela)" % plans.size())
+	_check(plans.size() >= 15, "hay %d maniobras de referencia (la Chimenea, la Pasarela, el Surco Ciego y el Cruce del Pan)" % plans.size())
 	_player.unlock_ability(&"dash")
+	_player.unlock_ability(&"double_jump")
 	var failures := []
 	for entry in plans:
 		var room: Node2D = _level.get_node("Rooms/" + entry.room)
@@ -4464,3 +4473,198 @@ func _test_cycle_flag_survives_reset_and_pairing_is_strict() -> void:
 	pairs = room.rail_pairs([[Vector2i(0, 0)]], [[Vector2i(0, 4)], [Vector2i(0, -4)]])
 	_check(pairs.size() == 1 and pairs[0][1][0] == Vector2i(0, 4), "a igual distancia gana el primero en orden de lectura (determinista)")
 	room.free()
+
+
+# --- El Cinturón alto (1): Surco Ciego, Campo de los Ferrán y Cruce del Pan ------
+
+## Los hijos de una sala que son de la clase `kind` (p. ej. Gate, Trigger).
+func _room_children_of(room_name: String, kind: Variant) -> Array:
+	var found := []
+	for child in _level.get_node("Rooms/" + room_name).get_children():
+		if is_instance_of(child, kind):
+			found.append(child)
+	return found
+
+
+## Camina a la derecha `frames` fotogramas desde `from`.
+func _walk_right_from(from: Vector2, frames: int) -> void:
+	_player.global_position = from
+	_player.velocity = Vector2.ZERO
+	await _wait(8)
+	Input.action_press(&"ui_right")
+	await _wait(frames)
+	Input.action_release(&"ui_right")
+	await _wait(4)
+
+
+func _test_cinturon_alto_is_connected_and_named() -> void:
+	print("\n[Cinturón alto: la cornisa de la Torre da al Surco Ciego, al Campo de los Ferrán y al Cruce del Pan]")
+	await _load_world()
+	_player.health.max_health = 99
+	_player.health.health = 99
+	var titles := {
+		"SurcoCiego": "El Surco Ciego",
+		"CampoDeLosFerran": "El Campo de los Ferrán",
+		"CruceDelPan": "El Cruce del Pan",
+	}
+	for room_name in titles:
+		var room: Node2D = _level.get_node("Rooms/" + room_name)
+		_check(room.title == titles[room_name] and room.region == &"cinturon" and not room.note.is_empty(), "%s tiene nombre, región del Cinturón y texto de entrada" % room_name)
+	await _walk_right_from(_standing_on("TorreDeRiego", 51, 7), 60)
+	_check(_level.current_room.name == "SurcoCiego" and _player.is_on_floor(), "de la cornisa del Ancla de la Torre se pasa caminando al Surco Ciego")
+	await _walk_right_from(_standing_on("SurcoCiego", 58, 31), 50)
+	_check(_level.current_room.name == "CampoDeLosFerran" and _player.is_on_floor(), "del Surco se pasa al Campo de los Ferrán")
+	await _walk_right_from(_standing_on("CampoDeLosFerran", 62, 31), 50)
+	_check(_level.current_room.name == "CruceDelPan" and _player.is_on_floor(), "del Campo se pasa al Cruce del Pan")
+	_check(_anchor_in("CruceDelPan") != null and _anchor_in("SurcoCiego") == null and _anchor_in("CampoDeLosFerran") == null, "el Ancla del tramo está en el Cruce del Pan")
+	# Vuelta: el Cruce no tiene más salida que la de entrada, y por ella se regresa.
+	Input.action_press(&"ui_left")
+	await _wait(150)
+	Input.action_release(&"ui_left")
+	_check(_level.current_room.name == "CampoDeLosFerran", "se puede volver por donde se entró")
+
+
+func _test_surco_ciego_niche_and_high_ledge() -> void:
+	print("\n[El Surco Ciego: nicho de muro frágil con una Bolsa y repisa alta que pide doble salto]")
+	await _load_world()
+	_player.health.max_health = 99
+	_player.health.health = 99
+	var pickups := {}
+	for pickup in get_nodes_in_group(&"collectible"):
+		pickups[String(pickup.id)] = pickup.kind
+	_check(pickups.get("surco_ciego.c13f29") == &"bag" and pickups.get("surco_ciego.c52f10") == &"item", "hay una Bolsa en el nicho y una Semilla gris (objeto) en la repisa")
+	var walls := _room_children_of("SurcoCiego", BreakableWall)
+	_check(walls.size() == 1 and walls[0].cells.size() == 6 and walls[0].flag_id == &"s:surco_ciego.nicho", "el nicho se cierra con un muro frágil de 6 celdas y marca permanente")
+	var wall: BreakableWall = walls[0]
+	_player.global_position = _standing_on("SurcoCiego", 17, 27)
+	_player.velocity = Vector2.ZERO
+	await _wait(10)
+	Input.action_press(&"ui_left")
+	await _wait(40)
+	Input.action_release(&"ui_left")
+	_check(_player.global_position.x > _cell("SurcoCiego", 16, 0).x - 8.0 and not wall.is_broken, "el muro cierra el paso al nicho")
+	for i in 3:
+		wall.take_hit(1, -1)
+		await _wait(2)
+	await _wait(40)
+	_check(wall.is_broken and _level.flags.has_flag(&"s:surco_ciego.nicho"), "tres golpes lo rompen y queda la marca")
+	var bags_before: int = _level.bag_count()
+	Input.action_press(&"ui_left")
+	await _wait(60)
+	Input.action_release(&"ui_left")
+	await _wait(4)
+	_check(_level.bag_count() == bags_before + 1, "la Bolsa del nicho se recoge")
+	# Repisa alta: desde el tablón, sin doble salto no se llega.
+	var ledge_y: float = _standing_on("SurcoCiego", 52, 11).y
+	var landed: bool = await _hop(_standing_on("SurcoCiego", 41, 24), 1, _cell("SurcoCiego", 48, 0).x)
+	_check(not (landed and absf(_player.global_position.y - ledge_y) < 6.0), "sin doble salto no se alcanza la repisa alta del Surco")
+	# Los surcos de pinchos devuelven al suelo seguro sin matar.
+	_player.global_position = _standing_on("SurcoCiego", 37, 31)
+	_player.velocity = Vector2.ZERO
+	await _wait(10)
+	var life: int = _player.health.health
+	_player.global_position = _cell("SurcoCiego", 40, 32)
+	_player.velocity = Vector2.ZERO
+	await _wait(40)
+	_check(_player.health.health == life - 1 and _player.health.health > 0 and _player.global_position.y < _cell("SurcoCiego", 40, 33).y, "caer en un surco cuesta 1 de vida y devuelve al suelo")
+
+
+func _test_campo_de_los_ferran_lever_opens_the_pen() -> void:
+	print("\n[El Campo de los Ferrán: la palanca de la repisa abre el cercado del espantapájaros (Nombre Eulalia)]")
+	await _load_world()
+	_player.health.max_health = 99
+	_player.health.health = 99
+	var field: Node2D = _level.get_node("Rooms/CampoDeLosFerran")
+	var spawners := _room_children_of("CampoDeLosFerran", EntitySpawner)
+	_check(spawners.size() == 3, "tres enemigos: dos cascarones y un coloso")
+	var gates := _room_children_of("CampoDeLosFerran", Gate)
+	var levers := _room_children_of("CampoDeLosFerran", Trigger)
+	_check(gates.size() == 1 and levers.size() == 1, "una compuerta y una palanca")
+	var gate: Gate = gates[0]
+	var lever: Trigger = levers[0]
+	_check(gate.cells.size() == 6 and gate.requires == [&"p:campo_de_los_ferran.cercado"] and lever.flag_id == &"p:campo_de_los_ferran.cercado", "se enlazan por la marca permanente p:campo_de_los_ferran.cercado")
+	var stone := _name_stone("CampoDeLosFerran", &"eulalia_ferran")
+	_check(stone != null and stone.text.begins_with("Lleva el delantal de Eulalia Ferrán."), "el espantapájaros lleva el Nombre de Eulalia Ferrán")
+	_check(stone.global_position.x > field.global_position.x + 53.0 * 16.0, "y está dentro del cercado")
+	_check(gate.closed, "el cercado empieza cerrado")
+	# Sin la palanca, la reja detiene el paso.
+	for spawner in spawners:
+		if is_instance_valid(spawner.instance):
+			spawner.instance.queue_free()
+	await _wait(2)
+	_player.global_position = _standing_on("CampoDeLosFerran", 49, 31)
+	_player.velocity = Vector2.ZERO
+	await _wait(10)
+	Input.action_press(&"ui_right")
+	await _wait(50)
+	Input.action_release(&"ui_right")
+	_check(_player.global_position.x < gate.global_position.x, "la reja cerrada no deja pasar")
+	# La repisa de la palanca se alcanza sin habilidades, subiendo por los tablones.
+	var steps := [[11, 27, 1, 15, 23], [18, 23, 1, 22, 19], [25, 19, 1, 29, 15], [32, 15, 1, 36, 11]]
+	for step in steps:
+		var landed: bool = await _hop(_standing_on("CampoDeLosFerran", step[0], step[1]), step[2], _cell("CampoDeLosFerran", step[3], 0).x)
+		_check(landed and absf(_player.global_position.y - _standing_on("CampoDeLosFerran", step[3], step[4]).y) < 4.0, "del tablón de la fila %d se sube a la fila %d" % [step[1], step[4]])
+	_player.global_position = lever.global_position
+	_player.velocity = Vector2.ZERO
+	await _wait(10)
+	await _press_action(&"interact")
+	await _wait(60)
+	_check(lever.active and not gate.closed and _level.flags.has_flag(&"p:campo_de_los_ferran.cercado"), "Z en la palanca abre el cercado para siempre")
+	_player.global_position = _standing_on("CampoDeLosFerran", 49, 31)
+	_player.velocity = Vector2.ZERO
+	await _wait(10)
+	Input.action_press(&"ui_right")
+	await _wait(50)
+	Input.action_release(&"ui_right")
+	_check(_player.global_position.x > gate.global_position.x + 16.0, "abierta, se entra al cercado")
+
+
+func _test_cruce_del_pan_plates_and_the_niche() -> void:
+	print("\n[El Cruce del Pan: tres placas con 6 s de retención abren el nicho de la Página; el nicho tiene salida]")
+	await _load_world()
+	_player.health.max_health = 99
+	_player.health.health = 99
+	var plates := _room_children_of("CruceDelPan", Trigger)
+	var gates := _room_children_of("CruceDelPan", Gate)
+	_check(plates.size() == 3 and gates.size() == 1, "tres placas y una compuerta")
+	var all_hold := true
+	for plate in plates:
+		all_hold = all_hold and plate.mode == Trigger.Mode.PLATE and is_equal_approx(plate.hold_time, 6.0)
+	_check(all_hold, "las tres son placas con hold_time de 6 s (piece_params)")
+	var gate: Gate = gates[0]
+	_check(gate.cells.size() == 6 and gate.requires.size() == 3 and gate.closed, "la compuerta de 6 celdas pide las tres marcas y empieza cerrada")
+	var pickups := {}
+	for pickup in get_nodes_in_group(&"collectible"):
+		pickups[String(pickup.id)] = pickup.kind
+	_check(pickups.get("cruce_del_pan.c20f30") == &"item" and pickups.get("cruce_del_pan.c50f09") == &"item", "el trompo de Telmo y la Página de Corvel son objetos")
+	# Una sola placa no basta; pisadas en orden y dentro de la ventana, sí.
+	_player.global_position = _standing_on("CruceDelPan", 24, 31)
+	_player.velocity = Vector2.ZERO
+	await _wait(8)
+	_check(gate.closed, "con una placa sola, cerrada")
+	_player.global_position = _standing_on("CruceDelPan", 31, 23)
+	_player.velocity = Vector2.ZERO
+	await _wait(8)
+	_player.global_position = _standing_on("CruceDelPan", 43, 10)
+	_player.velocity = Vector2.ZERO
+	await _wait(10)
+	_check(not gate.closed, "pisadas las tres dentro de la ventana, se abre")
+	# Fuera de las placas, a los 6 s se apagan y se cierra de nuevo.
+	_player.global_position = _standing_on("CruceDelPan", 20, 31)
+	_player.velocity = Vector2.ZERO
+	await _wait(60)
+	_check(not gate.closed, "se mantiene abierta durante la cuenta atrás")
+	await _wait(340)
+	_check(gate.closed, "pasados los 6 s se cierra y hay que repetirlo")
+	# Sin atasco: el suelo del nicho son tablones y se baja atravesándolos.
+	var rows := FileAccess.get_file_as_string("res://game/levels/cruce_del_pan.map").split("\n", false)
+	_check(rows[10].substr(48, 4) == "SSSS" and rows[11].substr(48, 4) == "...." and rows[12].substr(48, 4) == "....", "el suelo del nicho son tablones con vacío debajo")
+	_player.global_position = _standing_on("CruceDelPan", 50, 10)
+	_player.velocity = Vector2.ZERO
+	await _wait(10)
+	Input.action_press(&"ui_down")
+	Input.action_press(&"ui_accept")
+	await _wait(40)
+	Input.action_release(&"ui_down")
+	Input.action_release(&"ui_accept")
+	_check(_player.global_position.y > _standing_on("CruceDelPan", 50, 10).y + 48.0, "con la compuerta cerrada, desde el nicho se baja atravesando el tablón")
