@@ -122,6 +122,9 @@ const SPIKES_HALF_HEIGHT := 8.0
 
 ## Nombre de la sala: se anuncia al entrar por primera vez y sale en el mapa.
 @export var title: String = ""
+## Región del mundo a la que pertenece la sala (la misma que `region` en
+## tests/world_manifest.json); fija los Ecos de las Bolsas de Rastro de la sala.
+@export var region: StringName = &"cinturon"
 ## Si se ve el cielo con el fondo de colinas (false en salas bajo tierra).
 @export var has_sky: bool = true
 ## Texto de las inscripciones del marcador `i` (cada sala dice lo suyo; la `I`
@@ -199,6 +202,7 @@ func _ready() -> void:
 		var collectible := CollectibleScene.instantiate()
 		collectible.id = StringName(collectible_id(cells[i]))
 		collectible.kind = _collectible_kind(cells[i])
+		collectible.region = region
 		_place(collectible, tiles.markers["!"][i], COLLECTIBLE_HALF_HEIGHT)
 	_place_mechanics()
 

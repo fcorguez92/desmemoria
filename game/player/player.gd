@@ -47,6 +47,10 @@ const MIN_READING_SECONDS := 4.0
 const READING_CHARS_PER_SECOND := 15.0
 
 var ecos: int = 0
+## Fragmentos de vida recogidos (los cuenta el mundo y se los pasa con
+## `set_life_fragments`) y bonus de reliquias a la vida máxima (hueco del Trapo, hoy 0).
+var life_fragments: int = 0
+var life_bonus: int = 0
 ## Eco de la última muerte, si aún no se recuperó.
 var active_echo: Node = null
 
@@ -295,6 +299,16 @@ static func _vector_from(value: Variant) -> Variant:
 
 static func _int_from(value: Variant) -> int:
 	return int(value) if value is float or value is int else 0
+
+
+## Fija cuántos fragmentos de vida hay recogidos y recalcula la vida máxima. Con
+## `heal` también se cura del todo (al completar un grupo de 4, o al cargar partida).
+func set_life_fragments(count: int, heal: bool = false) -> void:
+	life_fragments = maxi(0, count)
+	_apply_skills()
+	if heal:
+		health.health = health.max_health
+		_update_hud()
 
 
 func add_ecos(amount: int) -> void:
@@ -571,7 +585,7 @@ func _on_parried(attacker: Node) -> void:
 func _apply_skills() -> void:
 	var old_health := health.max_health
 	var old_flasks := health.max_heal_charges
-	health.max_health = int(Skills.stat(&"vitalidad", skills.level(&"vitalidad")))
+	health.max_health = Stats.life_max(skills.level(&"vitalidad"), life_fragments, life_bonus)
 	health.max_heal_charges = int(Skills.stat(&"frascos", skills.level(&"frascos")))
 	health.heal_amount = int(Skills.stat(&"aliento", skills.level(&"aliento")))
 	health.heal_time = Stats.heal_time()

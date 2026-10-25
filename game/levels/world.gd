@@ -20,6 +20,8 @@ extends Node2D
 
 const PlayerScene := preload("res://game/player/player.tscn")
 const Names := preload("res://game/names.gd")
+const Stats := preload("res://game/player/stats.gd")
+const Economy := preload("res://game/economy.gd")
 ## Pantalla de inicio, a la que se vuelve desde la pausa. Por ruta y no con
 ## preload: ella también apunta a este mundo, y dos escenas no pueden
 ## precargarse la una a la otra.
@@ -48,9 +50,8 @@ const MAP_PLANK_COLOR := Color(0.54, 0.33, 0.13)
 const PLANK_ATLAS := Vector2i(4, 0)
 const MAP_ANCHOR_COLOR := Color(0.3, 0.62, 0.95)
 const MAP_ECHO_COLOR := Color(0.75, 0.55, 0.95)
-## Cuántos fragmentos de vida hacen falta para una vida máxima más (la fórmula que
-## la aplica es K10 y aún no existe: de momento solo se cuentan y se notifican).
-const FRAGMENTS_PER_LIFE := 4
+## Cuántos fragmentos de vida hacen falta para una vida máxima más (ver Stats.life_max).
+const FRAGMENTS_PER_LIFE := Stats.FRAGMENTS_PER_LIFE
 
 ## Dónde se guarda la partida. Las pruebas usan otro archivo para no tocar la
 ## partida de quien juega.
@@ -304,6 +305,8 @@ func _apply_save(saved: Dictionary) -> void:
 			for id in ids:
 				if id is String and id in real_ids:
 					collected.set_flag(StringName(id), "fragment" if key == "fragments" else "bag")
+	# La vida máxima sale de los fragmentos recogidos (y se carga con vida completa).
+	player.set_life_fragments(fragment_count(), true)
 	# Los recuerdos de habilidades ya conseguidas no vuelven a aparecer.
 	for room in _rooms:
 		for child in room.get_children():
@@ -365,10 +368,20 @@ func _on_collectible_collected(pickup: Node) -> void:
 				return
 			var count := fragment_count()
 			message = "Fragmento de vida %d/%d" % [(count - 1) % FRAGMENTS_PER_LIFE + 1, FRAGMENTS_PER_LIFE]
+			# Al completar un grupo de 4 sube la vida máxima y se cura del todo.
+			if count % FRAGMENTS_PER_LIFE == 0:
+				var before: int = player.health.max_health
+				player.set_life_fragments(count, true)
+				if player.health.max_health > before:
+					message += ": vida máxima %d" % player.health.max_health
+			else:
+				player.set_life_fragments(count)
 		&"bag":
 			if not collected.set_flag(pickup.id, "bag"):
 				return
-			message = "Bolsa de Rastro"
+			var reward := Economy.bag_ecos(pickup.region)
+			player.add_ecos(reward)
+			message = "Bolsa de Rastro: %d Ecos" % reward
 		_:
 			if not flags.set_flag(StringName("i:" + pickup.id)):
 				return

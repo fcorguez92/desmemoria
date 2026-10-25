@@ -14,6 +14,7 @@ extends SceneTree
 
 const Stats := preload("res://game/player/stats.gd")
 const Skills := preload("res://game/player/skills.gd")
+const Economy := preload("res://game/economy.gd")
 const LEVEL := "res://game/levels/test_level.tscn"
 const WORLD := "res://game/levels/world.tscn"
 ## Partida de las pruebas: nunca la de quien juega.
@@ -105,6 +106,8 @@ func _run() -> void:
 	await _test_loading_restores_progress()
 	await _test_flag_store()
 	await _test_collectibles_are_saved_once()
+	await _test_life_fragments_and_bags()
+	await _test_ecos_budget()
 	await _test_names_registry()
 	await _test_gate_opens_with_marks()
 	await _test_gate_never_closes_on_someone()
@@ -2429,6 +2432,132 @@ func _test_collectibles_are_saved_once() -> void:
 	SaveSlot.new(TEST_SAVE).write({ player = {}, flags = 5, fragments = ["cisterna.c37f05", "cisterna.c37f05", "sala.inventada", 3], bags = "x" })
 	await _load_world(true)
 	_check(_level.fragment_count() == 1 and _level.bag_count() == 0 and _level.flags.count() == 0, "claves con tipos equivocados, ids repetidos o ids que no existen en el mundo se toleran (solo cuenta el real)")
+
+
+# --- Vida máxima por fragmentos (K10) y Bolsas de Rastro (K12) ----------------
+
+func _test_life_fragments_and_bags() -> void:
+	print("\n[Vida máxima: 5 + Vitalidad + fragmentos/4 + hueco de reliquias, con tope 13]")
+	_check(Stats.life_max(0, 0) == 5 and Stats.life_max(0, 3) == 5, "3 fragmentos = vida base")
+	_check(Stats.life_max(0, 4) == 6 and Stats.life_max(0, 7) == 6 and Stats.life_max(0, 8) == 7, "4 fragmentos = +1, 7 siguen en +1, 8 = +2")
+	_check(Stats.life_max(0, 12) == 8 and Stats.life_max(4, 12) == 12, "12 fragmentos = +3; con Vitalidad IV, 12")
+	_check(Stats.life_max(4, 12, 1) == 13 and Stats.life_max(4, 12, 5) == 13 and Stats.life_max(4, 99, 9) == 13, "con todo comprado y el Trapo el tope 13 se respeta")
+	_check(Stats.life_max(0, 0) == Skills.stat(&"vitalidad", 0), "la fórmula sin fragmentos coincide con el árbol")
+
+	await _load_world()
+	var scene: PackedScene = load("res://game/pickups/collectible.tscn")
+	var health: HealthComponent = _player.health
+	for i in 3:
+		var fragment: Node = scene.instantiate()
+		fragment.id = StringName("test.f%d" % i)
+		fragment.kind = &"fragment"
+		_level.add_child(fragment)
+		_level._on_collectible_collected(fragment)
+		fragment.free()
+	_check(_level.fragment_count() == 3 and health.max_health == 5, "en el mundo, 3 fragmentos no suben la vida máxima")
+	health.health = 2
+	var fourth: Node = scene.instantiate()
+	fourth.id = &"test.f3"
+	fourth.kind = &"fragment"
+	_level.add_child(fourth)
+	_level._on_collectible_collected(fourth)
+	fourth.free()
+	_check(health.max_health == 6 and health.health == 6, "el 4.º sube la vida máxima en 1 y cura del todo")
+	await _wait(2)
+	var data := _saved()
+	_check(data.get("fragments", []).size() == 4, "los 4 fragmentos se guardan")
+	await _load_world(true)
+	_check(_level.fragment_count() == 0 or _player.health.max_health == Stats.life_max(0, _level.fragment_count()), "al cargar, la vida máxima sale de los fragmentos guardados")
+	_player.set_life_fragments(8, true)
+	_check(_player.health.max_health == 7 and _player.health.health == 7, "set_life_fragments(8) deja 7 de vida, llena")
+	_player.life_bonus = 1
+	_player.set_life_fragments(8)
+	_check(_player.health.max_health == 8, "el hueco de reliquias (Trapo) suma a la fórmula")
+	_player.life_bonus = 0
+	_player.set_life_fragments(0)
+
+	print("\n[Bolsas de Rastro: dan Ecos según la región, una sola vez]")
+	await _load_world()
+	var bag: Node = scene.instantiate()
+	bag.id = &"test.bolsa1"
+	bag.kind = &"bag"
+	bag.region = &"umbral"
+	_level.add_child(bag)
+	var before: int = _player.ecos
+	_level._on_collectible_collected(bag)
+	_check(_player.ecos == before + 12 and _level.bag_count() == 1, "una Bolsa del Umbral da 12 Ecos y cuenta")
+	_level._on_collectible_collected(bag)
+	_check(_player.ecos == before + 12 and _level.bag_count() == 1, "el mismo id no da Ecos dos veces")
+	bag.id = &"test.bolsa2"
+	bag.region = &"herida"
+	_level._on_collectible_collected(bag)
+	_check(_player.ecos == before + 12 + 30, "una Bolsa de La Herida da 30")
+	bag.free()
+	var in_range := true
+	for region in Economy.BAG_ECOS_BY_REGION:
+		var amount: int = Economy.bag_ecos(region)
+		if amount < Economy.MIN_BAG_ECOS or amount > Economy.MAX_BAG_ECOS:
+			in_range = false
+	_check(in_range and Economy.bag_ecos(&"inventada") == 0, "todas las regiones dan entre 12 y 30 Ecos; una región inventada, 0")
+
+
+# --- Presupuesto de Ecos (K12) ------------------------------------------------
+
+## Suma los Ecos que da el mundo (enemigos, jefes y Bolsas) y los compara con lo que
+## cuesta el camino principal. Con pocas salas NO falla por falta de contenido: solo
+## informa. Sí falla por datos incoherentes (recompensas no positivas, Bolsas fuera de
+## 12-30, una sala cuya región no coincide con la del manifiesto, regiones desconocidas)
+## y, cuando el manifiesto ya tiene las seis regiones, por salirse del 90-110 %.
+func _test_ecos_budget() -> void:
+	print("\n[Presupuesto de Ecos: enemigos + jefes + Bolsas frente al camino principal]")
+	await _load_world()
+	var manifest: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://tests/world_manifest.json"))
+	_check(manifest is Dictionary and manifest.has("salas"), "el manifiesto del mundo se lee")
+	var coherent := true
+	var regions := {}
+	for entry in manifest.get("salas", []):
+		regions[StringName(entry.region)] = true
+		if not Economy.BAG_ECOS_BY_REGION.has(StringName(entry.region)):
+			coherent = false
+		var room: Node = _level.get_node_or_null("Rooms/" + String(entry.id).to_pascal_case())
+		if room != null and room.region != StringName(entry.region):
+			coherent = false
+			print("      región distinta en ", entry.id, ": escena ", room.region, ", manifiesto ", entry.region)
+	_check(coherent, "las regiones de las salas coinciden con el manifiesto y todas tienen precio de Bolsa")
+	var enemies := 0
+	var enemy_ecos := 0
+	var boss_ecos := 0
+	var positive := true
+	for node in get_nodes_in_group("enemy"):
+		var reward: int = node.ecos_reward
+		if reward <= 0:
+			positive = false
+		if node.get_script().resource_path.begins_with("res://game/boss/"):
+			boss_ecos += reward
+		else:
+			enemies += 1
+			enemy_ecos += reward
+	var bags := 0
+	var bag_ecos := 0
+	var bags_ok := true
+	for pickup in get_nodes_in_group(&"collectible"):
+		if pickup.kind == &"bag":
+			bags += 1
+			var amount: int = Economy.bag_ecos(pickup.region)
+			bag_ecos += amount
+			if amount < Economy.MIN_BAG_ECOS or amount > Economy.MAX_BAG_ECOS:
+				bags_ok = false
+	_check(positive, "todo enemigo y jefe da al menos 1 Eco")
+	_check(bags_ok, "toda Bolsa del mundo da entre 12 y 30 Ecos")
+	var gross := int(enemy_ecos * Economy.ROUNDS_FACTOR) + boss_ecos + bag_ecos
+	var low := int(Economy.MAIN_PATH_SINKS * Economy.BUDGET_MIN_RATIO)
+	var high := int(Economy.MAIN_PATH_SINKS * Economy.BUDGET_MAX_RATIO)
+	print("      %d enemigos (%d Ecos), jefes %d, %d Bolsas (%d): bruto %d de %d-%d (%d %% del camino)" % [
+		enemies, enemy_ecos, boss_ecos, bags, bag_ecos, gross, low, high, roundi(100.0 * gross / Economy.MAIN_PATH_SINKS)])
+	if regions.size() >= Economy.BAG_ECOS_BY_REGION.size():
+		_check(gross >= low and gross <= high, "el mundo completo da entre el 90 y el 110 % del coste del camino principal")
+	else:
+		_check(gross <= high, "(informativo) con %d de %d regiones, lo que hay no pasa del 110 %% del coste" % [regions.size(), Economy.BAG_ECOS_BY_REGION.size()])
 
 
 # --- Precios y grafo del árbol (K11) -----------------------------------------
