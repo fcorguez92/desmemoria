@@ -122,7 +122,13 @@ func _update_header() -> void:
 			lines.append("¿Qué nombre quieres callar?")
 		Mode.CONFIRM_SILENCE:
 			lines.append("«%s»" % Names.info(_chosen_name).title)
-			lines.append("El Hito dejará de decirlo. No se puede deshacer.")
+			lines.append("Es para siempre.")
+			var registry := Names.find(self)
+			if registry != null:
+				var held: int = registry.held_count()
+				lines.append("Sostenidos: %d → %d (hacen falta %d)" % [held, held - 1, Names.SHARE_NEEDED])
+				if held - 1 < Names.SHARE_NEEDED:
+					lines.append("Con esto ya no podrías llegar a %d." % Names.SHARE_NEEDED)
 	stats_label.text = "\n".join(lines)
 
 
@@ -167,7 +173,11 @@ func _on_chosen(index: int) -> void:
 				return
 			var title: String = Names.info(_chosen_name).title
 			silence_requested.emit(_chosen_name)
-			_notice = "El Hito ya no dice «%s». Tú sí lo sabes." % title
+			var registry := Names.find(self)
+			if registry != null and registry.is_silenced(_chosen_name):
+				_notice = "El Hito ya no dice «%s». Tú sí lo sabes." % title
+			else:
+				_notice = ""
 			_show_main()
 
 

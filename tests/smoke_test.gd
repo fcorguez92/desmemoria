@@ -3607,7 +3607,7 @@ func _test_names_registry() -> void:
 	_check(_row_texts(menu.menu) == PackedStringArray(["Tomasa"]), "la lista ofrece los Nombres que se sostienen")
 	await _press_action("ui_accept")
 	_check(menu.menu.selected == 0 and _row_texts(menu.menu) == PackedStringArray(["No", "Callar"]), "la confirmación empieza en No")
-	_check("No se puede deshacer" in menu.stats_label.text, "avisa de que no se puede deshacer")
+	_check("Es para siempre." in menu.stats_label.text and "Sostenidos: 1 → 0 (hacen falta 20)" in menu.stats_label.text and "ya no podrías llegar a 20" in menu.stats_label.text, "avisa de que es para siempre, con el contador y el aviso de los 20")
 	await _press_action("ui_accept")
 	_check(names.is_held(&"tomasa") and _player.ecos == 0, "aceptar el No por defecto no calla nada")
 	await _press_action("ui_cancel")

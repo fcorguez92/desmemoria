@@ -18,6 +18,8 @@ const GROUP := &"names"
 ## Ecos que paga el Paño por cada Nombre callado (el único número del sistema, ver
 ## docs/nucleo-jugable.md).
 const SILENCE_REWARD := 50
+## Nombres sostenidos que hacen falta para el final Compartir.
+const SHARE_NEEDED := 20
 
 const STATE_READ := "read"
 const STATE_SILENCED := "silenced"
