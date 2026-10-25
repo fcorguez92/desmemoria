@@ -41,6 +41,7 @@ const SLIDE_PROBE_DEPTH := 100.0
 const FIRM_GROUND_HALF_WIDTH := 9.0
 ## Para textos que hay que leer (inscripciones): tiempo mínimo y por carácter,
 ## a un ritmo de lectura tranquilo (unos 15 caracteres por segundo).
+const POGO_HEIGHT := 126.0  ## Altura (px) del rebote al golpear hacia abajo algo rebotable.
 const MIN_READING_SECONDS := 4.0
 const READING_CHARS_PER_SECOND := 15.0
 
@@ -108,9 +109,8 @@ func _physics_process(delta: float) -> void:
 	# Con la guardia alzada no se puede atacar.
 	if health.is_healing():
 		velocity.x = 0.0
-	if Input.is_action_just_pressed("attack") and not parry.is_active and not health.is_healing() and melee.try_attack(self, motor.facing):
-		attack_visual.swing()
-		Sfx.play(&"swing", null, -9.0)
+	if Input.is_action_just_pressed("attack") and not parry.is_active and not health.is_healing():
+		_attack()
 	if Input.is_action_just_pressed("parry") and not health.is_healing() and parry.try_start():
 		animator.play_action("parry")
 	if Input.is_action_just_pressed("heal"):
@@ -135,6 +135,22 @@ func _physics_process(delta: float) -> void:
 
 	if respawn.is_out_of_bounds(self):
 		die()
+
+
+## Ataque: arriba con Arriba pulsado; abajo con Abajo pulsado en el aire (en el
+## suelo, Abajo + ataque sigue siendo el ataque de lado); si no, de lado.
+func _attack() -> void:
+	var direction := MeleeAttackComponent.Direction.SIDE
+	var animation := ""
+	if Input.is_action_pressed("ui_up"):
+		direction = MeleeAttackComponent.Direction.UP
+		animation = "attack_up"
+	elif Input.is_action_pressed("ui_down") and not is_on_floor():
+		direction = MeleeAttackComponent.Direction.DOWN
+		animation = "attack_down"
+	if melee.try_attack(self, motor.facing, direction):
+		attack_visual.swing(animation)
+		Sfx.play(&"swing", null, -9.0)
 
 
 func _on_heal_finished() -> void:
@@ -507,6 +523,10 @@ func _on_damaged(_amount: int) -> void:
 
 ## Feedback de un golpe propio que alcanza algo: chispazo y un temblor leve.
 func _on_hit_landed(body: Node) -> void:
+	# Pogo: un golpe hacia abajo a algo rebotable impulsa hacia arriba. Solo
+	# cambia la velocidad vertical: el dash y el doble salto no se recargan.
+	if melee.last_direction == MeleeAttackComponent.Direction.DOWN and body.is_in_group(&"pogoable"):
+		velocity.y = -sqrt(2.0 * motor.gravity * POGO_HEIGHT)
 	if body.is_in_group("enemy"):
 		Sfx.play(&"hit_enemy", (body as Node2D).global_position, -6.0)
 	HitSpark.spawn(get_parent(), (body as Node2D).global_position)

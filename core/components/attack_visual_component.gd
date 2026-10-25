@@ -44,9 +44,10 @@ func strike() -> void:
 	_flash_slash()
 
 
-## Ataque sin aviso: golpea al instante.
-func swing() -> void:
-	animator.play_action(swing_animation)
+## Ataque sin aviso: golpea al instante. `animation` permite otra variante (p. ej.
+## el golpe hacia arriba); vacío = `swing_animation`.
+func swing(animation: String = "") -> void:
+	animator.play_action(animation if animation != "" else swing_animation)
 	_flash_slash()
 
 

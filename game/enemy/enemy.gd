@@ -67,6 +67,7 @@ var _was_chasing: bool = false
 
 func _ready() -> void:
 	add_to_group("enemy")
+	add_to_group(&"pogoable")
 	health.damaged.connect(_on_damaged)
 	health.died.connect(_on_died)
 	ai.facing_changed.connect(_on_facing_changed)
