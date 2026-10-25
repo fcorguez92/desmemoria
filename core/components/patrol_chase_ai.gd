@@ -8,8 +8,12 @@ extends Node
 ## cómo golpear (normalmente con un MeleeAttackComponent).
 ##
 ## Estados: PATROL -> CHASE -> WINDUP (aviso) -> RECOVER (recuperación) -> ...
+##
+## Con `starts_dormant` empieza en DORMANT: inmóvil, fingiendo que no está, hasta que
+## el objetivo entra en `wake_radius` o le golpean. Entonces pasa a WAKING (se
+## levanta `wake_time` segundos, sin atacar) y de ahí a CHASE.
 
-enum State { PATROL, CHASE, WINDUP, RECOVER }
+enum State { PATROL, CHASE, WINDUP, RECOVER, DORMANT, WAKING }
 
 ## Cambia la dirección a la que mira (-1 o 1).
 signal facing_changed(facing: int)
@@ -19,6 +23,8 @@ signal attack_started
 signal attack_landed
 ## Se cancela el aviso porque el objetivo ha salido del territorio (no hay golpe).
 signal attack_cancelled
+## Empieza a despertar (DORMANT -> WAKING): el dueño puede mostrar que se levanta.
+signal woke_up
 
 @export var target_group: StringName = &"player"
 @export var patrol_speed: float = 60.0
@@ -45,6 +51,14 @@ signal attack_cancelled
 ## Distancia horizontal del sondeo de bordes al centro del cuerpo.
 @export var ledge_probe_offset: float = 22.0
 
+@export_group("Dormido")
+## Si es true, empieza dormido (DORMANT) en vez de patrullando.
+@export var starts_dormant: bool = false
+## Distancia (en 2D, de centro a centro) a la que el objetivo lo despierta.
+@export var wake_radius: float = 100.0
+## Segundos que tarda en levantarse; durante ellos no ataca ni avanza.
+@export var wake_time: float = 1.0
+
 var state: State = State.PATROL
 var facing: int = 1
 
@@ -56,6 +70,8 @@ var _target: Node2D
 
 func _ready() -> void:
 	_home_x = (get_parent() as Node2D).global_position.x
+	if starts_dormant:
+		state = State.DORMANT
 
 
 func step(body: CharacterBody2D, delta: float) -> void:
@@ -103,10 +119,46 @@ func step(body: CharacterBody2D, delta: float) -> void:
 			body.velocity.x = 0.0
 			if _timer <= 0.0:
 				state = State.CHASE if in_sight and absf(dx) <= detect_range else State.PATROL
+		State.DORMANT:
+			body.velocity.x = 0.0
+			if target != null and body.global_position.distance_to(target.global_position) <= wake_radius:
+				wake(toward)
+		State.WAKING:
+			body.velocity.x = 0.0
+			if _timer <= 0.0:
+				state = State.CHASE
+
+
+## Despierta a un enemigo dormido: empieza a levantarse (`wake_time` s) mirando hacia
+## `facing_to` (-1 o 1; 0 = como estaba). No hace nada si no estaba dormido.
+func wake(facing_to: int = 0) -> void:
+	if state != State.DORMANT:
+		return
+	if facing_to != 0:
+		_set_facing(facing_to)
+	_timer = wake_time
+	state = State.WAKING
+	woke_up.emit()
+
+
+## ¿Está dormido (fingiendo, inmóvil)?
+func is_dormant() -> bool:
+	return state == State.DORMANT
+
+
+## ¿Está persiguiendo? (Para que el dueño gruña al empezar a perseguir.)
+func is_chasing() -> bool:
+	return state == State.CHASE
 
 
 ## Cancela el ataque en curso y deja al enemigo aturdido `stagger_time` segundos.
+## Un golpe a un enemigo dormido lo despierta (se levanta en vez de quedar aturdido).
 func interrupt(stagger_time: float = 0.3) -> void:
+	if state == State.DORMANT:
+		wake()
+		return
+	if state == State.WAKING:
+		return
 	_timer = stagger_time
 	state = State.RECOVER
 

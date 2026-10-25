@@ -132,6 +132,7 @@ func _run() -> void:
 	await _test_surco_ciego_niche_and_high_ledge()
 	await _test_campo_de_los_ferran_lever_opens_the_pen()
 	await _test_cruce_del_pan_plates_and_the_niche()
+	await _test_dormant_ai_and_espantapajaros()
 	await _test_title_screen()
 	await _test_pause_returns_to_title()
 	await _test_menu_list_survives_leaving_the_tree()
@@ -1760,7 +1761,7 @@ func _test_sound_effects() -> void:
 
 	# Cada enemigo tiene su voz completa, su golpe y su paso.
 	var incomplete := []
-	for file in ["enemy", "enemy_lancero", "enemy_arrojador", "enemy_coloso", "enemy_acechador"]:
+	for file in ["enemy", "enemy_lancero", "enemy_arrojador", "enemy_coloso", "enemy_acechador", "enemy_espantapajaros"]:
 		var enemy: Node = load("res://game/enemy/%s.tscn" % file).instantiate()
 		for event in ["alert", "attack", "hurt", "die"]:
 			if not Sfx.has(StringName("%s_%s" % [enemy.voice, event])):
@@ -4675,3 +4676,72 @@ func _test_cruce_del_pan_plates_and_the_niche() -> void:
 	Input.action_release(&"ui_down")
 	Input.action_release(&"ui_accept")
 	_check(_player.global_position.y > _standing_on("CruceDelPan", 50, 10).y + 48.0, "con la compuerta cerrada, desde el nicho se baja atravesando el tablón")
+
+
+# --- Piezas de enemigos 1: DORMANT (K30), vuelo (K28), aviso de zona (K29) -----
+
+func _test_dormant_ai_and_espantapajaros() -> void:
+	print("\n[DORMANT (K30) y el Espantapájaros: inmóvil hasta que pasas a 100 px, o hasta que lo golpean]")
+	await _load_world()
+	_player.health.max_health = 99
+	_player.health.health = 99
+	var scarecrow := await _spawn_enemy_next_to_player("res://game/enemy/enemy_espantapajaros.tscn", 90.0)
+	scarecrow.global_position.x = 190.0
+	scarecrow.ai._home_x = 190.0
+	_player.global_position = Vector2(60.0, 296.0)
+	var woke := [0]
+	scarecrow.ai.woke_up.connect(func() -> void: woke[0] += 1)
+	var x0: float = scarecrow.global_position.x
+	await _wait(60)
+	_check(scarecrow.ai.state == PatrolChaseAI.State.DORMANT and absf(scarecrow.global_position.x - x0) < 0.5 and woke[0] == 0, "lejos, el espantapájaros sigue dormido e inmóvil (no patrulla)")
+	_check(scarecrow.animator.current == "dormant", "dormido usa su pose colgado del palo")
+	_check(scarecrow.health.max_health == 4 and scarecrow.ecos_reward == 3 and scarecrow.parryable, "4 de vida, 3 Ecos y golpe que se puede parar")
+	_check(scarecrow.ai.windup_time >= 0.55 and scarecrow.ai.wake_radius == 100.0, "avisa el golpe de brazo más de medio segundo y despierta a 100 px")
+	# A 130 px (fuera de su radio) sigue dormido; a 90 px despierta.
+	_player.global_position = Vector2(x0 - 130.0, 296.0)  # 130 px
+	await _wait(10)
+	_check(scarecrow.ai.state == PatrolChaseAI.State.DORMANT, "a 130 px no despierta")
+	var hp: int = _player.health.health
+	_player.global_position = Vector2(x0 - 90.0, 296.0)
+	await _wait(6)
+	_check(scarecrow.ai.state == PatrolChaseAI.State.WAKING and woke[0] == 1, "a 90 px despierta (señal woke_up una vez) y se levanta")
+	_check(scarecrow.animator.current == "wake", "mientras se levanta usa su animación de levantarse")
+	await _wait(40)
+	_check(_player.health.health == hp and absf(scarecrow.global_position.x - x0) < 1.0, "levantándose no ataca ni avanza: es la ventana para rodearlo")
+	await _wait(60)
+	_check(scarecrow.ai.state != PatrolChaseAI.State.WAKING and scarecrow.ai.state != PatrolChaseAI.State.DORMANT, "terminado el tiempo de levantarse, persigue")
+	await _wait(200)
+	_check(_player.health.health < hp, "y su golpe de brazo acaba haciendo daño")
+	# Despierto no vuelve a dormirse ni a emitir woke_up.
+	_check(woke[0] == 1, "no despierta dos veces")
+
+	# Un golpe lo despierta aunque el jugador esté lejos.
+	await _load_world()
+	scarecrow = await _spawn_enemy_next_to_player("res://game/enemy/enemy_espantapajaros.tscn", 300.0)
+	await _wait(5)
+	scarecrow.take_hit(1, -1)
+	_check(scarecrow.ai.state == PatrolChaseAI.State.WAKING and scarecrow.health.health == 3, "un golpe lo despierta y le quita vida")
+	var ecos: int = _player.ecos
+	for i in 3:
+		scarecrow.take_hit(1, -1)
+	await _wait(2)
+	_check(not is_instance_valid(scarecrow) and _player.ecos == ecos + 3, "muerto, paga sus 3 Ecos")
+
+	# Fuera de su sala no despierta: la sala de al lado no cuenta.
+	await _load_world()
+	var field: Node2D = _level.get_node("Rooms/SurcoCiego")
+	var spawners := _room_children_of("SurcoCiego", EntitySpawner)
+	_check(spawners.size() == 1 and is_instance_valid(spawners[0].instance), "el Surco Ciego tiene un espantapájaros de ejemplo")
+	var placed: Node2D = spawners[0].instance
+	var col := int((placed.global_position.x - field.global_position.x) / 16.0)
+	_check(placed.ai.state == PatrolChaseAI.State.DORMANT and col >= 10 and col <= 53, "empieza dormido y a 10 o más baldosas de las puertas (columna %d)" % col)
+	_player.global_position = _standing_on("TorreDeRiego", 51, 7)
+	_player.velocity = Vector2.ZERO
+	await _wait(30)
+	_check(placed.ai.state == PatrolChaseAI.State.DORMANT, "con el jugador en otra sala no despierta")
+	# Al descansar vuelve a su sitio y a dormir.
+	placed.ai.wake()
+	var spawner: EntitySpawner = spawners[0]
+	spawner.reset()
+	await _wait(3)
+	_check(spawner.instance != placed and spawner.instance.ai.state == PatrolChaseAI.State.DORMANT, "al reiniciar la sala reaparece dormido")

@@ -74,6 +74,7 @@ func _ready() -> void:
 	ai.attack_started.connect(_on_attack_started)
 	ai.attack_landed.connect(_on_attack_landed)
 	ai.attack_cancelled.connect(_on_attack_cancelled)
+	ai.woke_up.connect(_on_woke_up)
 	melee.hit_landed.connect(_on_hit_landed)
 	_limit_to_room()
 	animator.frame_changed.connect(_on_animation_frame)
@@ -102,7 +103,10 @@ func _physics_process(delta: float) -> void:
 	move_and_slide()
 	if _lunge_timer > 0.0 and is_on_wall():
 		_lunge_timer = 0.0
-	animator.play("walk" if absf(velocity.x) > 5.0 else "idle")
+	if ai.is_dormant():
+		animator.play("dormant")
+	else:
+		animator.play("walk" if absf(velocity.x) > 5.0 else "idle")
 	_play_alert_sound()
 
 
@@ -179,6 +183,14 @@ func _on_attack_cancelled() -> void:
 	attack_visual.reset()
 
 
+## El enemigo dormido (un espantapájaros) despierta y se levanta: pose de levantarse
+## durante `wake_time` y un gruñido. Sin daño mientras tanto: es la ventana para rodearlo.
+func _on_woke_up() -> void:
+	_speak(&"alert", -8.0)
+	_alert_cooldown = ALERT_COOLDOWN
+	animator.play_action("wake", false, ai.wake_time)
+
+
 func _on_attack_started() -> void:
 	_speak(&"attack", -7.0)
 	visual.modulate = TELEGRAPH_COLOR if parryable else TELEGRAPH_RED
@@ -201,7 +213,7 @@ func _on_attack_landed() -> void:
 
 ## Al empezar a perseguir al jugador gruñe, y no repite hasta pasado un rato.
 func _play_alert_sound() -> void:
-	var chasing := ai.state == PatrolChaseAI.State.CHASE
+	var chasing: bool = ai.is_chasing()
 	if chasing and not _was_chasing and _alert_cooldown <= 0.0:
 		_speak(&"alert", -8.0)
 		_alert_cooldown = ALERT_COOLDOWN
