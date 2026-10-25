@@ -17,6 +17,7 @@ const AnchorMenu := preload("res://game/ui/anchor_menu.gd")
 const PauseMenu := preload("res://game/ui/pause_menu.gd")
 const Skills := preload("res://game/player/skills.gd")
 const Stats := preload("res://game/player/stats.gd")
+const Names := preload("res://game/names.gd")
 const GameAudio := preload("res://game/audio/game_audio.gd")
 const ABILITY_NAMES := {
 	&"dash": "Dash",
@@ -92,6 +93,7 @@ func _ready() -> void:
 		skills.define(skill.id, PackedInt32Array(skill.costs), skill.requires)
 	skills.changed.connect(_apply_skills)
 	anchor_menu.skill_requested.connect(_on_skill_requested)
+	anchor_menu.silence_requested.connect(_on_silence_requested)
 	pause_menu.title_requested.connect(title_requested.emit)
 	_apply_skills()
 
@@ -333,6 +335,18 @@ func try_buy_skill(id: StringName) -> bool:
 	skills.advance(id)
 	_update_hud()
 	return true
+
+
+## El Paño: calla un Nombre que se sostiene y paga por ello (ver game/names.gd). Si
+## no se puede (no leído, ya callado), no pasa nada.
+func _on_silence_requested(id: StringName) -> void:
+	var registry := Names.find(self)
+	if registry == null or not registry.silence(id):
+		return
+	Sfx.play(&"skill_buy", null, -7.0)
+	add_ecos(Names.SILENCE_REWARD)
+	save_requested.emit()
+	_refresh_anchor_menu()
 
 
 func _on_skill_requested(id: StringName) -> void:
