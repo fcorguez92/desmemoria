@@ -50,6 +50,7 @@ están cambiadas respecto a Xbox):
 
 - Reinicio de enemigos por zonas: hoy al morir o descansar reaparecen todos los
   del mundo; cuando el mundo crezca, limitarlo a la región del Ancla.
+- Golpes no parables: `Enemy.parryable = false` hace que el golpe atraviese la guardia y el aviso sea rojo (`TELEGRAPH_RED`) en vez de amarillo. Falta la marca de suelo y usarlo en algún ataque real.
 - Jugar el jefe y el puzle a mano y ajustar (ver la lista de "cosas a vigilar" de `jefes.md`).
 - Colocar el salto de pared en el mundo (hoy solo está en el banco de pruebas) y
   seguir ampliando el Cinturón Yermo desde la Torre de Riego.
