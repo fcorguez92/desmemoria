@@ -121,7 +121,7 @@ Reglas del sorbo:
 - Descansar en un Ancla o morir recarga todo, como hoy.
 - Técnica: `HealthComponent` gana `heal_amount` (0 = cura del todo, compatible con el uso genérico y con las pruebas actuales), `heal_time`, `begin_heal()` y cancelación por daño; `use_heal_charge()` sigue siendo la aplicación instantánea (la llama el final del sorbo). Estos exports son genéricos y caben en `core/`.
 
-### Vida máxima [Pend.]
+### Vida máxima [Impl. salvo el Trapo]
 
 ```
 vida_max = 5 + nivel(Vitalidad) + floor(fragmentos_de_vida / 4) + (Trapo de Iria equipado ? 1 : 0)      # tope absoluto 13
@@ -129,7 +129,9 @@ vida_max = 5 + nivel(Vitalidad) + floor(fragmentos_de_vida / 4) + (Trapo de Iria
 
 Hay **12 fragmentos de vida** (cada 4 dan +1, es decir +3 en total) repartidos por exploración: 4 visibles, 4 de plataformas, 3 secretos (pared falsa o Excavar) y 1 tras un reto de combate opcional. Reparto por región orientativo: Umbral 1 (tras La Puerta Tapiada, se cierra la cuenta a las ~11:30), Cinturón 3, Archivo 3, Minas 3, Costa 2, Herida 0 (la última región no regala margen). Cadencia: 4.º a ~6:15, 8.º a ~9:00, 12.º a ~11:30, siempre antes de un hito emocional y nunca en las dos primeras horas. Se anuncian "Fragmento de vida 2/4" y el contador vive en el diario.
 
-## Árbol de habilidades [Impl. el esqueleto; Pend. la ampliación]
+**Impl. (K10).** `Stats.life_max(vitalidad, fragmentos, bonus)` es la fórmula, con el tope 13; el `bonus` es el hueco del Trapo de Iria (`Player.life_bonus`, hoy 0: las reliquias no existen aún). El mundo cuenta los fragmentos por sus ids guardados (los ids que ya no existen en el mundo no cuentan) y se los pasa al jugador con `set_life_fragments`: al completar cada grupo de 4 sube la vida máxima en 1 y se cura del todo en ese momento ("Fragmento de vida 4/4: vida máxima 6"); al cargar la partida la vida máxima se recalcula desde los ids guardados, así que no hay un número aparte que guardar. Pendiente: el contador en el diario.
+
+## Árbol de habilidades [Impl. el esqueleto y los precios; Pend. Brasa, Castigo, Paso fantasma y Voz]
 
 Se abre desde el menú del Ancla (**Z** para descansar, primera opción). Se gastan Ecos, el juego se pausa y las mejoras son permanentes (morir no las pierde, los Ecos en la mano sí). Comprar vida o frascos los rellena. El componente genérico es `SkillTree` (`core/components/skill_tree.gd`); lo propio del juego vive en `game/player/skills.gd`.
 
@@ -137,23 +139,25 @@ Se abre desde el menú del Ancla (**Z** para descansar, primera opción). Se gas
 
 Un nodo pide, además de Ecos, su **mejora previa** (a un nivel mínimo) y a veces una **puerta de historia** (un jefe vencido o una habilidad), que se explica en el menú sin revelar recorrido ("Lo aprendes del Segador cuando lo venzas").
 
+**Impl. (K11).** `Skills.LIST` tiene ya los precios de esta tabla en las **10 mejoras con efecto** (las 9 antiguas más Aliento): suman **1.210 Ecos** (Cuerpo 510, Filo 390, Espíritu 310). Faltan **590** de Brasa (160), Castigo (120), Paso fantasma (170) y Voz (140), que son paquetes aparte (cada una necesita una pieza de motor): no están en el menú; sus precios constan en `Skills.PENDING_COSTS` solo para comprobar que 1.210 + 590 = **1.800** (prueba de humo, junto con la del grafo: sin requisitos inexistentes ni ciclos, niveles crecientes). Una partida guardada con niveles sigue siendo válida; el coste de lo ya comprado no se devuelve ni se recalcula. Aliento cuelga de Frascos (fila 4 de Cuerpo).
+
 ### Rama Cuerpo (5 mejoras, 11 niveles, 670 Ecos)
 
 | Mejora | Niveles | Efecto por nivel | Coste por nivel (hoy → final) | Requiere | Puerta | Estado |
 |---|---|---|---|---|---|---|
-| Vitalidad | 4 | +1 vida máxima (5 → 9) | 5/8/12/18 → **10/25/50/85** (170) | — | — | [Impl.] efecto; costes [Pend.] |
-| Frascos | 2 | +1 frasco (3 → 5) | 10/18 → **30/65** (95) | Vitalidad | — | [Impl.]; costes [Pend.] |
-| Temple | 2 | Invulnerable tras un golpe 0,6 → 0,8 → 1,0 s | 14/24 → **35/60** (95) | Frascos | — | [Impl.]; costes [Pend.] |
-| Aliento | 2 | Cura por frasco +1 (3 → 4 → 5) | **50/100** (150) | Frascos | — | [Pend.] nuevo |
+| Vitalidad | 4 | +1 vida máxima (5 → 9) | 5/8/12/18 → **10/25/50/85** (170) | — | — | [Impl.] |
+| Frascos | 2 | +1 frasco (3 → 5) | 10/18 → **30/65** (95) | Vitalidad | — | [Impl.] |
+| Temple | 2 | Invulnerable tras un golpe 0,6 → 0,8 → 1,0 s | 14/24 → **35/60** (95) | Frascos | — | [Impl.] |
+| Aliento | 2 | Cura por frasco +1 (3 → 4 → 5) | **50/100** (150) | Frascos | — | [Impl.] (K11) |
 | Brasa | 1 | Una vez por descanso: si un golpe te mataría y tenías ≥ 3 de vida, quedas a 1 con 1,2 s de invulnerabilidad. No vale contra caídas ni pinchos | **160** | Vitalidad nivel 4 | Hesper vencido | [Pend.] nuevo |
 
 ### Rama Filo (4 mejoras, 8 niveles, 510 Ecos)
 
 | Mejora | Niveles | Efecto por nivel | Coste (hoy → final) | Requiere | Puerta | Estado |
 |---|---|---|---|---|---|---|
-| Filo afilado | 2 | +1 daño por golpe (1 → 3) | 14/30 → **35/110** (145) | — | — | [Impl.]; costes [Pend.] |
-| Ritmo | 3 | Espera entre golpes 0,30 → 0,26 → 0,22 → 0,18 s | 8/14/22 → **20/50/90** (160) | Filo afilado | — | [Impl.]; costes [Pend.] |
-| Alcance | 2 | +6 px por nivel (20 → 32) | 10/18 → **30/55** (85) | Ritmo | — | [Impl.]; costes [Pend.] |
+| Filo afilado | 2 | +1 daño por golpe (1 → 3) | 14/30 → **35/110** (145) | — | — | [Impl.] |
+| Ritmo | 3 | Espera entre golpes 0,30 → 0,26 → 0,22 → 0,18 s | 8/14/22 → **20/50/90** (160) | Filo afilado | — | [Impl.] |
+| Alcance | 2 | +6 px por nivel (20 → 32) | 10/18 → **30/55** (85) | Ritmo | — | [Impl.] |
 | Castigo | 1 | +1 daño al golpear a un enemigo **común** en su recuperación (tras fallar su ataque). **No afecta a jefes** | **120** | Ritmo nivel 2 | Jacinto vencido | [Pend.] nuevo |
 
 El daño del árbol tiene tope 3. Las mejoras nuevas de Filo cambian *cómo* se pelea (castigar a destiempo), no *cuánto*.
@@ -162,9 +166,9 @@ El daño del árbol tiene tope 3. Las mejoras nuevas de Filo cambian *cómo* se 
 
 | Mejora | Niveles | Efecto por nivel | Coste (hoy → final) | Requiere | Puerta | Estado |
 |---|---|---|---|---|---|---|
-| Guardia | 3 | Ventana del parry 0,20 → 0,25 → 0,30 → 0,35 s | 6/10/15 → **15/35/65** (115) | — | — | [Impl.]; costes [Pend.] |
-| Impulso | 2 | Espera del dash 0,40 → 0,32 → 0,24 s | 8/14 → **25/50** (75) | Guardia | — | [Impl.]; costes [Pend.] |
-| Contragolpe | 2 | Enemigo desviado aturdido +0,5 / +1,0 s (1,2 → 2,2 s) | 12/20 → **40/80** (120) | Impulso | — | [Impl.]; costes [Pend.] |
+| Guardia | 3 | Ventana del parry 0,20 → 0,25 → 0,30 → 0,35 s | 6/10/15 → **15/35/65** (115) | — | — | [Impl.] |
+| Impulso | 2 | Espera del dash 0,40 → 0,32 → 0,24 s | 8/14 → **25/50** (75) | Guardia | — | [Impl.] |
+| Contragolpe | 2 | Enemigo desviado aturdido +0,5 / +1,0 s (1,2 → 2,2 s) | 12/20 → **40/80** (120) | Impulso | — | [Impl.] |
 | Paso fantasma | 2 | El dash te hace invulnerable el 35 % / 60 % de su duración (0,05 / 0,09 s). No cruza paredes ni pinchos | **60/110** (170) | Impulso | Tener el Dash | [Pend.] nuevo |
 | Voz | 1 | Con Nombrar, en combate: aturde 2 s a un vaciado (cascarón, lancero...) cercano; espera de 25 s. **No afecta a jefes** | **140** | Contragolpe | Tener Nombrar | [Pend.] nuevo **[Recorte]** (el canon marca los usos de combate de Nombrar como lo primero que cae) |
 
@@ -263,7 +267,7 @@ Ajustes de muerte [Pend.]: la reliquia Medalla (conserva el 25 %), la Hebra de C
 |---|---|---|
 | Enemigos [Impl.] | `ecos_reward` por escena: Cinturón 2/3/8 (común/medio/élite), Archivo 3-5/10, Minas 4-5/12, Costa 5-6/13, Herida 6/15 | Reaparecen con cada descanso o muerte, sin fatiga |
 | Jefes | Fijo, una vez: Centinela 40 [Impl.], Jacinto 60, Ilara 80, Hesper 110, Magda 140, Eudora 160, Maelis 200 (**790** obligatorios); Casimar 90, Rufo 90, Oda 150 (330 opcionales) | Quedan guardados (`bosses`) |
-| **Bolsas de Rastro** | ~24 repartidas, 12 a 30 Ecos | Montón de polvo gris que se pulsa; se guarda cuál se recogió; no reaparecen. Comparten sistema con los fragmentos |
+| **Bolsas de Rastro** [Impl., K12] | ~24 repartidas, 12 a 30 Ecos | Se recogen al tocarlas (hoy; el doc original decía pulsar); se guarda cuál se recogió; no reaparecen. Comparten sistema con los fragmentos. Los Ecos dependen de la región de la sala (`Room.region`, `game/economy.gd`): Umbral 12, Cinturón 15, Archivo 18, Minas 22, Costa 26, Herida 30 |
 | El Paño | 50 por Nombre callado, hasta 400-500 | Una vez por Nombre |
 | Venta de objetos | No existe | Evita la hoja de cálculo |
 
@@ -282,6 +286,8 @@ Regla de precio: una compra cuesta entre 4 y 12 enemigos de la región actual; n
 ### Presupuesto y su invariante
 
 El total comprable está **cerrado y es público** (el diario del árbol muestra "Llevas 1.340 de 1.800"). El invariante que se vigila con una prueba (T20) es que la suma de Ecos del camino principal bruto (enemigos de la primera pasada con un 10 % por rondas, jefes obligatorios, Bolsas del camino) caiga entre el **90 % y el 110 %** del coste de los sumideros del camino principal (~2.000-2.300 brutos), con ~10 % perdido por Ecos no recuperados. Los números reales dependen de cuántos enemigos tengan los mapas definitivos (la sala original supuso 216 apariciones; el mapa macro sugiere más bien 100-130): **el ajuste se hace en los Ecos por enemigo y en las Bolsas, no en los precios**, y se recalcula al terminar cada región. A las 13 h el jugador medio ha comprado ~90 % del árbol; quien calla Nombres lo cierra del todo.
+
+**Impl. (K12).** La prueba de humo (`_test_ecos_budget`) suma los `ecos_reward` de los enemigos del mundo (+10 % por rondas, `Economy.ROUNDS_FACTOR`), los jefes y las Bolsas (por su región) y lo compara con 2.060 (`Economy.MAIN_PATH_SINKS`: árbol 1.800 + Garrán 150 + Cano 110), rango 1.854-2.266. Como aún hay 2 de 6 regiones, **solo informa** del porcentaje (hoy ~5 %) y exige que no pase del 110 %. **Falla** por datos incoherentes: un enemigo o jefe con recompensa ≤ 0, una Bolsa fuera de 12-30, una región sin precio de Bolsa o una sala cuya `region` no coincida con `tests/world_manifest.json`. Cuando el manifiesto tenga las seis regiones, exige además el 90-110 %.
 
 ## Anclas de Memoria [Impl.]
 
