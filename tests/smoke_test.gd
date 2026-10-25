@@ -4532,28 +4532,35 @@ func _test_surco_ciego_niche_and_high_ledge() -> void:
 	var pickups := {}
 	for pickup in get_nodes_in_group(&"collectible"):
 		pickups[String(pickup.id)] = pickup.kind
-	_check(pickups.get("surco_ciego.c13f29") == &"bag" and pickups.get("surco_ciego.c52f10") == &"item", "hay una Bolsa en el nicho y una Semilla gris (objeto) en la repisa")
+	_check(pickups.get("surco_ciego.c13f26") == &"bag" and pickups.get("surco_ciego.c52f10") == &"item", "hay una Bolsa en el nicho y una Semilla gris (objeto) en la repisa")
 	var walls := _room_children_of("SurcoCiego", BreakableWall)
 	_check(walls.size() == 1 and walls[0].cells.size() == 6 and walls[0].flag_id == &"s:surco_ciego.nicho", "el nicho se cierra con un muro frágil de 6 celdas y marca permanente")
 	var wall: BreakableWall = walls[0]
-	_player.global_position = _standing_on("SurcoCiego", 17, 27)
+	_player.global_position = _standing_on("SurcoCiego", 18, 27)
 	_player.velocity = Vector2.ZERO
 	await _wait(10)
 	Input.action_press(&"ui_left")
 	await _wait(40)
 	Input.action_release(&"ui_left")
-	_check(_player.global_position.x > _cell("SurcoCiego", 16, 0).x - 8.0 and not wall.is_broken, "el muro cierra el paso al nicho")
+	_check(_player.global_position.x > _cell("SurcoCiego", 17, 0).x - 8.0 and not wall.is_broken, "el muro cierra el paso al nicho")
 	for i in 3:
 		wall.take_hit(1, -1)
 		await _wait(2)
 	await _wait(40)
-	_check(wall.is_broken and _level.flags.has_flag(&"s:surco_ciego.nicho"), "tres golpes lo rompen y queda la marca")
+	# El muro se libera al romperse: no se vuelve a tocar la referencia.
+	_check(_level.flags.has_flag(&"s:surco_ciego.nicho") and _room_children_of("SurcoCiego", BreakableWall).is_empty(), "tres golpes lo rompen y queda la marca")
 	var bags_before: int = _level.bag_count()
 	Input.action_press(&"ui_left")
-	await _wait(60)
+	await _wait(45)
 	Input.action_release(&"ui_left")
 	await _wait(4)
 	_check(_level.bag_count() == bags_before + 1, "la Bolsa del nicho se recoge")
+	# Sin atasco: el suelo del nicho es el del bancal, se sale caminando sin habilidades.
+	Input.action_press(&"ui_right")
+	await _wait(60)
+	Input.action_release(&"ui_right")
+	await _wait(4)
+	_check(_player.is_on_floor() and _player.global_position.x > _cell("SurcoCiego", 18, 0).x, "con la Bolsa en la mano se sale del nicho caminando")
 	# Repisa alta: desde el tablón, sin doble salto no se llega.
 	var ledge_y: float = _standing_on("SurcoCiego", 52, 11).y
 	var landed: bool = await _hop(_standing_on("SurcoCiego", 41, 24), 1, _cell("SurcoCiego", 48, 0).x)

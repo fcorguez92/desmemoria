@@ -9,9 +9,9 @@ script = ExtResource("1_room")
 title = "El Surco Ciego"
 has_sky = false
 note = "Aquí se sembraba trigo. Se sigue sembrando. Nadie recuerda qué."
-pickups = PackedStringArray("c13f29:bag", "c52f10:item")
+pickups = PackedStringArray("c13f26:bag", "c52f10:item")
 links = {
-"#@15,24": "s:surco_ciego.nicho"
+"#@16,21": "s:surco_ciego.nicho"
 }
 
 [node name="Tiles" type="TileMapLayer" parent="."]

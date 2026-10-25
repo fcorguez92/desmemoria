@@ -262,10 +262,10 @@ Estructura: **Bajo** (Terrazas, Cisterna, Galerías, Aljibe, Chimenea, Pasarela,
 | CIN-05 | La Chimenea (c.) | 40×69 @(384,-21) | O→CIN-04 · E (alto)→CIN-06 · O (alto) [1→]→CIN-11 · E (bajo)→SEC-06 | Puzle de Dash (3 cruces) | Dash | Pinchos; ningún enemigo | A06, A07; huella de pie con prisa |
 | CIN-06 | La Pasarela de los Mensajeros y El Mirador (c.) | 100×24 @(424,-21) | O→CIN-05 · N (hueco, ↓)←CIN-23 | Puzle de Dash; vista de la Herida; **Jefe 10 (secreto)** | Dash; Nombrar (secreto) | Abismo de pinchos; Oda (secreto) | A08; Nombre: Oda Bellver; cartas; Insignia de Mensajera |
 | CIN-07 | La Torre de Riego (c.) | 56×44 @(144,-20) | O→CIN-01 · E (cornisa)→CIN-08 | Escalera de tablones; Doble | Dash (llegar); Doble (cornisa) | Acechador; sin más | Doble; A09; Dedal de la Torre; Nombre: Tomasa; Medida de trigo |
-| CIN-08 | El Surco Ciego | 72×36 @(200,-36) | O→CIN-07 · E→CIN-10 · N (↑)→CIN-09 | Calma + vista de la Casa Varga | Doble (cornisa de entrada) | Ninguno | Placa "Nadie recuerda qué"; Semilla gris |
+| CIN-08 | El Surco Ciego | 64×36 @(200,-36) (CONSTRUIDA) | O→CIN-07 · E→CIN-10 · N (↑)→CIN-09 | Calma + vista de la Casa Varga | Doble (cornisa de entrada) | Ninguno | Placa "Nadie recuerda qué"; Semilla gris |
 | CIN-09 | La Casa Varga | 48×48 @(200,-84) | S (↑)→CIN-08 · E→CIN-12 · N→SEC-03 | Eco narrativo del Doble | Doble | Ninguno | Marcas de altura de dos niños; FV |
-| CIN-10 | El Campo de los Ferrán | 72×36 @(272,-36) | O→CIN-08 · E→CIN-11 · N (↑ desde Acequia ↓)↔CIN-12 | Combate con parches grises | — | Cascarones y 1 coloso; densidad media | Nombre: Eulalia Ferrán; mojón del lindero |
-| CIN-11 | El Cruce del Pan | 40×36 @(344,-36) | O→CIN-10 · N (↑)→CIN-13 · E [1→]→CIN-05 | Calma, Ancla bonita, Cano | — | Ninguno | A10; Página 2 de Corvel; trompo de Telmo |
+| CIN-10 | El Campo de los Ferrán | 66×36 @(264,-36) (CONSTRUIDA) | O→CIN-08 · E→CIN-11 · N (↑ desde Acequia ↓)↔CIN-12 | Combate con parches grises | — | Cascarones y 1 coloso; densidad media | Nombre: Eulalia Ferrán; mojón del lindero |
+| CIN-11 | El Cruce del Pan | 54×36 @(330,-36) (CONSTRUIDA) | O→CIN-10 · N (↑)→CIN-13 · E [1→]→CIN-05 | Calma, Ancla bonita, Cano | — | Ninguno | A10; Página 2 de Corvel; trompo de Telmo |
 | CIN-12 | La Acequia | 96×48 @(248,-84) | O→CIN-09 · E→CIN-13 · S (↓)→CIN-10 · N→CIN-25 | Plataformas sobre agua seca | Doble | 2 arrojadores; esqueleto con azada | Azada de madera; nota "la tierra no me dice" |
 | CIN-13 | La Segunda Torre de Riego | 40×60 @(344,-96) | S→CIN-11 · O→CIN-12 · E→CIN-14 · N→CIN-15 | Puzle de Doble: torre 1 | Doble | Ninguno | Placa de la Orden; Hermano Gaspar (aparece aquí o en CIN-14) |
 | CIN-14 | El Camino de Ronda | 72×40 @(384,-96) | O→CIN-13 · E→CIN-17 · N→SEC-02 y CIN-15 | Combate de puesto de guardia | — | Lanceros y coloso; densidad media | A11; placa "declarar lo que recuerda"; Lacre de silencio (Gaspar) |
@@ -285,6 +285,8 @@ Estructura: **Bajo** (Terrazas, Cisterna, Galerías, Aljibe, Chimenea, Pasarela,
 | CIN-28 | La Ermita del Cruce | 40×60 @(416,-216) | O→CIN-27 · E→CIN-29 | Capilla, Gaspar (si no está en CIN-13) | Doble | Ninguno | Lacre de silencio |
 | CIN-29 | El Camino de los Mojones | 88×60 @(456,-216) | O→CIN-28 · E→ARC-01 (alto) · S→CIN-16 | Combate lineal con mojones de los Mensajeros | Doble | Lanceros; arrojador; densidad media | Mojón "se cortaba cada invierno" |
 | CIN-30 | La Linde Gris | 72×60 @(344,-276) | S→CIN-27 | Plataformas que se borran; secreta | Doble | Parche gris: el suelo desaparece 2 s después de pisarlo | FV; rastro del límite limpio, "como cortado con tijera" |
+
+**Construidas con otra medida (rama `feat/cinturon-alto-1`):** CIN-08 Surco Ciego 64 de ancho en x 200; CIN-10 Campo de los Ferrán 66 en x 264; CIN-11 Cruce del Pan 54 en x 330 (acaba pegado a la Chimenea, x 384). Todas con y -36 y 36 de alto, puertas este/oeste en las filas 25-30 y suelo en la fila 31. Las salas por construir que se apoyan en ellas **deben alinear sus puertas a estas medidas**: la Casa Varga (CIN-09) sobre el Surco (x 200-264), la Acequia (CIN-12) sobre el Campo/Surco y la Segunda Torre (CIN-13) sobre el Cruce (x 330-384; el macro la ponía en x 344). Sus puertas norte hoy son pared.
 
 (c.) = construida. El Peón (SEC-03), el Palomar (SEC-02), el Silo (SEC-01) y los Establos (SEC-06) están en §4.7 pero se ven en el mapa del Cinturón.
 

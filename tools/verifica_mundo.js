@@ -216,6 +216,8 @@ function main() {
     "_": ["mode", "flag_id", "toggle", "hold_time", "reach_rect", "target_groups", "action_interact", "lit_color", "dim_color", "sound", "sound_volume_db"],
     "<": ["mode", "end_offset", "size", "speed", "wait_time", "return_delay", "blocked_time", "rider_height", "activation_flag", "action_interact", "rider_groups", "blocker_groups", "body_color", "edge_color", "rail_color"],
   };
+  KNOWN.z = KNOWN._;  // palancas y botones son el mismo Trigger (core/objects/trigger.gd)
+  KNOWN["*"] = KNOWN._;
   for (const room of rooms) {
     const groups = (c) => groupsOf(room, c);
     const starts = groups("<"), ends = groups(">");
@@ -242,7 +244,7 @@ function main() {
     const text = scene ? fs.readFileSync(path.join(LEVELS, scene.scene + ".tscn"), "utf8") : "";
     const m = text.match(/^piece_params = (\{[\s\S]*?\n\})\s*$/m);
     if (!m) continue;
-    const ids = new Set([...starts, ...groups("y"), ...groups("_")].map((g) => g.id));
+    const ids = new Set([...starts, ...groups("y"), ...groups("_"), ...groups("z"), ...groups("*")].map((g) => g.id));
     let current = null;
     for (const line of m[1].split("\n")) {
       const k = line.match(/^"([^"]+)"\s*:\s*(.*)$/);

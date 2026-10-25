@@ -359,17 +359,17 @@
    "delay": 0,
    "hold": 18,
    "k": 0,
-   "dashAt": 44,
-   "dashDir": 1,
+   "dashAt": null,
+   "dashDir": 0,
    "facing": 1
   },
   "margin": {
    "hold": 17,
    "k": 17,
-   "dash": 20,
+   "dash": 99,
    "pos": 52
   },
-  "dash": true
+  "dash": false
  },
  {
   "room": "SurcoCiego",
@@ -385,7 +385,7 @@
   },
   "sx": 580,
   "plan": {
-   "d1": 0,
+   "d1": -1,
    "d2": 1,
    "delay": 0,
    "hold": 18,
@@ -393,7 +393,7 @@
    "dashAt": null,
    "dashDir": 0,
    "dj": 26,
-   "facing": 1
+   "facing": -1
   },
   "margin": {
    "hold": 17,
@@ -416,26 +416,24 @@
    "c0": 28,
    "c1": 34
   },
-  "sx": 365,
+  "sx": 657,
   "plan": {
    "d1": -1,
-   "d2": 0,
+   "d2": -1,
    "delay": 0,
-   "hold": 9,
-   "k": 0,
-   "dashAt": 22,
-   "dashDir": 1,
-   "dj": 11,
+   "hold": 18,
+   "k": 26,
+   "dashAt": null,
+   "dashDir": 0,
    "facing": -1
   },
   "margin": {
    "hold": 17,
    "k": 17,
-   "dash": 21,
-   "dj": 21,
+   "dash": 99,
    "pos": 62
   },
-  "dash": true
+  "dash": false
  },
  {
   "room": "CruceDelPan",
@@ -449,25 +447,25 @@
    "c0": 40,
    "c1": 46
   },
-  "sx": 504,
+  "sx": 452,
   "plan": {
-   "d1": -1,
+   "d1": 0,
    "d2": 1,
    "delay": 0,
    "hold": 18,
    "k": 0,
-   "dashAt": 44,
-   "dashDir": 1,
+   "dashAt": null,
+   "dashDir": 0,
    "dj": 26,
-   "facing": -1
+   "facing": 1
   },
   "margin": {
-   "hold": 16,
+   "hold": 17,
    "k": 17,
-   "dash": 21,
-   "dj": 19,
+   "dash": 99,
+   "dj": 17,
    "pos": 62
   },
-  "dash": true
+  "dash": false
  }
 ]

@@ -40,6 +40,10 @@ function bestLeg(m, S, opts, from, to) {
     }
   }
   if (!found.length) throw new Error(`sin maniobra de fila ${from.row} a fila ${to.row}`);
+  // Lo mínimo: si basta un salto simple no se usa dash ni doble salto (más robusto en el motor).
+  const cost = (e) => (e.dash ? 1 : 0) + (e.plan.dj !== undefined ? 1 : 0);
+  const least = Math.min(...found.map(cost));
+  for (let i = found.length - 1; i >= 0; i--) if (cost(found[i]) > least) found.splice(i, 1);
   const step = Math.max(1, Math.floor(found.length / 80));
   let best = null;
   for (let i = 0; i < found.length; i += step) {
