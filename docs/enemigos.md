@@ -1,6 +1,6 @@
 # Enemigos (documento vivo)
 
-Estado: los cinco enemigos del primer tramo están construidos y probados; el resto del bestiario está diseñado y **sin construir**. Este documento es la versión unificada tras la reunión de diseñadores: parte de la propuesta de `docs/reunion/disenadores/04-combate-enemigos-jefes.md` (§2 y §8, que conserva el detalle largo de cada ficha) y de `docs/reunion/artistas/05-criaturas-y-jefes.md` (lectura visual y tipos de cuerpo), y la **recorta** al alcance de una sola persona. Los jefes están en `jefes.md`; las reglas de combate del jugador y la economía, en `nucleo-jugable.md`.
+Estado: los cinco enemigos del primer tramo y, desde `feat/piezas-enemigos-1`, el Cuervo y el Espantapájaros están construidos y probados; el resto del bestiario está diseñado y **sin construir**. Este documento es la versión unificada tras la reunión de diseñadores: parte de la propuesta de `docs/reunion/disenadores/04-combate-enemigos-jefes.md` (§2 y §8, que conserva el detalle largo de cada ficha) y de `docs/reunion/artistas/05-criaturas-y-jefes.md` (lectura visual y tipos de cuerpo), y la **recorta** al alcance de una sola persona. Los jefes están en `jefes.md`; las reglas de combate del jugador y la economía, en `nucleo-jugable.md`.
 
 Leyenda: **[Impl.]** construido · **[Pend.]** pendiente. En las tablas, **P** = aviso amarillo (se puede parar) y **R** = aviso rojo (solo esquivar). Vidas dadas con el daño esperado de la región (ver `nucleo-jugable.md`); todas las cifras se ajustan jugando.
 
@@ -50,6 +50,9 @@ Todos los enemigos comparten `game/enemy/enemy.gd` y se diferencian por su escen
 - Un golpe tuyo lo empuja y cancela su ataque; un parry lo aturde `parry_stun_time` (1,2 s, más el Contragolpe) y recibe doble daño.
 - Número de daño flotante, chispa, barra de vida que se oculta sola, hit stop 0,06 s, pose de encajar el golpe, voz propia (`voice`) y sonidos de paso y golpe.
 - Reaparecen al descansar o morir (`EntitySpawner`); pagan `ecos_reward`.
+- **Dormido (K30):** `PatrolChaseAI` con `starts_dormant` empieza inmóvil (DORMANT) y despierta (WAKING, `wake_time`, sin atacar) cuando el jugador entra en `wake_radius` o le golpean. Lo usa el Espantapájaros (`enemy_espantapajaros.tscn`, marcador `6`): vida 4, golpe de brazo parable con aviso de 0,65 s, 3 Ecos; hoja con filas `dormant` y `wake`. Ejemplo colocado en El Surco Ciego (columna 26), al lado de la inscripción: leerla lo despierta.
+- **Volador (K28):** `FlyAI` (nodo `FlyAI` en vez de `PatrolChaseAI`; `Enemy` elige la que encuentra, `flying = true` y cuerpo FLOATING). El Cuervo (`enemy_cuervo.tscn`, marcador `5`): vida 2, merodea, se coloca a 90 px sobre el jugador oscilando, avisa 0,45 s, pica a 260 px/s con `AttackKind.DIVE` (el daño es de contacto durante el picado, declarado y con aviso) y descansa 1,2 s; 2 Ecos. Ejemplo en El Cruce del Pan (columna 38). El arte (hoja de 64×48, sin esqueleto humanoide) sale de `tools/rig_enemigos.js`. Voz: reutiliza la del acechador y el golpe `enemy_lunge`.
+- **Aviso de zona (K29):** `TelegraphZone` (`core/objects/`) pinta la marca amarilla o roja (con bandas) y golpea al terminar. Todavía no la usa ningún enemigo colocado: el Espantapájaros y el Cuervo atacan con golpe de arma y picado, que ya llevan su aviso en el propio cuerpo; su primer usuario será el Sellador (charco).
 
 ## El bestiario por región
 
@@ -66,8 +69,8 @@ Región de la primera lección: lee el aviso, esquiva o para, entra en el hueco.
 | **Arrojador** | 2 | 1 | Proyectil recto (a 240 px): 0,50 / 0,8 s; mantiene distancia | P | Saltar el proyectil, dash a través, parry | H · PROJECTILE | 3 | [Impl.] |
 | **Acechador** | 3 | 1 | Embestida desde 150 px (215 px/s): 0,28 / 0,65 s | P | Saltar por encima, parry (ventana corta) | H · LUNGE | 3 | [Impl.] |
 | **Coloso** | 10 | 2 | Mazazo: 0,72 / 1,0 s; 78 px/s | P | Parry (premia: 1,2 s de doble daño), dash por detrás | H · MELEE | 8 | [Impl.] |
-| **Cuervo de Rastrojo** | 2 | 1 | Vuela a ~90 px de altura; picado a 260 px/s: 0,45 s, pausa de 1,2 s entre picados | P | Ataque hacia arriba, parry en el picado, dash lateral | V · `fly_ai` | 2 | [Pend.] |
-| **Espantapájaros** | 4 | 1 | Inmóvil hasta que pasas a 100 px; se levanta (1,0 s, sin daño) y avanza lento; golpe de brazo: 0,65 s | P | Rodearlo mientras se levanta; es la **emboscada** (tres falsos entre los verdaderos en La Era) | H · estado DORMANT | 3 | [Pend.] |
+| **Cuervo de Rastrojo** | 2 | 1 | Vuela a ~90 px de altura; picado a 260 px/s: 0,45 s, pausa de 1,2 s entre picados | P | Ataque hacia arriba, parry en el picado, dash lateral | V · `fly_ai` | 2 | [Impl.] |
+| **Espantapájaros** | 4 | 1 | Inmóvil hasta que pasas a 100 px; se levanta (1,0 s, sin daño) y avanza lento; golpe de brazo: 0,65 s | P | Rodearlo mientras se levanta; es la **emboscada** (tres falsos entre los verdaderos en La Era) | H · estado DORMANT | 3 | [Impl.] |
 
 **Élite: Segador Vaciado** (variante del cascarón; vida 7, hoz larga, solo en los bancales altos, examen de entrada a La Era). Barrido en arco alto-bajo (alcance 90): 0,60 s, daño 1, **P**; cada 12 s un paso de segador con 0,40 s. Entrar por dentro, pegado a él, evita el arco (anticipa la lección de Jacinto). Ecos 12. Cuerpo H, MELEE con hitbox de arco (ya existe). [Pend.]
 
@@ -195,10 +198,10 @@ Cada pieza se construye **cuando llega el primer enemigo o jefe que la necesita*
 |---|---|---|---|---|---|
 | 1 | **`parryable` + aviso rojo + marca de suelo** | Atributo por ataque; `ParryComponent` lo respeta (un golpe no parable atraviesa la guardia); tinte rojo y decal | Todos los rojos (Sellador, Chinche...); Jacinto | S | Antes de cualquier enemigo o jefe nuevo |
 | 2 | **Ataque hacia arriba y hacia abajo (pogo) del jugador** | Ver `nucleo-jugable.md` | Cuervo, Polilla, Gaviota, Geoda | M + M | Antes de colocar el primer volador |
-| 3 | **`fly_ai`** (vuelo) | Equivalente a `PatrolChaseAI` sin gravedad: merodea, se coloca a altura de ataque, picado con aviso, retirada. Detecta por distancia en 2D (no por la tolerancia vertical de 80 px). Mismo contrato (`step`, señales); necesita colisión con techo y suelo | Cuervo | M | Cinturón alto; el cuervo es el banco de pruebas de V |
-| 4 | **Estado DORMANT** en `PatrolChaseAI` | Inmóvil hasta que el jugador pasa a N px; se "levanta" y pasa a CHASE | Espantapájaros | S | Cinturón alto |
+| 3 | **`fly_ai`** (vuelo) | Equivalente a `PatrolChaseAI` sin gravedad: merodea, se coloca a altura de ataque, picado con aviso, retirada. Detecta por distancia en 2D (no por la tolerancia vertical de 80 px). Mismo contrato (`step`, señales); necesita colisión con techo y suelo | Cuervo | M | Cinturón alto; el cuervo es el banco de pruebas de V · **[Impl.]** |
+| 4 | **Estado DORMANT** en `PatrolChaseAI` | Inmóvil hasta que el jugador pasa a N px; se "levanta" y pasa a CHASE | Espantapájaros | S | Cinturón alto · **[Impl.]** |
 | 5 | **`attack_picker`, `phase_tracker`, `boss_base`** | Ver `jefes.md` | Jacinto | M | Con Jacinto |
-| 6 | **`telegraph_zone`** | Rectángulo, círculo o sector en el suelo o el aire que se pinta en amarillo o rojo durante N s y después aplica daño o efecto a lo que haya dentro (reutiliza `MeleeAttackComponent`). Puede ser persistente (charco) y de objetivos configurables | Jacinto (sombra del picado), Sellador, Hondo, Zapador, Hermano de Cal | M | Con Jacinto, en versión mínima; crece con el Archivo |
+| 6 | **`telegraph_zone`** | Rectángulo, círculo o sector en el suelo o el aire que se pinta en amarillo o rojo durante N s y después aplica daño o efecto a lo que haya dentro (reutiliza `MeleeAttackComponent`). Puede ser persistente (charco) y de objetivos configurables | Jacinto (sombra del picado), Sellador, Hondo, Zapador, Hermano de Cal | M | Con Jacinto, en versión mínima; crece con el Archivo · **[Impl. la pieza (K29), sin usuario aún]** |
 | 7 | **`Spawner` con tope** | Crea N entidades con un máximo vivo; se libera al morir el invocador. Sin pooling | Jacinto, Relator, Hesper | S | Con Jacinto |
 | 8 | **`status_effects` (Lento, Fijado)** | Aplica y retira estados con duración; señal `status_changed` para el HUD; morir los limpia | Sellador, Hesper, Acompañante | M | Antes del Archivo |
 | 9 | **`directional_guard`** (escudo) | Bloquea golpes que llegan por el lado indicado (rebote con chispa y metal); se rompe con parry, golpe desde arriba, por la espalda o tras la recuperación propia. `take_hit` ya recibe `from_direction`. Un parámetro `closed` permite la Geoda | Armadura Vacía | S-M | Con el Archivo |

@@ -39,6 +39,14 @@ Ataques verticales (K06, K07, K08, rama `feat/ataque-arriba-y-abajo`): Arriba + 
 
 **A jugar a mano:** el ritmo del recorrido; si el doble salto a la repisa del Surco y el de la repisa alta del Cruce se sienten justos; la ventana de 6 s de las placas yendo de la A a la C; que el cercado del Campo se lea (reja y palanca visibles) y la dificultad del coloso con los cascarones; si las salas anchas piden más enemigos; y que el nicho de la Bolsa se descubra sin pista.
 
+## Piezas de enemigos (1): DORMANT, vuelo y aviso de zona (K30, K28, K29)
+
+Rama `feat/piezas-enemigos-1`, tres piezas en este orden y un commit por pieza. **K30:** estado DORMANT/WAKING en `PatrolChaseAI` (`starts_dormant`, `wake_radius`, `wake_time`, señal `woke_up`) y el **Espantapájaros** (vida 4, 3 Ecos, marcador `6`, ejemplo en el Surco Ciego). **K28:** `FlyAI` (`core/components/fly_ai.gd`: merodeo, colocación sobre el objetivo con oscilación, aviso y picado, pausa) y el **Cuervo de Rastrojo** (vida 2, 2 Ecos, marcador `5`, ejemplo en el Cruce del Pan); `Enemy` admite voladores (`flying`, `AttackKind.DIVE`). **K29:** `TelegraphZone` (`core/objects/telegraph_zone.gd`), marca amarilla o roja con bandas que golpea al terminar el aviso; solo la pieza y su prueba (sin usuario aún). Seis pruebas de humo nuevas. Arte provisional de ambos enemigos desde `tools/rig_enemigos.js` (el cuervo, con las primitivas de `tools/lib/raster.js`).
+
+**Efectos en lo existente:** la prueba de las maniobras de referencia limpia los enemigos del Cruce del Pan (el cuervo las estorbaría); los marcadores `5` y `6` de `docs/vertical-slice.md` ya tienen ocupante por defecto (el `enemy_set` por sala no hace falta hasta que haya un segundo ocupante).
+
+**A jugar a mano:** que el Espantapájaros se lea como falso y la emboscada del Surco (leer la inscripción lo despierta) sea justa; el picado del Cuervo (si 0,45 s de aviso y los 1,2 s de pausa se sienten bien, y que el ataque hacia arriba y el pogo lo alcancen cómodamente); que el cuervo del Cruce del Pan no moleste en las placas de 6 s.
+
 ## Controles actuales
 
 - Flecha izq/dcha: moverse · Espacio: saltar · Flecha arriba/abajo: mirar · Arriba + X: atacar hacia arriba · Abajo + X en el aire: ataque hacia abajo con rebote (pogo) sobre enemigos · Abajo + Espacio sobre un tablón: bajar atravesándolo

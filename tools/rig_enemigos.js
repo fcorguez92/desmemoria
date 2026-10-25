@@ -212,6 +212,62 @@ const ENEMIES = {};
   };
 }
 
+// ============ 6. Espantapájaros: emboscada (dormido) y golpe de brazo ============
+// Dos filas más que los demás: `dormant` (colgado del palo, fingiendo) y `wake` (se baja
+// del palo y se levanta; dura lo mismo que `wake_time` de su IA). El palo solo se dibuja
+// mientras está colgado: al levantarse se queda atrás.
+{
+  const S = makeStyle({
+    head: 'hood', headR: 5.0, headDist: 4.6,
+    hood: { main: '7', hi: '8', face: '5', mask: null, eye: ['u', 't'], trim: null },
+    legLen: 10.0, torsoR: [3.8, 4.2, 4.6, 2.4], armLen: 8.0, farArmLen: 7.8, armR: [2.4, 2.0, 1.8], farArmR: [2.3, 1.9, 1.7],
+    nearLegR: [3.0, 2.5, 2.0, 1.5], farLegR: [3.0, 2.4, 2.0, 1.5],
+    torsoCol: ['7', '6', '5'], nearLegCol: ['6', '5', '5'], farLegCol: ['5', '5', '1'], nearArmCol: ['7', '6', '5'], farArmCol: ['6', '5', '1'], handCol: ['8', '7'],
+    cape: { on: true, base: '6', fold: '5', edge: '7', segs: 3, seg: 5, w0: 2.8, wk: 0.9, rag: 5 },
+    scarf: false, belt: false, pouch: false, noise: 0.2, wraps: ['7', '6'], ribs: null, eyeGlint: 'u', tunic: 6, strap: 'r', waistBand: ['7', '6', '5'],
+    weapon: 'claws', weaponLen: 7,
+  });
+  const idle = { hipx: 0, hipy: -18.4, lean: 6, bend: 3, head: -6, nfx: 4, ffx: -4, fx: 7, fy: 8, gx: -5, gy: 9, blade: 80, gAng: 80, capeTx: -1, capeTy: 0.3, capeAmt: 0.3, capeWave: 0.4, hoodTy: -0.3 };
+  // colgado del palo: pies sin tocar el suelo, brazos en cruz y la cabeza caída
+  const hang = { hipx: 0, hipy: -22, lean: 2, bend: 12, head: -34, nfx: 3, nfy: -4, ffx: -3, ffy: -4, fx: 16, fy: -2, gx: -14, gy: -2, blade: 20, gAng: 20, capeTx: -0.2, capeTy: 0.9, capeAmt: 0.15, capeWave: 0.3, hoodTy: 0.2 };
+  const pole = (upTo) => (out, f) => {
+    // el palo (detrás del cuerpo) y el travesaño donde cuelgan los brazos
+    const x = 48 - 1, head = f.head;
+    const top = Math.floor(head[1]) - 9, bar = Math.floor(head[1]) + 10;
+    for (let y = top; y < 64; y++) for (let dx = 0; dx < 2; dx++) if (out.get(x + dx, y) === '.') out.set(x + dx, y, dx === 0 ? '6' : '5');
+    for (let dx = -16; dx <= 16; dx++) if (out.get(x + dx, bar) === '.') out.set(x + dx, bar, '6');
+    for (let dx = -16; dx <= 16; dx++) if (out.get(x + dx, bar + 1) === '.') out.set(x + dx, bar + 1, '5');
+  };
+  const withPole = (p, upTo) => Object.assign(p, { post: pole(upTo) });
+  ENEMIES.espantapajaros = {
+    canvas: [96, 64], file: 'espantapajaros', out: 'res://game/enemy/espantapajaros_sheet.png', S,
+    order: ['idle', 'walk', 'windup', 'strike', 'hit', 'dormant', 'wake'],
+    title: 'El espantapájaros', desc: 'saco y paja sobre un palo, con cintas rojas de lacre. Cuelga inmóvil entre los demás hasta que pasas a su lado; entonces se baja del palo y avanza despacio, con un brazo largo que cae como un látigo.',
+    anims: {
+      idle: { fps: 6, loop: true, frames: frames(8, (t) => { const b = Math.sin(t * 2 * Math.PI); return pose(Object.assign({}, idle, { hipy: -18.4 + 0.3 * b, lean: 6 + 0.8 * b, fy: 8 - 0.4 * b, gy: 9 + 0.4 * b, phase: t * 2 * Math.PI })); }) },
+      walk: { fps: 14, loop: true, frames: walk(12, 5, 3, idle, (u, sw) => ({ hipx: 1, lean: 8, fx: 7 + 1.5 * sw, fy: 8, gx: -5 - 1.5 * sw, gy: 9, blade: 80 + 5 * sw, capeAmt: 0.45 })) },
+      windup: { fps: 10, loop: false, frames: seq([
+        { t: 0, ...idle },
+        { t: 0.5, hipx: -1, hipy: -18, lean: 0, bend: -2, head: 0, nfx: 5, ffx: -5, fx: 2, fy: -8, gx: -4, gy: 9, blade: -30, gAng: -30, capeTx: -0.3, capeTy: 0.4, capeAmt: 0.5, capeWave: 0.4, hoodTy: -0.3 },
+        { t: 1, hipx: -3, hipy: -17.4, lean: -8, bend: -4, head: 6, nfx: 6, ffx: -6, fx: -4, fy: -24, gx: -4, gy: 9, blade: -100, gAng: -100, capeTx: 0.3, capeTy: 0.5, capeAmt: 0.7, capeWave: 0.4, hoodTy: -0.3 },
+      ], 6) },
+      strike: { fps: 30, loop: false, frames: seq([
+        { t: 0, hipx: -3, hipy: -17.4, lean: -8, bend: -4, head: 6, nfx: 6, ffx: -6, fx: -4, fy: -24, gx: -4, gy: 9, blade: -100, gAng: -100, capeTx: 0.3, capeTy: 0.5, capeAmt: 0.7, capeWave: 0.4, hoodTy: -0.3 },
+        { t: 0.4, hipx: 3, hipy: -17, lean: 18, bend: 8, head: -10, nfx: 8, ffx: -7, fx: 14, fy: -6, gx: -4, gy: 9, blade: 10, gAng: 10, capeTx: -1, capeTy: 0.1, capeAmt: 0.9, capeWave: 0.4, hoodTy: -0.3 },
+        { t: 1, hipx: 6, hipy: -16.4, lean: 30, bend: 10, head: -18, nfx: 10, ffx: -8, fx: 22, fy: 10, gx: -5, gy: 10, blade: 60, gAng: 60, capeTx: -1, capeTy: 0, capeAmt: 1, capeWave: 0.4, hoodTy: -0.3 },
+      ], 6) },
+      hit: { fps: 16, loop: false, frames: hitAnim({ blade: 110, gAng: 110 }) },
+      dormant: { fps: 2, loop: true, frames: [0, 1].map((i) => withPole(pose(Object.assign({}, hang, { hipy: -22 + 0.4 * i, head: -34 - 1.5 * i, capeAmt: 0.15 + 0.1 * i, phase: i * 2 })))) },
+      wake: { fps: 6, loop: false, frames: seq([
+        { t: 0, ...hang },
+        { t: 0.3, ...hang, hipy: -21, lean: 0, bend: 8, head: -22, nfy: -1, ffy: -1, fx: 12, fy: 2, gx: -10, gy: 2 },
+        { t: 0.6, hipx: 0, hipy: -17, lean: 12, bend: 6, head: -12, nfx: 5, nfy: 0, ffx: -5, ffy: 0, fx: 8, fy: 10, gx: -6, gy: 10, blade: 70, gAng: 70, capeTx: -1, capeTy: 0.4, capeAmt: 0.4, capeWave: 0.4, hoodTy: -0.3 },
+        { t: 1, ...idle },
+      ], 6).map((p, i) => (i < 3 ? withPole(p) : p)) },
+    },
+  };
+}
+
 // ---------- salida ----------
 const order = ['idle', 'walk', 'windup', 'strike', 'hit'];
 const only = process.argv[2];
@@ -224,10 +280,75 @@ for (const [name, E] of Object.entries(ENEMIES)) {
     '# Lo genera el esqueleto de tools/rig_enemigos.js (ver tools/rig_lib.js); para cambiar',
     '# el movimiento se edita el esqueleto y se regenera, no estos fotogramas a mano.',
     '# Leyenda: ver art/palette.txt. El punto (.) es transparente.'];
-  const info = lib.writeSprite('art/source/' + E.file + '.sprite', header, E.out, order, E.anims, E.S);
+  const info = lib.writeSprite('art/source/' + E.file + '.sprite', header, E.out, E.order || order, E.anims, E.S);
   // donde sale el proyectil / la punta del arma en el golpe (respecto a los pies)
   const strike = E.anims.strike.frames[E.anims.strike.frames.length - 1];
   const r = lib.render(strike, E.S);
   const cs = lib.canvasSize();
   console.log(name, JSON.stringify(info), 'tip-strike=(' + (r.tip[0] - cs.OX).toFixed(1) + ',' + (r.tip[1] - cs.OY).toFixed(1) + ')');
+}
+
+// ============ 7. Cuervo de Rastrojo: picado desde el aire ============
+// No usa el esqueleto humanoide: es un pájaro de perfil dibujado con las primitivas de
+// tools/lib/raster.js. Filas: idle (aleteo; el juego usa la misma para "walk"), windup
+// (alas alzadas, pico abierto), strike (picado con las alas recogidas) y hit.
+// El lienzo es de 64x48 y el cuerpo está centrado en (32, 24), que es el centro de su colisión.
+if (!only || only === 'cuervo') {
+  const R = require('./lib/raster');
+  lib.setCanvas(64, 48);
+  const C = [32, 24];
+  const A = (a, b) => [a[0] + b[0], a[1] + b[1]];
+  const K = (v, k) => [v[0] * k, v[1] * k];
+  const polar = (deg, l) => [Math.cos(R.rad(deg)) * l, Math.sin(R.rad(deg)) * l];
+  function wing(c, root, phi, scale, cols, droop) {
+    const lens = [7 * scale, 7 * scale, 5 * scale], rs = [3.0, 2.6, 1.6, 0.8];
+    const pts = [root];
+    for (let i = 0; i < 3; i++) pts.push(A(pts[i], polar(phi + droop * i, lens[i])));
+    c.shape(R.chainTest(pts, rs), R.chainColor(pts, rs, cols[0], cols[1], cols[2], 0.1), R.bbox(pts, 4));
+    // plumas primarias: tres puntas que abren la mano del ala
+    const tip = pts[3];
+    for (const da of [-16, 0, 16]) c.line(tip, A(tip, polar(phi + droop * 2 + da, 4.5 * scale)), cols[2]);
+  }
+  function crow(p) {
+    const c = new R.Canvas();
+    const dir = polar(p.tilt, 1), up = [dir[1], -dir[0]];
+    const body = [A(C, K(dir, -8)), C, A(C, K(dir, 5.5))];
+    const head = A(A(C, K(dir, 10)), K(up, 1.6));
+    // ala lejana (detrás) y cola
+    const shoulder = A(A(C, K(dir, 1.5)), K(up, 1.5));
+    wing(c, shoulder, p.wing + 14, p.fold, ['2', '1', '1'], p.droop);
+    const tailRoot = A(C, K(dir, -6));
+    for (const k of [-1, 0, 1]) {
+      const tp = A(tailRoot, A(K(dir, -9), K(up, k * 2.6)));
+      c.shape(R.chainTest([tailRoot, tp], [1.8, 1.0]), () => '2', R.bbox([tailRoot, tp], 3));
+    }
+    c.shape(R.chainTest(body, [1.8, 4.2, 3.8]), R.chainColor(body, [1.8, 4.2, 3.8], '3', '2', '1', 0.1), R.bbox(body, 5));
+    // cabeza, pico y ojo rojo
+    c.shape((x, y) => Math.hypot(x - head[0], y - head[1]) <= 3.3, R.chainColor([head, A(head, [0.1, 0])], [3.3, 3.3], '3', '2', '2'), R.bbox([head], 5));
+    const beak = [A(head, A(K(dir, 2), K(up, 1.4))), A(head, K(dir, 7.2)), A(head, A(K(dir, 2), K(up, -1.4 - p.beak * 0.4)))];
+    c.shape(R.polyTest(beak), () => '4', R.bbox(beak, 4));
+    const eye = A(A(head, K(dir, 1.2)), K(up, 0.6));
+    c.set(Math.floor(eye[0]), Math.floor(eye[1]), 'u');
+    // patas recogidas
+    const leg = A(C, A(K(dir, 1), K(up, -4)));
+    c.line(leg, A(leg, [p.tilt > 30 ? 4 : -1, 3]), '3');
+    // ala cercana (delante)
+    wing(c, shoulder, p.wing, p.fold, ['3', '2', '1'], p.droop);
+    return c;
+  }
+  const flap = (n) => Array.from({ length: n }, (_, i) => { const t = i / n; return { tilt: 4 - 3 * Math.cos(2 * Math.PI * t), wing: -160 + 46 * Math.cos(2 * Math.PI * t), fold: 1, droop: -6, beak: 0.2 }; });
+  const CROW = {
+    idle: { fps: 12, loop: true, frames: flap(6) },
+    windup: { fps: 10, loop: false, frames: [0, 1, 2, 3].map((i) => ({ tilt: -20 - 3 * i, wing: -112 + (i % 2) * 6, fold: 1.05, droop: -4, beak: 2.2 })) },
+    strike: { fps: 8, loop: false, frames: [0, 1].map((i) => ({ tilt: 52 + 4 * i, wing: -176, fold: 0.7, droop: 2, beak: 0.6 })) },
+    hit: { fps: 12, loop: false, frames: [0, 1].map((i) => ({ tilt: -30 + 6 * i, wing: -95 + 12 * i, fold: 1, droop: -8, beak: 1.8 })) },
+  };
+  const header = [
+    '# El cuervo de rastrojo: pájaro negro de perfil, de ojo rojo, que merodea sobre los campos',
+    '# y pica desde lo alto. Lo dibuja tools/rig_enemigos.js con las primitivas de tools/lib/raster.js',
+    '# (no usa el esqueleto humanoide); para cambiarlo se edita el script y se regenera.',
+    '# Cada fotograma es un lienzo completo de 64x48 con el cuerpo centrado en (32, 24).',
+    '# Leyenda: ver art/palette.txt. El punto (.) es transparente.'];
+  const info = R.writeSprite('art/source/cuervo.sprite', header, 'res://game/enemy/cuervo_sheet.png', ['idle', 'windup', 'strike', 'hit'], CROW, crow);
+  console.log('cuervo', JSON.stringify(info));
 }

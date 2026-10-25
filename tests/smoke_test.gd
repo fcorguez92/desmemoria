@@ -132,6 +132,9 @@ func _run() -> void:
 	await _test_surco_ciego_niche_and_high_ledge()
 	await _test_campo_de_los_ferran_lever_opens_the_pen()
 	await _test_cruce_del_pan_plates_and_the_niche()
+	await _test_dormant_ai_and_espantapajaros()
+	await _test_fly_ai_and_cuervo()
+	await _test_telegraph_zone()
 	await _test_title_screen()
 	await _test_pause_returns_to_title()
 	await _test_menu_list_survives_leaving_the_tree()
@@ -1760,7 +1763,7 @@ func _test_sound_effects() -> void:
 
 	# Cada enemigo tiene su voz completa, su golpe y su paso.
 	var incomplete := []
-	for file in ["enemy", "enemy_lancero", "enemy_arrojador", "enemy_coloso", "enemy_acechador"]:
+	for file in ["enemy", "enemy_lancero", "enemy_arrojador", "enemy_coloso", "enemy_acechador", "enemy_espantapajaros", "enemy_cuervo"]:
 		var enemy: Node = load("res://game/enemy/%s.tscn" % file).instantiate()
 		for event in ["alert", "attack", "hurt", "die"]:
 			if not Sfx.has(StringName("%s_%s" % [enemy.voice, event])):
@@ -4675,3 +4678,294 @@ func _test_cruce_del_pan_plates_and_the_niche() -> void:
 	Input.action_release(&"ui_down")
 	Input.action_release(&"ui_accept")
 	_check(_player.global_position.y > _standing_on("CruceDelPan", 50, 10).y + 48.0, "con la compuerta cerrada, desde el nicho se baja atravesando el tablón")
+
+
+# --- Piezas de enemigos 1: DORMANT (K30), vuelo (K28), aviso de zona (K29) -----
+
+func _test_dormant_ai_and_espantapajaros() -> void:
+	print("\n[DORMANT (K30) y el Espantapájaros: inmóvil hasta que pasas a 100 px, o hasta que lo golpean]")
+	await _load_world()
+	_player.health.max_health = 99
+	_player.health.health = 99
+	var scarecrow := await _spawn_enemy_next_to_player("res://game/enemy/enemy_espantapajaros.tscn", 90.0)
+	scarecrow.global_position.x = 190.0
+	scarecrow.ai._home_x = 190.0
+	_player.global_position = Vector2(60.0, 296.0)
+	var woke := [0]
+	scarecrow.ai.woke_up.connect(func() -> void: woke[0] += 1)
+	var x0: float = scarecrow.global_position.x
+	await _wait(60)
+	_check(scarecrow.ai.state == PatrolChaseAI.State.DORMANT and absf(scarecrow.global_position.x - x0) < 0.5 and woke[0] == 0, "lejos, el espantapájaros sigue dormido e inmóvil (no patrulla)")
+	_check(scarecrow.animator.current == "dormant", "dormido usa su pose colgado del palo")
+	_check(scarecrow.health.max_health == 4 and scarecrow.ecos_reward == 3 and scarecrow.parryable, "4 de vida, 3 Ecos y golpe que se puede parar")
+	_check(scarecrow.ai.windup_time >= 0.55 and scarecrow.ai.wake_radius == 100.0, "avisa el golpe de brazo más de medio segundo y despierta a 100 px")
+	# A 130 px (fuera de su radio) sigue dormido; a 90 px despierta.
+	_player.global_position = Vector2(x0 - 130.0, 296.0)  # 130 px
+	await _wait(10)
+	_check(scarecrow.ai.state == PatrolChaseAI.State.DORMANT, "a 130 px no despierta")
+	var hp: int = _player.health.health
+	_player.global_position = Vector2(x0 - 90.0, 296.0)
+	await _wait(6)
+	_check(scarecrow.ai.state == PatrolChaseAI.State.WAKING and woke[0] == 1, "a 90 px despierta (señal woke_up una vez) y se levanta")
+	_check(scarecrow.animator.current == "wake", "mientras se levanta usa su animación de levantarse")
+	await _wait(40)
+	_check(_player.health.health == hp and absf(scarecrow.global_position.x - x0) < 1.0, "levantándose no ataca ni avanza: es la ventana para rodearlo")
+	await _wait(60)
+	_check(scarecrow.ai.state != PatrolChaseAI.State.WAKING and scarecrow.ai.state != PatrolChaseAI.State.DORMANT, "terminado el tiempo de levantarse, persigue")
+	await _wait(200)
+	_check(_player.health.health < hp, "y su golpe de brazo acaba haciendo daño")
+	# Despierto no vuelve a dormirse ni a emitir woke_up.
+	_check(woke[0] == 1, "no despierta dos veces")
+	# Un golpe mientras se levanta (o que lo despierta) no pisa la animación de levantarse.
+	await _load_world()
+	scarecrow = await _spawn_enemy_next_to_player("res://game/enemy/enemy_espantapajaros.tscn", 300.0)
+	await _wait(5)
+	scarecrow.take_hit(1, -1)
+	await _wait(3)
+	_check(scarecrow.ai.state == PatrolChaseAI.State.WAKING and scarecrow.animator.current == "wake", "un golpe que lo despierta no cancela su animación de levantarse")
+	scarecrow.take_hit(1, -1)
+	await _wait(3)
+	_check(scarecrow.animator.current == "wake" and scarecrow.health.health == 2, "ni uno que llega mientras se levanta")
+
+	# Un golpe lo despierta aunque el jugador esté lejos.
+	await _load_world()
+	scarecrow = await _spawn_enemy_next_to_player("res://game/enemy/enemy_espantapajaros.tscn", 300.0)
+	await _wait(5)
+	scarecrow.take_hit(1, -1)
+	_check(scarecrow.ai.state == PatrolChaseAI.State.WAKING and scarecrow.health.health == 3, "un golpe lo despierta y le quita vida")
+	var ecos: int = _player.ecos
+	for i in 3:
+		scarecrow.take_hit(1, -1)
+	await _wait(2)
+	_check(not is_instance_valid(scarecrow) and _player.ecos == ecos + 3, "muerto, paga sus 3 Ecos")
+
+	# Fuera de su sala no despierta: la sala de al lado no cuenta.
+	await _load_world()
+	var field: Node2D = _level.get_node("Rooms/SurcoCiego")
+	var spawners := _room_children_of("SurcoCiego", EntitySpawner)
+	_check(spawners.size() == 1 and is_instance_valid(spawners[0].instance), "el Surco Ciego tiene un espantapájaros de ejemplo")
+	var placed: Node2D = spawners[0].instance
+	var col := int((placed.global_position.x - field.global_position.x) / 16.0)
+	_check(placed.ai.state == PatrolChaseAI.State.DORMANT and col >= 10 and col <= 53, "empieza dormido y a 10 o más baldosas de las puertas (columna %d)" % col)
+	_player.global_position = _standing_on("TorreDeRiego", 51, 7)
+	_player.velocity = Vector2.ZERO
+	await _wait(30)
+	_check(placed.ai.state == PatrolChaseAI.State.DORMANT, "con el jugador en otra sala no despierta")
+	# Al descansar vuelve a su sitio y a dormir.
+	placed.ai.wake()
+	var spawner: EntitySpawner = spawners[0]
+	spawner.reset()
+	await _wait(3)
+	_check(spawner.instance != placed and spawner.instance.ai.state == PatrolChaseAI.State.DORMANT, "al reiniciar la sala reaparece dormido")
+
+
+func _make_zone(at: Vector2, kind: TelegraphZone.Shape, size: Vector2, duration: float, parryable: bool) -> TelegraphZone:
+	# El jugador siempre en el mismo punto (un golpe anterior lo habrá empujado).
+	_player.global_position = Vector2(100.0, 296.0)
+	_player.velocity = Vector2.ZERO
+	var zone := TelegraphZone.new()
+	zone.shape_kind = kind
+	zone.size = size
+	zone.duration = duration
+	zone.parryable = parryable
+	_room.add_child(zone)
+	zone.global_position = at
+	return zone
+
+
+func _test_telegraph_zone() -> void:
+	print("\n[Aviso de zona (K29): marca amarilla o roja, daño solo al terminar y solo a lo que hay dentro]")
+	await _load_world()
+	_player.health.max_health = 99
+	_player.health.health = 99
+	await _clear_enemies(_room)
+	var enemy_script: Script = load("res://game/enemy/enemy.gd")
+	var enemy_yellow: Color = enemy_script.TELEGRAPH_COLOR
+	var enemy_red: Color = enemy_script.TELEGRAPH_RED
+	var zone := _make_zone(Vector2(100.0, 296.0), TelegraphZone.Shape.RECT, Vector2(80.0, 60.0), 0.5, true)
+	_player.global_position = Vector2(100.0, 296.0)
+	_player.velocity = Vector2.ZERO
+	_check(zone.warning_color() == enemy_yellow, "una zona que se puede parar se pinta del amarillo de aviso de los enemigos")
+	zone.parryable = false
+	_check(zone.warning_color() == enemy_red, "una que no se puede parar, del rojo de aviso")
+	zone.parryable = true
+	var hp: int = _player.health.health
+	await _wait(15)
+	_check(_player.health.health == hp and not zone.is_resolved, "durante el aviso, dentro de la marca, no hace daño")
+	_check(zone.progress() > 0.3 and zone.progress() < 0.7, "el aviso avanza (%d %%)" % int(zone.progress() * 100.0))
+	var seen := []
+	zone.resolved.connect(func(hit: Array) -> void: seen.append(hit.size()))
+	await _wait(25)
+	_check(_player.health.health == hp - 1 and seen == [1], "al terminar el aviso hace daño a lo que hay dentro, una sola vez")
+	await _wait(30)
+	_check(not is_instance_valid(zone) and _player.health.health == hp - 1, "después de golpear se borra sola y no repite")
+
+	# Fuera de la zona no pasa nada; un círculo mide su radio, no su caja.
+	await _wait(40)
+	hp = _player.health.health
+	zone = _make_zone(Vector2(160.0, 296.0), TelegraphZone.Shape.RECT, Vector2(40.0, 40.0), 0.3, false)
+	await _wait(30)
+	_check(_player.health.health == hp, "quien está fuera de la marca no recibe daño")
+	await _wait(40)
+	zone = _make_zone(Vector2(100.0, 296.0), TelegraphZone.Shape.CIRCLE, Vector2(30.0, 0.0), 0.3, false)
+	await _wait(30)
+	_check(_player.health.health == hp - 1, "un círculo de radio 30 alcanza al jugador que está en su centro")
+	await _wait(60)
+	hp = _player.health.health
+	zone = _make_zone(Vector2(220.0, 296.0), TelegraphZone.Shape.CIRCLE, Vector2(30.0, 0.0), 0.3, false)
+	await _wait(30)
+	_check(_player.health.health == hp, "y no al que está a 120 px")
+
+	# El rojo atraviesa la guardia; el amarillo se puede parar (sin daño).
+	await _wait(40)
+	hp = _player.health.health
+	_player.global_position = Vector2(100.0, 296.0)
+	_player.velocity = Vector2.ZERO
+	zone = _make_zone(Vector2(130.0, 296.0), TelegraphZone.Shape.RECT, Vector2(120.0, 60.0), 0.3, false)
+	await _wait(8)
+	_player.parry.try_start()
+	await _wait(16)
+	_check(_player.health.health == hp - 1, "un golpe de zona rojo atraviesa la guardia del jugador (con la ventana de parry abierta)")
+	await _wait(60)
+	hp = _player.health.health
+	_player.global_position = Vector2(100.0, 296.0)
+	_player.velocity = Vector2.ZERO
+	zone = _make_zone(Vector2(130.0, 296.0), TelegraphZone.Shape.RECT, Vector2(120.0, 60.0), 0.3, true)
+	var parried := [0]
+	zone.parried.connect(func() -> void: parried[0] += 1)
+	var hit_counts := []
+	zone.resolved.connect(func(hit: Array) -> void: hit_counts.append(hit.size()))
+	await _wait(8)
+	_player.parry.try_start()
+	await _wait(14)
+	_check(_player.health.health == hp and parried[0] == 1, "uno amarillo se puede parar: sin daño y con la señal parried")
+	_check(hit_counts == [0], "y quien lo paró no cuenta como golpeado en resolved")
+	# Cancelar antes de tiempo no golpea.
+	await _wait(60)
+	hp = _player.health.health
+	zone = _make_zone(Vector2(100.0, 296.0), TelegraphZone.Shape.RECT, Vector2(80.0, 60.0), 0.4, true)
+	await _wait(10)
+	zone.cancel()
+	await _wait(40)
+	_check(_player.health.health == hp, "cancelar el aviso evita el golpe")
+
+
+## Un cuervo en El Último Umbral, en `at` (el suelo está en y = 320).
+func _spawn_crow(at: Vector2) -> Node2D:
+	var crow: Node2D = load("res://game/enemy/enemy_cuervo.tscn").instantiate()
+	_room.add_child(crow)
+	crow.global_position = at
+	crow.ai._home = at
+	return crow
+
+
+func _test_fly_ai_and_cuervo() -> void:
+	print("\n[Vuelo (K28) y el Cuervo: merodea, se coloca encima, avisa y pica; no atraviesa el terreno]")
+	await _load_world()
+	_player.health.max_health = 99
+	_player.health.health = 99
+	# Sin objetivo (el jugador fuera de su zona) solo merodea, sin gravedad.
+	_player.global_position = Vector2(30.0, 296.0)  # fuera de su zona de acción (a menos de 64 px del borde)
+	_player.velocity = Vector2.ZERO
+	var crow := _spawn_crow(Vector2(140.0, 200.0))
+	crow.ai.patrol_extent = Vector2(50.0, 14.0)
+	var min_x := 1e9
+	var max_x := -1e9
+	var min_y := 1e9
+	var max_y := -1e9
+	for i in 240:
+		await _wait(1)
+		min_x = minf(min_x, crow.global_position.x)
+		max_x = maxf(max_x, crow.global_position.x)
+		min_y = minf(min_y, crow.global_position.y)
+		max_y = maxf(max_y, crow.global_position.y)
+	_check(crow.ai.state == FlyAI.State.PATROL and max_x - min_x > 40.0, "sin objetivo merodea en el aire (se mueve %d px)" % int(max_x - min_x))
+	_check(max_y - min_y < 40.0 and absf(crow.global_position.y - 200.0) < 30.0, "y no cae: no tiene gravedad (variación vertical %d px)" % int(max_y - min_y))
+	_check(min_x >= 140.0 - crow.ai.patrol_extent.x - 12.0 and max_x <= 140.0 + crow.ai.patrol_extent.x + 12.0, "el merodeo no se aleja de su zona")
+	_check(crow.health.max_health == 2 and crow.ecos_reward == 2 and crow.parryable and crow.ai.windup_time >= 0.4 and crow.ai.recovery_time >= 1.0, "2 de vida, 2 Ecos, golpe que se puede parar, aviso de 0,45 s y pausa de 1,2 s")
+	crow.queue_free()
+
+	# Con el jugador cerca: se coloca encima, avisa, pica y hace daño.
+	await _load_world()
+	_player.health.max_health = 99
+	_player.health.health = 99
+	_player.global_position = Vector2(100.0, 296.0)
+	_player.velocity = Vector2.ZERO
+	crow = _spawn_crow(Vector2(190.0, 190.0))
+	var events := {"windup": 0, "landed": 0, "dive_ended": 0}
+	crow.ai.attack_started.connect(func() -> void: events["windup"] += 1)
+	crow.ai.attack_landed.connect(func() -> void: events["landed"] += 1)
+	crow.ai.dive_ended.connect(func() -> void: events["dive_ended"] += 1)
+	var hp: int = _player.health.health
+	var windup_frames := 0
+	var lowest := -1e9
+	var first_landed_frame := -1
+	var second_windup_frame := -1
+	var hurt_frame := -1
+	for i in 420:
+		await _wait(1)
+		if crow.ai.state == FlyAI.State.WINDUP:
+			windup_frames += 1
+		lowest = maxf(lowest, crow.global_position.y)
+		if first_landed_frame < 0 and events["landed"] > 0:
+			first_landed_frame = i
+		if first_landed_frame >= 0 and second_windup_frame < 0 and events["windup"] > 1:
+			second_windup_frame = i
+		if hurt_frame < 0 and _player.health.health < hp:
+			hurt_frame = i
+		# Que el jugador no se mueva: así el picado siempre lo alcanza.
+		_player.global_position = Vector2(100.0, 296.0)
+		_player.velocity = Vector2.ZERO
+	_check(events["windup"] >= 1 and windup_frames >= 24, "avisa antes de picar (aviso de %d fotogramas)" % windup_frames)
+	_check(hurt_frame >= 0 and _player.health.health < hp, "el picado hace daño al jugador")
+	_check(events["dive_ended"] >= 1, "el picado termina al acertar (señal dive_ended)")
+	_check(lowest < 320.0 - 8.0, "no atraviesa el suelo (su punto más bajo es y = %d, el suelo está en 320)" % int(lowest))
+	_check(second_windup_frame < 0 or second_windup_frame - first_landed_frame >= 66, "entre picados deja una pausa de ~1,2 s (%d fotogramas)" % (second_windup_frame - first_landed_frame))
+	# Sin camino libre (un techo de por medio) no pica.
+	crow.ai.state = FlyAI.State.CHASE
+	var roof := _mech_wall(Rect2(40.0, 262.0, 200.0, 8.0))
+	_player.global_position = Vector2(100.0, 296.0)
+	var windups_before: int = events["windup"]
+	for i in 120:
+		await _wait(1)
+		_player.global_position = Vector2(100.0, 296.0)
+		_player.velocity = Vector2.ZERO
+	_check(events["windup"] == windups_before, "con un sólido entre el cuervo y el jugador no inicia picados")
+	roof.queue_free()
+	# Colocación: por encima del jugador mientras lo persigue.
+	_player.global_position = Vector2(100.0, 296.0)
+	await _wait(5)
+
+	# El terreno corta el picado: sin objetivo, un picado hacia abajo acaba en el suelo.
+	_player.global_position = Vector2(30.0, 296.0)
+	_player.velocity = Vector2.ZERO
+	crow.queue_free()
+	await _wait(2)
+	crow = _spawn_crow(Vector2(140.0, 240.0))
+	crow.ai.dive_distance = 1000.0
+	crow.ai._dive_direction = Vector2.DOWN
+	crow.ai._dive_travelled = 0.0
+	crow.ai.state = FlyAI.State.DIVE
+	await _wait(60)
+	_check(crow.ai.state != FlyAI.State.DIVE and crow.global_position.y < 320.0 - 6.0, "un picado contra el suelo se corta ahí (y = %d)" % int(crow.global_position.y))
+	# Un golpe lo interrumpe y lo deja quieto; dos lo matan y pagan 2 Ecos.
+	crow.ai.state = FlyAI.State.CHASE
+	var ecos: int = _player.ecos
+	crow.take_hit(1, 1)
+	_check(crow.health.health == 1 and crow.ai.state == FlyAI.State.RECOVER, "un golpe lo aturde en el aire")
+	crow.take_hit(1, 1)
+	await _wait(2)
+	_check(not is_instance_valid(crow) and _player.ecos == ecos + 2, "muerto, paga sus 2 Ecos")
+
+	# Sala: el cuervo de ejemplo está en el Cruce del Pan, lejos de las puertas.
+	var field: Node2D = _level.get_node("Rooms/CruceDelPan")
+	var spawners := _room_children_of("CruceDelPan", EntitySpawner)
+	_check(spawners.size() == 1 and is_instance_valid(spawners[0].instance) and spawners[0].instance.get_node_or_null("FlyAI") != null, "el Cruce del Pan tiene un cuervo")
+	var col := int((spawners[0].global_position.x - field.global_position.x) / 16.0)
+	_check(col >= 10 and spawners[0].instance.ai.territory.has_area(), "a 10 o más baldosas de las puertas (columna %d) y limitado a su sala" % col)
+	# Fuera de su sala no persigue.
+	var placed: Node2D = spawners[0].instance
+	_player.global_position = _standing_on("CampoDeLosFerran", 62, 31)
+	_player.velocity = Vector2.ZERO
+	await _wait(60)
+	_check(placed.ai.state == FlyAI.State.PATROL, "con el jugador en la sala de al lado sigue merodeando")

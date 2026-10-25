@@ -159,15 +159,15 @@ Las piezas singulares (props únicos de cada región) no usan letra: se listan e
 
 | Car. | Qué es | Estado |
 |---|---|---|
-| `5` | Enemigo nuevo, rol **volador** (cuervo, polilla, murciélago, gaviota, vela...) | nuevo (04) |
-| `6` | Enemigo nuevo, rol **guardia** (escudo o coraza que bloquea de frente, o emboscador durmiente) | nuevo (04) |
+| `5` | Enemigo nuevo, rol **volador** (cuervo, polilla, murciélago, gaviota, vela...). Por defecto: cuervo de rastrojo (picado) | ✔ (K28) |
+| `6` | Enemigo nuevo, rol **guardia** (escudo o coraza que bloquea de frente, o emboscador durmiente). Por defecto: espantapájaros (dormido) | ✔ (K30) |
 | `7` | Enemigo nuevo, rol **corredor** (carga, salto o rodadura, o rastrero) | nuevo (04) |
 | `8` | Enemigo nuevo, rol **de zona o de apoyo** (crea una zona o un estado, o da escudo) | nuevo (04) |
 | `9` | **Élite o minijefe** de la sala (uno por sala) | nuevo (04) |
 | `!` | Coleccionable: fragmento de vida o de frasco, Bolsa de Rastro, Página de Corvel, reliquia, objeto de lore (tipo en el campo `pickups` de la escena como `c37f05:bag`, por posición, y `fragment` si falta; el id sale del mapa y la posición, `cisterna.c37f05`) | ✔ (W1) |
 | `@` | Personaje no jugador (PNJ; cuál, en el campo `npcs` de la escena) | nuevo (fase de PNJ) |
 
-Los enemigos `5`-`9` son **casilleros**: la escena de la sala (`enemy_set`) dice qué enemigo concreto es cada uno en esa sala (el catálogo está en la propuesta 04; el editor de combate fija cuáles entran). `1`-`4` y `E` conservan su significado en todas las salas.
+Los enemigos `5` y `6` ya son **fijos**: `5` es el cuervo de rastrojo (volador, picado) y `6` el espantapájaros (dormido). Si algún día hay un segundo volador o un segundo emboscador, se añadirá un `enemy_set` por sala que los asigne; mientras tanto no hace falta. `7`-`9` siguen siendo **casilleros** reservados (rol corredor, de zona o apoyo, élite o minijefe; el catálogo está en la propuesta 04). `1`-`4` y `E` conservan su significado en todas las salas.
 
 ### Libres
 

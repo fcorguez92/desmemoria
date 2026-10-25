@@ -26,6 +26,8 @@ const LanceroScene := preload("res://game/enemy/enemy_lancero.tscn")
 const ArrojadorScene := preload("res://game/enemy/enemy_arrojador.tscn")
 const ColosoScene := preload("res://game/enemy/enemy_coloso.tscn")
 const AcechadorScene := preload("res://game/enemy/enemy_acechador.tscn")
+const EspantapajarosScene := preload("res://game/enemy/enemy_espantapajaros.tscn")
+const CuervoScene := preload("res://game/enemy/enemy_cuervo.tscn")
 const AnchorScene := preload("res://game/memory_anchor/memory_anchor.tscn")
 const BreakableUrnScene := preload("res://game/environment/breakable_urn.tscn")
 const BreakableCrateScene := preload("res://game/environment/breakable_crate.tscn")
@@ -62,13 +64,15 @@ const CELL := 16.0
 ## Mitad de la altura de cada entidad, para apoyar sus pies en la celda.
 ## Enemigos: marcador -> [escena, mitad de la altura de su cuerpo]. E = cascarón
 ## (tajo), 1 = lancero (estocada larga), 2 = arrojador (a distancia), 3 = coloso
-## (mazazo lento) y 4 = acechador (embestida).
+## (mazazo lento), 4 = acechador (embestida), 5 = cuervo (volador, picado) y 6 = espantapájaros (emboscada dormida).
 const ENEMIES := {
 	"E": [EnemyScene, 24.0],
 	"1": [LanceroScene, 24.0],
 	"2": [ArrojadorScene, 24.0],
 	"3": [ColosoScene, 32.0],
 	"4": [AcechadorScene, 18.0],
+	"5": [CuervoScene, 8.0],
+	"6": [EspantapajarosScene, 24.0],
 }
 const ANCHOR_HALF_HEIGHT := 28.0
 const BREAKABLE_HALF_HEIGHT := 11.0
