@@ -52,7 +52,7 @@ position = Vector2(742, 334)
 scale = Vector2(2, 2)
 
 [node name="Hero" type="Sprite2D" parent="."]
-position = Vector2(122, 326)
+position = Vector2(122, 294)
 scale = Vector2(2, 2)
 texture = ExtResource("14_hero")
 hframes = 14

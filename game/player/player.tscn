@@ -34,7 +34,7 @@ shape = SubResource("CapsuleShape2D_1")
 
 [node name="Visual" type="Sprite2D" parent="."]
 texture = ExtResource("13_sheet")
-offset = Vector2(0, -8)
+offset = Vector2(0, -24)
 hframes = 14
 vframes = 8
 
