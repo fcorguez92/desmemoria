@@ -146,7 +146,8 @@ const SPIKES_HALF_HEIGHT := 8.0
 ## enlace: las compuertas leen `t:sala.canal_a`/`canal_b` y lo demás escribe
 ## `t:sala.nombre_columna_fila` (temporal). Lo permanente se nombra aquí, a mano.
 @export var links: Dictionary = {}
-## Ajustes de las piezas con ritmo o recorrido (ciclos `y` y plataformas `<`): la clave
+## Ajustes de las piezas con ritmo o recorrido (ciclos `y`, plataformas `<` y disparadores
+## `z _ *`, p. ej. el `hold_time` de una placa): la clave
 ## es el id de la pieza (`y@12,5`; de una plataforma, el de su `<`) y el valor, un
 ## diccionario de propiedades del nodo, p. ej. `{"phase": 0.5, "period": 4.0}` para
 ## un ciclo o `{"mode": 1, "activation_flag": "t:sala.palanca"}` para una plataforma
@@ -247,6 +248,7 @@ func _place_mechanics() -> void:
 			var trigger := TRIGGERS[symbol][0].instantiate() as Trigger
 			var fallback := StringName("t:%s.%s_%d_%d" % [room_id(), TRIGGERS[symbol][1], group[0].x, group[0].y])
 			trigger.flag_id = piece_flags(symbol, group, fallback)[0]
+			_apply_params(trigger, piece_id(symbol, group))
 			trigger.position = _cell_local(group[0])
 			if trigger.mode == Trigger.Mode.PLATE:
 				# Una placa de varias celdas en fila es una sola, más ancha.
