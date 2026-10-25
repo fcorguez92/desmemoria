@@ -166,6 +166,28 @@ function main() {
     mapsSeen.add(room.id);
   }
 
+  // C18: Nombres en inscripciones. El "note_name_id" de una sala y el "name_id" de
+  // inscription.tscn deben ser ids de game/names.gd y no repetirse (un Nombre, una fuente);
+  // una sala con "note_name_id" necesita su "i" en el mapa.
+  {
+    const names = new Set([...fs.readFileSync(path.join(ROOT, 'game/names.gd'), 'utf8').matchAll(/id = &"([a-z_]+)", region = /g)].map((k) => k[1]));
+    const used = new Map();
+    const use = (id, where) => {
+      if (!names.has(id)) fail('C18', where, '', `el Nombre "${id}" no está en game/names.gd`);
+      else if (used.has(id)) fail('C18', where, '', `el Nombre "${id}" ya lo lleva ${used.get(id)}`);
+      else used.set(id, where);
+    };
+    const stone = fs.readFileSync(path.join(ROOT, 'game/environment/inscription.tscn'), 'utf8').match(/^name_id = &"([^"]*)"/m);
+    if (stone && stone[1]) use(stone[1], 'inscription.tscn');
+    for (const room of rooms) {
+      const scene = worldRooms().find((w) => sceneMap(w.scene) === room.id);
+      const m = scene && fs.readFileSync(path.join(LEVELS, scene.scene + '.tscn'), 'utf8').match(/^note_name_id = &"([^"]*)"/m);
+      if (!m || !m[1]) continue;
+      if (!room.rows.some((row) => row.includes('i'))) fail('C18', room.id, '', `"note_name_id" sin ninguna "i" en el mapa`);
+      use(m[1], room.id);
+    }
+  }
+
   // C16: enlaces ("links" de la escena) de las piezas de mecánica. Cada clave debe
   // ser el id de una pieza que existe en el mapa (carácter@columna,fila de su primera
   // celda en orden de lectura, ver room.gd) y cada marca, tener la forma prefijo:sala.objeto.

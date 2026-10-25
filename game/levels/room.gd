@@ -9,7 +9,8 @@ extends Node2D
 ##   reaparece: ver core/objects/breakable_prop.gd), I = inscripción legible
 ##   (ver core/objects/readable.gd), i = inscripción con el texto `note` de la sala,
 ##   d / j / w = habilidad (dash, doble salto, salto de pared) que se recuerda al
-##   tocarla, ^ v = pinchos fijos (suelo, techo) y ~ - = pinchos que salen y se
+##   tocarla, ^ v = pinchos fijos (suelo, techo), { } = pinchos fijos pegados a una
+##   pared izquierda / derecha y ~ - = pinchos que salen y se
 ##   retraen (los dos grupos alternan; ver core/objects/hazard.gd), ! = coleccionable
 ##   con id guardado (fragmento de vida, Bolsa de Rastro u objeto; ver `pickups`).
 ## El marcador P (inicio del jugador) no lo usa la sala: lo busca el mundo, que
@@ -111,6 +112,11 @@ const SPIKES := {
 	"v": [180.0, 0.0, 0.0],
 	"~": [0.0, 2.4, 0.0],
 	"-": [0.0, 2.4, 0.5],
+	# Laterales (T2 de docs/puzles.md): la tira pegada a una pared izquierda apunta a
+	# la derecha (`{`) y la de una pared derecha a la izquierda (`}`). El giro lleva la
+	# caja de daño de 12x9 a una tira fina de 9 px pegada a la pared de su celda.
+	"{": [90.0, 0.0, 0.0],
+	"}": [-90.0, 0.0, 0.0],
 }
 const SPIKES_HALF_HEIGHT := 8.0
 
@@ -121,6 +127,9 @@ const SPIKES_HALF_HEIGHT := 8.0
 ## Texto de las inscripciones del marcador `i` (cada sala dice lo suyo; la `I`
 ## mayúscula es la de El Último Umbral, con su texto en la escena).
 @export_multiline var note: String = ""
+## Nombre (id de game/names.gd) que contienen las inscripciones `i` de la sala; vacío si
+## no llevan ninguno. Lo verifica tools/verifica_mundo.js (C18).
+@export var note_name_id: StringName = &""
 ## Tipo de los coleccionables `!` que no son fragmentos de vida, atado a su posición
 ## y no al orden de lectura: entradas `cCCfFF:tipo` (p. ej. `c37f05:bag`), con tipo
 ## `fragment`, `bag` o `item`. Sin entrada, el `!` es `fragment`. Mover un `!` en el
@@ -162,6 +171,7 @@ func _ready() -> void:
 	for at in tiles.markers.get("i", []):
 		var note_stone := InscriptionScene.instantiate()
 		note_stone.text = note
+		note_stone.name_id = note_name_id
 		_place(note_stone, at, INSCRIPTION_HALF_HEIGHT)
 	for symbol in SPIKES:
 		for at in tiles.markers.get(symbol, []):

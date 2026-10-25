@@ -146,8 +146,8 @@ Las piezas singulares (props únicos de cada región) no usan letra: se listan e
 | `n` | Piedra de lectura (Nombrar) | nuevo (W8) |
 | `<` `>` | Extremos de un carril de plataforma móvil, barca o vagoneta | ✔ (W3) |
 | `y` | Ciclo (marea, tinta, ventana) | ✔ (W3) |
-| `{` | Pinchos laterales pegados a una pared **izquierda** (apuntan a la derecha) | nuevo (W4) |
-| `}` | Pinchos laterales pegados a una pared **derecha** (apuntan a la izquierda) | nuevo (W4) |
+| `{` | Pinchos laterales pegados a una pared **izquierda** (apuntan a la derecha) | ✔ (W4) |
+| `}` | Pinchos laterales pegados a una pared **derecha** (apuntan a la izquierda) | ✔ (W4) |
 | `k` | Derribo: columna, estantería-torre, puntal | nuevo (WA, ampliación) |
 | `o` | Combinación: selector de símbolos | nuevo (WA, ampliación) |
 | `)` `(` | Corriente de viento hacia la derecha / hacia la izquierda | reservado (WR, recortada) |

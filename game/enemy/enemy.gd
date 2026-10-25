@@ -14,6 +14,8 @@ extends CharacterBody2D
 enum AttackKind { MELEE, PROJECTILE, LUNGE }
 
 const TELEGRAPH_COLOR := Color(1.0, 0.85, 0.3)
+## Aviso de un ataque que no se puede parar: hay que esquivarlo.
+const TELEGRAPH_RED := Color(1.0, 0.25, 0.2)
 const STUN_COLOR := Color(0.7, 0.9, 1.0)
 ## Fotogramas de la marcha en los que un pie toca el suelo (ver tools/rig_enemigos.js).
 const STEP_FRAMES := [5, 11]
@@ -27,6 +29,8 @@ const ROOM_ENTRY_MARGIN := 64.0
 @export var gravity: float = 2250.0
 ## Segundos de aturdimiento tras un parry, durante los que recibe doble daño.
 @export var parry_stun_time: float = 1.2
+## Si es false, su golpe atraviesa la guardia (aviso rojo en vez de amarillo).
+@export var parryable: bool = true
 
 @export_group("Sonido")
 ## Prefijo de su voz: busca `<voz>_alert`, `_attack`, `_hurt` y `_die` (ver tools/sonidos.js).
@@ -176,7 +180,7 @@ func _on_attack_cancelled() -> void:
 
 func _on_attack_started() -> void:
 	_speak(&"attack", -7.0)
-	visual.modulate = TELEGRAPH_COLOR
+	visual.modulate = TELEGRAPH_COLOR if parryable else TELEGRAPH_RED
 	attack_visual.windup(ai.windup_time)
 
 
