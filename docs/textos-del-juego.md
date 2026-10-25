@@ -133,7 +133,7 @@ Formato: **Sala · colocación**, tipo, texto. Los nombres de sala están en §9
 
 **La Torre de Riego (construido)**
 
-- **La Torre de Riego · placa de la rueda parada, con la cuerda aún tensa** — «Torre de Riego. Vigía: Tomasa. Cerró la última compuerta y nadie más abrió la torre.» **[Nombre: Tomasa]** **[nuevo marcador]**
+- **La Torre de Riego · placa de la rueda parada, con la cuerda aún tensa** — «Torre de Riego. Vigía: Tomasa. Cerró la última compuerta y nadie más abrió la torre.» **[Nombre: Tomasa]** **[colocada en K22, con `name_id`]**
 
 **El resto del Cinturón**
 

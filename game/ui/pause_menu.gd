@@ -8,17 +8,20 @@ extends ModalLayer
 ## Quien lo abre (el jugador, al pulsar Esc o Start) llama a `open()`: una capa que solo
 ## funciona en pausa no puede escuchar la tecla mientras se juega.
 
-enum Page { MAIN, MAP, CHARACTER, CONTROLS }
+enum Page { MAIN, MAP, CHARACTER, CONTROLS, NAMES }
 
 ## Se ha elegido volver al menú principal (lo atiende el mundo, que guarda antes).
 signal title_requested
+
+const Names := preload("res://game/names.gd")
 
 const OPTION_CONTINUE := 0
 const OPTION_MAP := 1
 const OPTION_CHARACTER := 2
 const OPTION_CONTROLS := 3
-const OPTION_TITLE := 4
-const OPTION_QUIT := 5
+const OPTION_NAMES := 4
+const OPTION_TITLE := 5
+const OPTION_QUIT := 6
 
 ## Los indicadores de botón del pie de cada página (ver InputHintBar): sin texto, solo
 ## los iconos del dispositivo que se use. El mapa añade su leyenda de colores (tú,
@@ -53,7 +56,7 @@ var _character_text: String = ""
 
 func _ready() -> void:
 	super()
-	menu.set_entries(PackedStringArray(["Continuar", "Mapa", "Personaje", "Controles", "Menú principal", "Salir del juego"]))
+	menu.set_entries(PackedStringArray(["Continuar", "Mapa", "Personaje", "Controles", "Nombres que sostienes", "Menú principal", "Salir del juego"]))
 	menu.chosen.connect(_on_chosen)
 	menu.cancelled.connect(close)
 
@@ -106,6 +109,8 @@ func _on_chosen(index: int) -> void:
 			_show_page(Page.CHARACTER)
 		OPTION_CONTROLS:
 			_show_page(Page.CONTROLS)
+		OPTION_NAMES:
+			_show_page(Page.NAMES)
 		OPTION_TITLE:
 			title_requested.emit()
 		OPTION_QUIT:
@@ -117,7 +122,7 @@ func _on_chosen(index: int) -> void:
 func _show_page(page: Page) -> void:
 	_page = page
 	menu.visible = page == Page.MAIN
-	info.visible = page == Page.CHARACTER
+	info.visible = page == Page.CHARACTER or page == Page.NAMES
 	controls_view.visible = page == Page.CONTROLS
 	map_view.visible = page == Page.MAP
 	hint_bar.set_entries(HINTS_MAIN if page == Page.MAIN else (HINTS_MAP if page == Page.MAP else (HINTS_CONTROLS if page == Page.CONTROLS else HINTS_SUBPAGE)))
@@ -131,6 +136,31 @@ func _show_page(page: Page) -> void:
 			info_label.text = _character_text
 		Page.CONTROLS:
 			title_label.text = "Controles"
+		Page.NAMES:
+			title_label.text = "Nombres que sostienes"
+			info_label.text = names_text()
+
+
+## El diario de Nombres: una línea por región con su contador y los Nombres que se
+## sostienen, y el total. Solo se muestra lo leído: de lo que falta solo se ve el
+## contador de la región (un Nombre callado ya no se sostiene y no aparece).
+func names_text() -> String:
+	var registry := Names.find(self)
+	var lines: PackedStringArray = []
+	var total := 0
+	for region in Names.REGIONS:
+		var held: Array[StringName] = registry.held_ids(region.id) if registry != null else []
+		total += held.size()
+		var line := "%s %d/5" % [region.title, held.size()]
+		if not held.is_empty():
+			var titles := PackedStringArray()
+			for id in held:
+				titles.append(Names.info(id).title)
+			line += "  ·  " + ", ".join(titles)
+		lines.append(line)
+	lines.append("")
+	lines.append("Sostenidos: %d/%d" % [total, Names.LIST.size()])
+	return "\n".join(lines)
 
 
 ## "Mapa", y el nombre de la sala donde está el jugador si se sabe.

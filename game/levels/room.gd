@@ -123,6 +123,9 @@ const SPIKES_HALF_HEIGHT := 8.0
 ## Texto de las inscripciones del marcador `i` (cada sala dice lo suyo; la `I`
 ## mayúscula es la de El Último Umbral, con su texto en la escena).
 @export_multiline var note: String = ""
+## Nombre (id de game/names.gd) que contienen las inscripciones `i` de la sala; vacío si
+## no llevan ninguno. Lo verifica tools/verifica_mundo.js (C18).
+@export var note_name_id: StringName = &""
 ## Tipo de los coleccionables `!` que no son fragmentos de vida, atado a su posición
 ## y no al orden de lectura: entradas `cCCfFF:tipo` (p. ej. `c37f05:bag`), con tipo
 ## `fragment`, `bag` o `item`. Sin entrada, el `!` es `fragment`. Mover un `!` en el
@@ -157,6 +160,7 @@ func _ready() -> void:
 	for at in tiles.markers.get("i", []):
 		var note_stone := InscriptionScene.instantiate()
 		note_stone.text = note
+		note_stone.name_id = note_name_id
 		_place(note_stone, at, INSCRIPTION_HALF_HEIGHT)
 	for symbol in SPIKES:
 		for at in tiles.markers.get(symbol, []):

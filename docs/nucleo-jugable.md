@@ -228,7 +228,7 @@ Equilibrio: ninguna reliquia es estrictamente mejor que otra (las más fuertes o
 
 Orden de implementación sugerido para la primera versión (10 reliquias, las que no exigen sistemas nuevos): Cuenta, Dedal, Medalla, Aguja, Pesa, Lacre, Diente, Piedra blanca, Hebra, Trapo.
 
-## Los Nombres y el Paño, en lo mecánico [Pend.]
+## Los Nombres y el Paño, en lo mecánico [Impl. parcial: registro, diario y Callar; falta pronunciar al descansar y el Paño como objeto]
 
 El canon fija el sistema en `guion-maestro.md` §10; aquí solo lo que toca a los números.
 
@@ -246,6 +246,8 @@ El canon fija el sistema en `guion-maestro.md` §10; aquí solo lo que toca a lo
 | Ajuste | Si en las pruebas nadie calla, sube el pago; si todos callan, baja. Es el único número del sistema |
 
 Se descartó que los Nombres leídos den ranuras ("Hilos"): contradecía el canon y creaba una segunda forma de poder ligada a un coleccionable narrativo.
+
+**Impl. (K22, K23).** `game/names.gd` es el registro (30 ids con región; estados leído y callado) y se guarda en la clave opcional `names` (`{ read, silenced }`, sin subir `FORMAT_VERSION`; los ids desconocidos se ignoran). Una inscripción (`game/environment/inscription.gd`, un `Readable`) con `name_id` lo lee la primera vez y muestra "Nombre: X. Lo sostienes." bajo su texto; las inscripciones `i` de una sala toman el suyo de `note_name_id` (ejemplo: la placa de Tomasa en La Torre de Riego). La pausa tiene "Nombres que sostienes" (contador por región; solo salen los leídos y sostenidos). El menú del Ancla ofrece "Callar un nombre" mientras se sostenga alguno: lista, confirmación ("No" por defecto), +50 Ecos (`Names.SILENCE_REWARD`) y guardado; callar no quita de "leídos". **Pendiente:** el Paño como objeto que se recibe (hoy la entrada se ve en cuanto hay un Nombre sostenido), pronunciar al descansar, y las fuentes (la confirmación ya muestra el contador y el aviso de los 20; la fuente de un Nombre callado todavía se lee, en el canon queda en blanco) de los otros 29 Nombres.
 
 ## Ecos, muerte y economía
 
