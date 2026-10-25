@@ -73,6 +73,10 @@ var _air_jumps_left: int = 0
 var _wall_normal_x: int = 0
 var _wall_timer: float = 0.0
 var _wall_lock_timer: float = 0.0
+var _bounce_lock_timer: float = 0.0
+
+## Segundos tras un rebote en los que soltar el salto no recorta la subida.
+const BOUNCE_JUMP_CUT_LOCK := 0.1
 
 
 func step(body: CharacterBody2D, delta: float) -> void:
@@ -135,7 +139,8 @@ func step(body: CharacterBody2D, delta: float) -> void:
 		_jump_buffer_timer = 0.0
 		jumped.emit(&"air")
 
-	if Input.is_action_just_released(action_jump) and body.velocity.y < 0.0:
+	_bounce_lock_timer = maxf(_bounce_lock_timer - delta, 0.0)
+	if Input.is_action_just_released(action_jump) and body.velocity.y < 0.0 and _bounce_lock_timer <= 0.0:
 		body.velocity.y *= jump_cut_factor
 
 	if _wall_lock_timer <= 0.0:
@@ -209,6 +214,13 @@ static func is_standing_on_one_way(body: CharacterBody2D) -> bool:
 		var shape_node := object.shape_owner_get_owner(owner_id) as CollisionShape2D
 		return shape_node != null and shape_node.one_way_collision
 	return false
+
+
+## Impulsa el cuerpo hacia arriba hasta `height` píxeles (rebote). No recarga saltos
+## extra, y soltar el salto justo después no recorta la subida.
+func bounce(body: CharacterBody2D, height: float) -> void:
+	body.velocity.y = -sqrt(2.0 * gravity * height)
+	_bounce_lock_timer = BOUNCE_JUMP_CUT_LOCK
 
 
 func _set_facing(new_facing: int) -> void:

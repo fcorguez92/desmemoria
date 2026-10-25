@@ -561,6 +561,58 @@ func _test_vertical_attacks() -> void:
 	await _tap_attack_with("ui_down")
 	_check(_player.velocity.y > -100.0, "los pinchos no hacen rebotar")
 	spikes.queue_free()
+	await _wait(60)
+	# Un golpeable que además es un peligro (grupo `hazard`) se golpea pero no rebota.
+	_player.global_position = Vector2(665, 200)
+	_player.velocity = Vector2.ZERO
+	await _wait(2)
+	var trap := _make_dummy(_player.global_position + Vector2(0, 40), true)
+	trap.add_to_group(&"hazard")
+	await _tap_attack_with("ui_down")
+	_check(trap.hits == 1 and _player.velocity.y > -100.0, "un peligro rebotable por grupo se golpea pero no hace rebotar")
+	trap.queue_free()
+
+	# Soltar el salto justo tras el rebote no lo recorta.
+	await _wait(60)
+	_player.global_position = Vector2(665, 200)
+	_player.velocity = Vector2.ZERO
+	await _wait(2)
+	_player.motor._air_jumps_left = 0  # que pulsar salto en el aire no haga un doble salto
+	start_y = _player.global_position.y
+	var cut_target := _make_dummy(_player.global_position + Vector2(0, 40), true)
+	Input.action_press("ui_accept")
+	await _tap_attack_with("ui_down")
+	Input.action_release("ui_accept")
+	apex = _player.global_position.y
+	for i in 40:
+		await _wait(1)
+		apex = minf(apex, _player.global_position.y)
+		if _player.velocity.y > 0.0:
+			break
+	_check(start_y - apex > 105.0, "soltar el salto tras el rebote no lo recorta (sube %.0f)" % (start_y - apex))
+	cut_target.queue_free()
+
+	# Un golpe hacia abajo en pleno dash rebota igualmente (corta el dash).
+	await _wait(60)
+	_player.dash.unlocked = true
+	_player.global_position = Vector2(665, 200)
+	_player.velocity = Vector2.ZERO
+	await _wait(2)
+	var dash_target := _make_dummy(_player.global_position + Vector2(0, 40), true)
+	Input.action_press("dash")
+	await _wait(2)
+	Input.action_release("dash")
+	_check(_player.dash.is_dashing, "el dash en el aire está en curso")
+	var before_x: float = _player.global_position.x
+	dash_target.global_position.x = before_x + 12.0
+	await _tap_attack_with("ui_down")
+	_check(dash_target.hits == 1 and not _player.dash.is_dashing and _player.velocity.y < -300.0, "un pogo en pleno dash rebota y corta el dash")
+	dash_target.queue_free()
+	# Que termine la pausa breve del último golpe antes de pasar a otra prueba.
+	for i in 120:
+		if Engine.time_scale >= 1.0:
+			break
+		await _wait(1)
 
 	# Las animaciones existen y caben en la hoja.
 	var sprite: Sprite2D = _player.visual

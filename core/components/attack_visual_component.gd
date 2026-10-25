@@ -48,7 +48,9 @@ func strike() -> void:
 ## el golpe hacia arriba); vacío = `swing_animation`.
 func swing(animation: String = "") -> void:
 	animator.play_action(animation if animation != "" else swing_animation)
-	_flash_slash()
+	# El destello es el arco horizontal de delante: las variantes no lo lanzan.
+	if animation == "":
+		_flash_slash()
 
 
 ## Cancela la animación de ataque y apaga el destello.

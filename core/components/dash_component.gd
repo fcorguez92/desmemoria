@@ -24,6 +24,11 @@ var _direction: int = 1
 var _air_dash_used: bool = false
 
 
+## Corta el dash en curso (p. ej. un rebote). No recarga el dash en el aire.
+func cancel() -> void:
+	is_dashing = false
+
+
 func step(body: CharacterBody2D, facing: int, delta: float) -> void:
 	_cooldown_timer = maxf(_cooldown_timer - delta, 0.0)
 	var on_floor := body.is_on_floor()
