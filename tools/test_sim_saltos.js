@@ -50,4 +50,14 @@ check(touch.hazard === true || touch.startHazard === true, 'los pinchos laterale
 const away = sim.simulate(side, 8 * sim.CELL, y, { d1: 1, d2: 1, delay: 0, hold: 3, k: 10, dashAt: null }, { dash: false });
 check(away.hazard !== true, 'lejos de la tira no hay daño');
 
+// El pozo con pinchos laterales de la Torre de Riego (W4): se sale con Agarre sin tocarlos,
+// y hay maniobras que sí los tocan.
+const torre = sim.loadMap(path.join(__dirname, '..', 'game', 'levels', 'torre_de_riego.map'));
+const torreAnalysis = sim.analyse(torre, 'W', 28, 50);
+const torreMeta = torreAnalysis.S.find((s) => s.row === 7 && s.c0 === 51);
+check(torreMeta && torreMeta.id in torreAnalysis.dist, 'el pozo de la Torre de Riego se sale con Agarre sin tocar los pinchos laterales');
+const torreOpts = { dash: false, dj: false, wall: true };
+const torreY = 28 * sim.CELL - sim.P.hh;
+check(sim.planGrid(torreOpts).some((plan) => sim.simulate(torre, 809, torreY, plan, torreOpts).hazard === true), 'y hay maniobras en ese pozo que sí los tocan');
+
 process.exit(fails ? 1 : 0);

@@ -19,6 +19,7 @@ extends Node2D
 ## abrir el juego se carga y se aparece en la última Ancla (ver docs/nucleo-jugable.md).
 
 const PlayerScene := preload("res://game/player/player.tscn")
+const Names := preload("res://game/names.gd")
 ## Pantalla de inicio, a la que se vuelve desde la pausa. Por ruta y no con
 ## preload: ella también apunta a este mundo, y dos escenas no pueden
 ## precargarse la una a la otra.
@@ -62,6 +63,8 @@ var flags := FlagStore.new()
 ## Coleccionables recogidos: id -> tipo ("fragment" o "bag"). Los de tipo objeto
 ## van en `flags` con prefijo "i:". Cada id cuenta una sola vez.
 var collected := FlagStore.new()
+## Nombres leídos y callados (ver game/names.gd): se guardan en la clave opcional `names`.
+var names := Names.new()
 var player: Node2D
 ## Sala en la que está el jugador (la última en la que estuvo si ahora mismo no
 ## está dentro de ninguna, p. ej. saltando por encima del techo del mapa).
@@ -101,6 +104,9 @@ func _ready() -> void:
 	flags.add_to_group(&"resettable")
 	add_child(flags)
 	add_child(collected)
+	names.add_to_group(Names.GROUP)
+	add_child(names)
+	names.name_read.connect(_on_name_read)
 	_spawn_player()
 	if player == null:
 		return
@@ -232,6 +238,7 @@ func save_game() -> void:
 		bosses = bosses,
 		seen = map_data.get_seen_data(),
 		flags = flags.to_dict(),
+		names = names.to_dict(),
 		fragments = _collected_ids(&"fragment"),
 		bags = _collected_ids(&"bag"),
 	})
@@ -284,6 +291,7 @@ func _apply_save(saved: Dictionary) -> void:
 		map_data.set_seen_data(seen)
 	# Claves opcionales: una partida antigua sin ellas carga sin marcas ni coleccionables.
 	flags.from_dict(saved.get("flags"))
+	names.from_dict(saved.get("names"))
 	collected.from_dict({})
 	# Solo cuentan los ids de coleccionables que existen en el mundo (uno que se
 	# quitó del mapa, o un id inventado, se ignora).
@@ -367,4 +375,11 @@ func _on_collectible_collected(pickup: Node) -> void:
 			message = "Objeto recogido"
 	Sfx.play(&"echo_collect", null, -7.0)
 	player.announce_area(message)
+	save_game.call_deferred()
+
+
+## Un Nombre nuevo (ver game/names.gd): suena y se guarda. El aviso en pantalla lo
+## da quien lo ha leído (p. ej. game/environment/inscription.gd).
+func _on_name_read(_id: StringName) -> void:
+	Sfx.play(&"echo_collect", null, -7.0)
 	save_game.call_deferred()
