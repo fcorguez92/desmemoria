@@ -138,6 +138,9 @@ func take_hit(damage: int, from_direction: int, _attacker: Node = null) -> void:
 		knockback.apply(from_direction)
 		ai.interrupt(maxf(0.3, _stun_timer))
 		visual.modulate = STUN_COLOR if stunned else Color.WHITE
+		# Levantándose (o despertado por este golpe): no se pisa la animación de levantarse.
+		if ai is PatrolChaseAI and ai.state == PatrolChaseAI.State.WAKING:
+			return
 		# reset() cancela su propio ataque en curso (windup/strike) si lo había;
 		# va antes de la animación de golpe recibido porque las dos usan el mismo
 		# hueco de "acción" del SheetAnimator y si no, reset() la borraría.

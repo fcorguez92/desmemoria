@@ -3897,8 +3897,6 @@ func _replay_plan(plan: Dictionary, start: Vector2) -> bool:
 func _test_dash_puzzle_needs_dash() -> void:
 	print("\n[El puzle del dash: cada tramo se supera con la maniobra prevista y no sin dash]")
 	await _load_world()
-	# Las maniobras se miden sin enemigos: el cuervo del Cruce del Pan las estorbaría.
-	await _clear_enemies(_level.get_node("Rooms/CruceDelPan"))
 	var plans: Array = JSON.parse_string(FileAccess.get_file_as_string("res://tests/puzzle_plans.json"))
 	_check(plans.size() >= 15, "hay %d maniobras de referencia (la Chimenea, la Pasarela, el Surco Ciego y el Cruce del Pan)" % plans.size())
 	_player.unlock_ability(&"dash")
@@ -4718,6 +4716,16 @@ func _test_dormant_ai_and_espantapajaros() -> void:
 	_check(_player.health.health < hp, "y su golpe de brazo acaba haciendo daño")
 	# Despierto no vuelve a dormirse ni a emitir woke_up.
 	_check(woke[0] == 1, "no despierta dos veces")
+	# Un golpe mientras se levanta (o que lo despierta) no pisa la animación de levantarse.
+	await _load_world()
+	scarecrow = await _spawn_enemy_next_to_player("res://game/enemy/enemy_espantapajaros.tscn", 300.0)
+	await _wait(5)
+	scarecrow.take_hit(1, -1)
+	await _wait(3)
+	_check(scarecrow.ai.state == PatrolChaseAI.State.WAKING and scarecrow.animator.current == "wake", "un golpe que lo despierta no cancela su animación de levantarse")
+	scarecrow.take_hit(1, -1)
+	await _wait(3)
+	_check(scarecrow.animator.current == "wake" and scarecrow.health.health == 2, "ni uno que llega mientras se levanta")
 
 	# Un golpe lo despierta aunque el jugador esté lejos.
 	await _load_world()
@@ -4825,10 +4833,13 @@ func _test_telegraph_zone() -> void:
 	zone = _make_zone(Vector2(130.0, 296.0), TelegraphZone.Shape.RECT, Vector2(120.0, 60.0), 0.3, true)
 	var parried := [0]
 	zone.parried.connect(func() -> void: parried[0] += 1)
+	var hit_counts := []
+	zone.resolved.connect(func(hit: Array) -> void: hit_counts.append(hit.size()))
 	await _wait(8)
 	_player.parry.try_start()
 	await _wait(14)
 	_check(_player.health.health == hp and parried[0] == 1, "uno amarillo se puede parar: sin daño y con la señal parried")
+	_check(hit_counts == [0], "y quien lo paró no cuenta como golpeado en resolved")
 	# Cancelar antes de tiempo no golpea.
 	await _wait(60)
 	hp = _player.health.health
@@ -4910,6 +4921,17 @@ func _test_fly_ai_and_cuervo() -> void:
 	_check(events["dive_ended"] >= 1, "el picado termina al acertar (señal dive_ended)")
 	_check(lowest < 320.0 - 8.0, "no atraviesa el suelo (su punto más bajo es y = %d, el suelo está en 320)" % int(lowest))
 	_check(second_windup_frame < 0 or second_windup_frame - first_landed_frame >= 66, "entre picados deja una pausa de ~1,2 s (%d fotogramas)" % (second_windup_frame - first_landed_frame))
+	# Sin camino libre (un techo de por medio) no pica.
+	crow.ai.state = FlyAI.State.CHASE
+	var roof := _mech_wall(Rect2(40.0, 262.0, 200.0, 8.0))
+	_player.global_position = Vector2(100.0, 296.0)
+	var windups_before: int = events["windup"]
+	for i in 120:
+		await _wait(1)
+		_player.global_position = Vector2(100.0, 296.0)
+		_player.velocity = Vector2.ZERO
+	_check(events["windup"] == windups_before, "con un sólido entre el cuervo y el jugador no inicia picados")
+	roof.queue_free()
 	# Colocación: por encima del jugador mientras lo persigue.
 	_player.global_position = Vector2(100.0, 296.0)
 	await _wait(5)

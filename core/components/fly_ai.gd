@@ -96,7 +96,7 @@ func step(body: CharacterBody2D, delta: float) -> void:
 			else:
 				_seek(body, _hover_point(target), chase_speed)
 				_face(offset.x)
-				if absf(offset.x) <= attack_range and offset.y >= min_dive_height and _timer <= 0.0:
+				if absf(offset.x) <= attack_range and offset.y >= min_dive_height and _timer <= 0.0 and _line_is_clear(body, target):
 					body.velocity = Vector2.ZERO
 					_timer = windup_time
 					state = State.WINDUP
@@ -152,6 +152,14 @@ func is_chasing() -> bool:
 ## Un volador nunca está dormido: mismo contrato que PatrolChaseAI.
 func is_dormant() -> bool:
 	return false
+
+
+## ¿Hay camino libre de terreno hacia el objetivo? Si hay un sólido de por medio no pica
+## (evita picados que acaben contra el techo o una repisa, en bucle).
+func _line_is_clear(body: CharacterBody2D, target: Node2D) -> bool:
+	var query := PhysicsRayQueryParameters2D.create(body.global_position, target.global_position, 1, [body.get_rid()])
+	var hit := body.get_world_2d().direct_space_state.intersect_ray(query)
+	return hit.is_empty() or hit.collider is CharacterBody2D
 
 
 func _start_dive(body: CharacterBody2D, target: Node2D) -> void:

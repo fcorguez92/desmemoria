@@ -45,6 +45,7 @@ var elapsed: float = 0.0
 var is_resolved: bool = false
 
 var _flash_left: float = 0.0
+var _deflected: bool = false
 
 
 func _physics_process(delta: float) -> void:
@@ -81,6 +82,7 @@ func cancel() -> void:
 ## Contrato "parable": si un objetivo desvía el golpe, solo se avisa; los demás
 ## objetivos de la zona siguen recibiéndolo.
 func on_parried(_extra_stun: float = 0.0) -> void:
+	_deflected = true
 	parried.emit()
 
 
@@ -94,8 +96,11 @@ func _resolve() -> void:
 		if not body.has_method("take_hit"):
 			continue
 		var from_direction := 1 if body.global_position.x >= global_position.x else -1
+		_deflected = false
 		body.take_hit(damage, from_direction, self)
-		hit.append(body)
+		# Un cuerpo que ha parado el golpe (zona amarilla) no cuenta como golpeado.
+		if not _deflected:
+			hit.append(body)
 	resolved.emit(hit)
 
 
