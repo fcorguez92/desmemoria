@@ -1,0 +1,35 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://game/levels/room.gd" id="1_room"]
+[ext_resource type="Script" path="res://core/objects/text_tile_map.gd" id="2_tilemap"]
+[ext_resource type="TileSet" path="res://game/levels/tiles_umbral.tres" id="3_tileset"]
+
+[node name="CruceDelPan" type="Node2D"]
+script = ExtResource("1_room")
+title = "El Cruce del Pan"
+has_sky = false
+note = "Se deja pan para los que van de paso. Si no pasa nadie, que lo coman los pájaros."
+pickups = PackedStringArray("c20f30:item", "c50f09:item")
+links = {
+"=@47,4": ["t:cruce_del_pan.placa_a", "t:cruce_del_pan.placa_b", "t:cruce_del_pan.placa_c"],
+"_@24,30": "t:cruce_del_pan.placa_a",
+"_@31,22": "t:cruce_del_pan.placa_b",
+"_@43,9": "t:cruce_del_pan.placa_c"
+}
+piece_params = {
+"_@24,30": {
+"hold_time": 6.0
+},
+"_@31,22": {
+"hold_time": 6.0
+},
+"_@43,9": {
+"hold_time": 6.0
+}
+}
+
+[node name="Tiles" type="TileMapLayer" parent="."]
+tile_set = ExtResource("3_tileset")
+script = ExtResource("2_tilemap")
+map_file = "res://game/levels/cruce_del_pan.map"
+legend = {"B": Vector2i(2, 0), "C": Vector2i(3, 0), "G": Vector2i(1, 0), "%": Vector2i(5, 0), "S": Vector2i(4, 0), "T": Vector2i(0, 0)}

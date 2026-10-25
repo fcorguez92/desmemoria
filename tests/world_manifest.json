@@ -16,7 +16,7 @@
       "puertas": [ { "lado": "R", "desde": 16, "hasta": 21, "a": "galerias_bajas" }, { "lado": "T", "desde": 30, "hasta": 49, "a": "terrazas_secas" } ],
       "abiertas": [] },
     { "id": "torre_de_riego", "region": "cinturon", "x": 144, "y": -20,
-      "puertas": [ { "lado": "L", "desde": 34, "hasta": 39, "a": "terrazas_secas" } ],
+      "puertas": [ { "lado": "L", "desde": 34, "hasta": 39, "a": "terrazas_secas" }, { "lado": "R", "desde": 1, "hasta": 6, "a": "surco_ciego" } ],
       "abiertas": [] },
     { "id": "galerias_bajas", "region": "cinturon", "x": 208, "y": 20,
       "puertas": [ { "lado": "L", "desde": 20, "hasta": 25, "a": "cisterna" }, { "lado": "R", "desde": 20, "hasta": 25, "a": "aljibe" } ],
@@ -29,6 +29,15 @@
       "abiertas": [] },
     { "id": "pasarela", "region": "cinturon", "x": 424, "y": -21,
       "puertas": [ { "lado": "L", "desde": 2, "hasta": 7, "a": "chimenea" } ],
-      "abiertas": [ { "lado": "R", "desde": 22, "hasta": 22, "tipo": "abismo" }, { "lado": "T", "desde": 0, "hasta": 97, "tipo": "cielo" } ] }
+      "abiertas": [ { "lado": "R", "desde": 22, "hasta": 22, "tipo": "abismo" }, { "lado": "T", "desde": 0, "hasta": 97, "tipo": "cielo" } ] },
+    { "id": "surco_ciego", "region": "cinturon", "x": 200, "y": -36,
+      "puertas": [ { "lado": "L", "desde": 17, "hasta": 22, "a": "torre_de_riego" }, { "lado": "R", "desde": 25, "hasta": 30, "a": "campo_de_los_ferran" } ],
+      "abiertas": [] },
+    { "id": "campo_de_los_ferran", "region": "cinturon", "x": 264, "y": -36,
+      "puertas": [ { "lado": "L", "desde": 25, "hasta": 30, "a": "surco_ciego" }, { "lado": "R", "desde": 25, "hasta": 30, "a": "cruce_del_pan" } ],
+      "abiertas": [] },
+    { "id": "cruce_del_pan", "region": "cinturon", "x": 330, "y": -36,
+      "puertas": [ { "lado": "L", "desde": 25, "hasta": 30, "a": "campo_de_los_ferran" } ],
+      "abiertas": [] }
   ]
 }
