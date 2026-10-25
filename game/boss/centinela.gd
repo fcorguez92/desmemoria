@@ -134,6 +134,7 @@ var _ghosted: CollisionObject2D
 
 func _ready() -> void:
 	add_to_group("enemy")
+	add_to_group(&"pogoable")
 	core_hp = core_health
 	armor_hp = ARMOR[0]
 	_set_facing(_facing)

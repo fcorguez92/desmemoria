@@ -56,7 +56,7 @@ position = Vector2(122, 294)
 scale = Vector2(2, 2)
 texture = ExtResource("14_hero")
 hframes = 14
-vframes = 8
+vframes = 10
 
 [node name="HeroAnimator" type="Node" parent="Hero" node_paths=PackedStringArray("sprite")]
 script = ExtResource("15_animator")

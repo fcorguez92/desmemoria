@@ -86,6 +86,45 @@ const attFrames = Array.from({ length: 12 }, (_, i) => pose(Object.assign(keyed(
 }
 anims.attack = { fps: 40, loop: false, frames: attFrames };
 
+// ataque hacia arriba: se agacha, se estira de puntillas y la daga sube en arco
+// por encima de la cabeza, con la hoja del reves y la capucha mirando arriba.
+const ATT_UP = [
+  { t: 0.00, hipx: 2, hipy: -17.4, lean: 24, bend: 8, head: -16, nfx: 8, ffx: -7, nfy: 0, ffy: 0, nfa: 0, ffa: 0, fx: 2, fy: 12, gx: 8, gy: 6, blade: 180, capeTx: -1, capeTy: 0.3, capeAmt: 0.5, scTx: -1, scAmt: 0.6 },
+  // carga: se encoge y el puño baja junto a la cadera
+  { t: 0.12, hipx: 0, hipy: -15.6, lean: 30, bend: 12, head: -14, nfx: 9, ffx: -8, nfy: 0, ffy: 0, nfa: 0, ffa: 0, fx: 3, fy: 11, gx: 6, gy: 6, blade: 150, capeTx: -1, capeTy: 0.4, capeAmt: 0.6, scTx: -1, scAmt: 0.7 },
+  // arranca: el cuerpo se endereza y el puño sube por delante del pecho
+  { t: 0.28, hipx: 3, hipy: -18.6, lean: 8, bend: -2, head: 4, nfx: 7, ffx: -6, nfy: 0, ffy: 0, nfa: 0, ffa: 0, fx: 9, fy: -6, gx: -6, gy: 6, blade: -10, capeTx: -0.4, capeTy: 0.7, capeAmt: 0.9, scTx: -0.4, scTy: 0.5, scAmt: 0.9 },
+  // golpe: brazo estirado al cielo, de puntillas, la hoja corta por encima de la cabeza
+  { t: 0.42, hipx: 3, hipy: -20.4, lean: 2, bend: -6, head: 14, nfx: 6, ffx: -5, nfy: -1.5, ffy: -2, nfa: 25, ffa: 30, fx: 4, fy: -14, gx: -7, gy: 4, blade: -78, capeTx: -0.2, capeTy: 1, capeAmt: 1, scTx: -0.2, scTy: 0.9, scAmt: 1 },
+  // sigue: la hoja pasa por encima y cae hacia atras
+  { t: 0.58, hipx: 2, hipy: -20, lean: 4, bend: -4, head: 12, nfx: 6, ffx: -5, nfy: -1, ffy: -1.5, nfa: 20, ffa: 25, fx: 2, fy: -13, gx: -6, gy: 4, blade: -112, capeTx: -0.6, capeTy: 0.8, capeAmt: 1, scTx: -0.6, scTy: 0.6, scAmt: 1 },
+  { t: 0.78, hipx: 2, hipy: -18, lean: 16, bend: 4, head: -4, nfx: 7, ffx: -6, nfy: 0, ffy: 0, nfa: 0, ffa: 0, fx: 4, fy: 4, gx: 2, gy: 6, blade: 160, capeTx: -1, capeTy: 0.4, capeAmt: 0.8, scTx: -1, scAmt: 0.8 },
+  { t: 1.00, hipx: 2, hipy: -17.4, lean: 24, bend: 8, head: -16, nfx: 8, ffx: -7, nfy: 0, ffy: 0, nfa: 0, ffa: 0, fx: 2, fy: 12, gx: 8, gy: 6, blade: 180, capeTx: -1, capeTy: 0.3, capeAmt: 0.5, scTx: -1, scAmt: 0.6 },
+];
+const upFrames = Array.from({ length: 12 }, (_, i) => pose(Object.assign(keyed(ATT_UP, i / 11), { phase: i * 0.8 })));
+{
+  const tipAt = t => figure(pose(keyed(ATT_UP, clamp(t, 0, 1)))).tip;
+  for (let i = 0; i < upFrames.length; i++) {
+    const t = i / 11;
+    if (i >= 3 && i <= 8) {
+      const pts = [];
+      for (let k = 0; k <= 12; k++) pts.push(tipAt(t - 0.15 + 0.15 * k / 12));
+      upFrames[i].trailFrom = pts;
+    }
+  }
+}
+anims.attack_up = { fps: 40, loop: false, frames: upFrames };
+
+// ataque hacia abajo (pogo): en el aire, rodillas al pecho y la daga clavada hacia
+// abajo, por delante de los pies; la capa sube por la caida.
+const ATT_DOWN = [
+  { t: 0.00, hipx: 1, hipy: -20, lean: 14, bend: 6, head: -8, nfx: 6, nfy: -2, nfa: 15, ffx: -5, ffy: -4, ffa: 25, fx: 6, fy: 6, gx: 8, gy: -3, blade: 150, capeTx: -0.35, capeTy: -1, capeAmt: 1, scTx: -0.4, scTy: -1, scAmt: 1 },
+  { t: 0.30, hipx: 1, hipy: -21, lean: 20, bend: 8, head: -12, nfx: 8, nfy: -6, nfa: 30, ffx: -3, ffy: -9, ffa: 40, fx: 7, fy: 12, gx: 6, gy: 2, blade: 108, capeTx: -0.3, capeTy: -1, capeAmt: 1, scTx: -0.35, scTy: -1, scAmt: 1 },
+  { t: 0.60, hipx: 1, hipy: -21.5, lean: 22, bend: 8, head: -14, nfx: 9, nfy: -7, nfa: 35, ffx: -2, ffy: -10, ffa: 45, fx: 7, fy: 14, gx: 5, gy: 2, blade: 96, capeTx: -0.25, capeTy: -1, capeAmt: 1, scTx: -0.3, scTy: -1, scAmt: 1 },
+  { t: 1.00, hipx: 1, hipy: -21.5, lean: 22, bend: 8, head: -14, nfx: 9, nfy: -7, nfa: 35, ffx: -2, ffy: -10, ffa: 45, fx: 7, fy: 14, gx: 5, gy: 2, blade: 94, capeTx: -0.25, capeTy: -1, capeAmt: 1, scTx: -0.3, scTy: -1, scAmt: 1 },
+];
+anims.attack_down = { fps: 32, loop: false, frames: Array.from({ length: 8 }, (_, i) => pose(Object.assign(keyed(ATT_DOWN, i / 7), { capeWave: 0.6, phase: i * 0.8, hoodTy: -1 }))) };
+
 // guardia: puño alto delante del pecho con la hoja curva cubriendo el cuerpo
 anims.parry = { fps: 20, loop: false, frames: [
   pose({ hipx: 1, hipy: -17.4, lean: 18, bend: 4, head: -10, nfx: 8, ffx: -8, fx: 6, fy: 2, gx: -4, gy: 8, blade: 100 }),
@@ -113,7 +152,7 @@ anims.dash = { fps: 40, loop: false, frames: [
 ] };
 
 // ---------- salida ----------
-const order = ["idle", "run", "jump", "fall", "attack", "parry", "hit", "dash"];
+const order = ["idle", "run", "jump", "fall", "attack", "parry", "hit", "dash", "attack_up", "attack_down"];
 const header = [
   "# El caminante, un asesino de la memoria: capucha, mascara y bufanda de luz azul",
   "# y una daga curva que empuña del reves. Cada fotograma es un lienzo completo de",
