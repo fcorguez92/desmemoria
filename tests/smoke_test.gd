@@ -133,6 +133,7 @@ func _run() -> void:
 	await _test_campo_de_los_ferran_lever_opens_the_pen()
 	await _test_cruce_del_pan_plates_and_the_niche()
 	await _test_dormant_ai_and_espantapajaros()
+	await _test_fly_ai_and_cuervo()
 	await _test_title_screen()
 	await _test_pause_returns_to_title()
 	await _test_menu_list_survives_leaving_the_tree()
@@ -1761,7 +1762,7 @@ func _test_sound_effects() -> void:
 
 	# Cada enemigo tiene su voz completa, su golpe y su paso.
 	var incomplete := []
-	for file in ["enemy", "enemy_lancero", "enemy_arrojador", "enemy_coloso", "enemy_acechador", "enemy_espantapajaros"]:
+	for file in ["enemy", "enemy_lancero", "enemy_arrojador", "enemy_coloso", "enemy_acechador", "enemy_espantapajaros", "enemy_cuervo"]:
 		var enemy: Node = load("res://game/enemy/%s.tscn" % file).instantiate()
 		for event in ["alert", "attack", "hurt", "die"]:
 			if not Sfx.has(StringName("%s_%s" % [enemy.voice, event])):
@@ -3895,6 +3896,8 @@ func _replay_plan(plan: Dictionary, start: Vector2) -> bool:
 func _test_dash_puzzle_needs_dash() -> void:
 	print("\n[El puzle del dash: cada tramo se supera con la maniobra prevista y no sin dash]")
 	await _load_world()
+	# Las maniobras se miden sin enemigos: el cuervo del Cruce del Pan las estorbaría.
+	await _clear_enemies(_level.get_node("Rooms/CruceDelPan"))
 	var plans: Array = JSON.parse_string(FileAccess.get_file_as_string("res://tests/puzzle_plans.json"))
 	_check(plans.size() >= 15, "hay %d maniobras de referencia (la Chimenea, la Pasarela, el Surco Ciego y el Cruce del Pan)" % plans.size())
 	_player.unlock_ability(&"dash")
@@ -4745,3 +4748,113 @@ func _test_dormant_ai_and_espantapajaros() -> void:
 	spawner.reset()
 	await _wait(3)
 	_check(spawner.instance != placed and spawner.instance.ai.state == PatrolChaseAI.State.DORMANT, "al reiniciar la sala reaparece dormido")
+
+
+## Un cuervo en El Último Umbral, en `at` (el suelo está en y = 320).
+func _spawn_crow(at: Vector2) -> Node2D:
+	var crow: Node2D = load("res://game/enemy/enemy_cuervo.tscn").instantiate()
+	_room.add_child(crow)
+	crow.global_position = at
+	crow.ai._home = at
+	return crow
+
+
+func _test_fly_ai_and_cuervo() -> void:
+	print("\n[Vuelo (K28) y el Cuervo: merodea, se coloca encima, avisa y pica; no atraviesa el terreno]")
+	await _load_world()
+	_player.health.max_health = 99
+	_player.health.health = 99
+	# Sin objetivo (el jugador fuera de su zona) solo merodea, sin gravedad.
+	_player.global_position = Vector2(30.0, 296.0)  # fuera de su zona de acción (a menos de 64 px del borde)
+	_player.velocity = Vector2.ZERO
+	var crow := _spawn_crow(Vector2(140.0, 200.0))
+	crow.ai.patrol_extent = Vector2(50.0, 14.0)
+	var min_x := 1e9
+	var max_x := -1e9
+	var min_y := 1e9
+	var max_y := -1e9
+	for i in 240:
+		await _wait(1)
+		min_x = minf(min_x, crow.global_position.x)
+		max_x = maxf(max_x, crow.global_position.x)
+		min_y = minf(min_y, crow.global_position.y)
+		max_y = maxf(max_y, crow.global_position.y)
+	_check(crow.ai.state == FlyAI.State.PATROL and max_x - min_x > 40.0, "sin objetivo merodea en el aire (se mueve %d px)" % int(max_x - min_x))
+	_check(max_y - min_y < 40.0 and absf(crow.global_position.y - 200.0) < 30.0, "y no cae: no tiene gravedad (variación vertical %d px)" % int(max_y - min_y))
+	_check(min_x >= 140.0 - crow.ai.patrol_extent.x - 12.0 and max_x <= 140.0 + crow.ai.patrol_extent.x + 12.0, "el merodeo no se aleja de su zona")
+	_check(crow.health.max_health == 2 and crow.ecos_reward == 2 and crow.parryable and crow.ai.windup_time >= 0.4 and crow.ai.recovery_time >= 1.0, "2 de vida, 2 Ecos, golpe que se puede parar, aviso de 0,45 s y pausa de 1,2 s")
+	crow.queue_free()
+
+	# Con el jugador cerca: se coloca encima, avisa, pica y hace daño.
+	await _load_world()
+	_player.health.max_health = 99
+	_player.health.health = 99
+	_player.global_position = Vector2(100.0, 296.0)
+	_player.velocity = Vector2.ZERO
+	crow = _spawn_crow(Vector2(190.0, 190.0))
+	var events := {"windup": 0, "landed": 0, "dive_ended": 0}
+	crow.ai.attack_started.connect(func() -> void: events["windup"] += 1)
+	crow.ai.attack_landed.connect(func() -> void: events["landed"] += 1)
+	crow.ai.dive_ended.connect(func() -> void: events["dive_ended"] += 1)
+	var hp: int = _player.health.health
+	var windup_frames := 0
+	var lowest := -1e9
+	var first_landed_frame := -1
+	var second_windup_frame := -1
+	var hurt_frame := -1
+	for i in 420:
+		await _wait(1)
+		if crow.ai.state == FlyAI.State.WINDUP:
+			windup_frames += 1
+		lowest = maxf(lowest, crow.global_position.y)
+		if first_landed_frame < 0 and events["landed"] > 0:
+			first_landed_frame = i
+		if first_landed_frame >= 0 and second_windup_frame < 0 and events["windup"] > 1:
+			second_windup_frame = i
+		if hurt_frame < 0 and _player.health.health < hp:
+			hurt_frame = i
+		# Que el jugador no se mueva: así el picado siempre lo alcanza.
+		_player.global_position = Vector2(100.0, 296.0)
+		_player.velocity = Vector2.ZERO
+	_check(events["windup"] >= 1 and windup_frames >= 24, "avisa antes de picar (aviso de %d fotogramas)" % windup_frames)
+	_check(hurt_frame >= 0 and _player.health.health < hp, "el picado hace daño al jugador")
+	_check(events["dive_ended"] >= 1, "el picado termina al acertar (señal dive_ended)")
+	_check(lowest < 320.0 - 8.0, "no atraviesa el suelo (su punto más bajo es y = %d, el suelo está en 320)" % int(lowest))
+	_check(second_windup_frame < 0 or second_windup_frame - first_landed_frame >= 66, "entre picados deja una pausa de ~1,2 s (%d fotogramas)" % (second_windup_frame - first_landed_frame))
+	# Colocación: por encima del jugador mientras lo persigue.
+	_player.global_position = Vector2(100.0, 296.0)
+	await _wait(5)
+
+	# El terreno corta el picado: sin objetivo, un picado hacia abajo acaba en el suelo.
+	_player.global_position = Vector2(30.0, 296.0)
+	_player.velocity = Vector2.ZERO
+	crow.queue_free()
+	await _wait(2)
+	crow = _spawn_crow(Vector2(140.0, 240.0))
+	crow.ai.dive_distance = 1000.0
+	crow.ai._dive_direction = Vector2.DOWN
+	crow.ai._dive_travelled = 0.0
+	crow.ai.state = FlyAI.State.DIVE
+	await _wait(60)
+	_check(crow.ai.state != FlyAI.State.DIVE and crow.global_position.y < 320.0 - 6.0, "un picado contra el suelo se corta ahí (y = %d)" % int(crow.global_position.y))
+	# Un golpe lo interrumpe y lo deja quieto; dos lo matan y pagan 2 Ecos.
+	crow.ai.state = FlyAI.State.CHASE
+	var ecos: int = _player.ecos
+	crow.take_hit(1, 1)
+	_check(crow.health.health == 1 and crow.ai.state == FlyAI.State.RECOVER, "un golpe lo aturde en el aire")
+	crow.take_hit(1, 1)
+	await _wait(2)
+	_check(not is_instance_valid(crow) and _player.ecos == ecos + 2, "muerto, paga sus 2 Ecos")
+
+	# Sala: el cuervo de ejemplo está en el Cruce del Pan, lejos de las puertas.
+	var field: Node2D = _level.get_node("Rooms/CruceDelPan")
+	var spawners := _room_children_of("CruceDelPan", EntitySpawner)
+	_check(spawners.size() == 1 and is_instance_valid(spawners[0].instance) and spawners[0].instance.get_node_or_null("FlyAI") != null, "el Cruce del Pan tiene un cuervo")
+	var col := int((spawners[0].global_position.x - field.global_position.x) / 16.0)
+	_check(col >= 10 and spawners[0].instance.ai.territory.has_area(), "a 10 o más baldosas de las puertas (columna %d) y limitado a su sala" % col)
+	# Fuera de su sala no persigue.
+	var placed: Node2D = spawners[0].instance
+	_player.global_position = _standing_on("CampoDeLosFerran", 62, 31)
+	_player.velocity = Vector2.ZERO
+	await _wait(60)
+	_check(placed.ai.state == FlyAI.State.PATROL, "con el jugador en la sala de al lado sigue merodeando")

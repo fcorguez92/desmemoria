@@ -287,3 +287,68 @@ for (const [name, E] of Object.entries(ENEMIES)) {
   const cs = lib.canvasSize();
   console.log(name, JSON.stringify(info), 'tip-strike=(' + (r.tip[0] - cs.OX).toFixed(1) + ',' + (r.tip[1] - cs.OY).toFixed(1) + ')');
 }
+
+// ============ 7. Cuervo de Rastrojo: picado desde el aire ============
+// No usa el esqueleto humanoide: es un pájaro de perfil dibujado con las primitivas de
+// tools/lib/raster.js. Filas: idle (aleteo; el juego usa la misma para "walk"), windup
+// (alas alzadas, pico abierto), strike (picado con las alas recogidas) y hit.
+// El lienzo es de 64x48 y el cuerpo está centrado en (32, 24), que es el centro de su colisión.
+if (!only || only === 'cuervo') {
+  const R = require('./lib/raster');
+  lib.setCanvas(64, 48);
+  const C = [32, 24];
+  const A = (a, b) => [a[0] + b[0], a[1] + b[1]];
+  const K = (v, k) => [v[0] * k, v[1] * k];
+  const polar = (deg, l) => [Math.cos(R.rad(deg)) * l, Math.sin(R.rad(deg)) * l];
+  function wing(c, root, phi, scale, cols, droop) {
+    const lens = [7 * scale, 7 * scale, 5 * scale], rs = [3.0, 2.6, 1.6, 0.8];
+    const pts = [root];
+    for (let i = 0; i < 3; i++) pts.push(A(pts[i], polar(phi + droop * i, lens[i])));
+    c.shape(R.chainTest(pts, rs), R.chainColor(pts, rs, cols[0], cols[1], cols[2], 0.1), R.bbox(pts, 4));
+    // plumas primarias: tres puntas que abren la mano del ala
+    const tip = pts[3];
+    for (const da of [-16, 0, 16]) c.line(tip, A(tip, polar(phi + droop * 2 + da, 4.5 * scale)), cols[2]);
+  }
+  function crow(p) {
+    const c = new R.Canvas();
+    const dir = polar(p.tilt, 1), up = [dir[1], -dir[0]];
+    const body = [A(C, K(dir, -8)), C, A(C, K(dir, 5.5))];
+    const head = A(A(C, K(dir, 10)), K(up, 1.6));
+    // ala lejana (detrás) y cola
+    const shoulder = A(A(C, K(dir, 1.5)), K(up, 1.5));
+    wing(c, shoulder, p.wing + 14, p.fold, ['2', '1', '1'], p.droop);
+    const tailRoot = A(C, K(dir, -6));
+    for (const k of [-1, 0, 1]) {
+      const tp = A(tailRoot, A(K(dir, -9), K(up, k * 2.6)));
+      c.shape(R.chainTest([tailRoot, tp], [1.8, 1.0]), () => '2', R.bbox([tailRoot, tp], 3));
+    }
+    c.shape(R.chainTest(body, [1.8, 4.2, 3.8]), R.chainColor(body, [1.8, 4.2, 3.8], '3', '2', '1', 0.1), R.bbox(body, 5));
+    // cabeza, pico y ojo rojo
+    c.shape((x, y) => Math.hypot(x - head[0], y - head[1]) <= 3.3, R.chainColor([head, A(head, [0.1, 0])], [3.3, 3.3], '3', '2', '2'), R.bbox([head], 5));
+    const beak = [A(head, A(K(dir, 2), K(up, 1.4))), A(head, K(dir, 7.2)), A(head, A(K(dir, 2), K(up, -1.4 - p.beak * 0.4)))];
+    c.shape(R.polyTest(beak), () => '4', R.bbox(beak, 4));
+    const eye = A(A(head, K(dir, 1.2)), K(up, 0.6));
+    c.set(Math.floor(eye[0]), Math.floor(eye[1]), 'u');
+    // patas recogidas
+    const leg = A(C, A(K(dir, 1), K(up, -4)));
+    c.line(leg, A(leg, [p.tilt > 30 ? 4 : -1, 3]), '3');
+    // ala cercana (delante)
+    wing(c, shoulder, p.wing, p.fold, ['3', '2', '1'], p.droop);
+    return c;
+  }
+  const flap = (n) => Array.from({ length: n }, (_, i) => { const t = i / n; return { tilt: 4 - 3 * Math.cos(2 * Math.PI * t), wing: -160 + 46 * Math.cos(2 * Math.PI * t), fold: 1, droop: -6, beak: 0.2 }; });
+  const CROW = {
+    idle: { fps: 12, loop: true, frames: flap(6) },
+    windup: { fps: 10, loop: false, frames: [0, 1, 2, 3].map((i) => ({ tilt: -20 - 3 * i, wing: -112 + (i % 2) * 6, fold: 1.05, droop: -4, beak: 2.2 })) },
+    strike: { fps: 8, loop: false, frames: [0, 1].map((i) => ({ tilt: 52 + 4 * i, wing: -176, fold: 0.7, droop: 2, beak: 0.6 })) },
+    hit: { fps: 12, loop: false, frames: [0, 1].map((i) => ({ tilt: -30 + 6 * i, wing: -95 + 12 * i, fold: 1, droop: -8, beak: 1.8 })) },
+  };
+  const header = [
+    '# El cuervo de rastrojo: pájaro negro de perfil, de ojo rojo, que merodea sobre los campos',
+    '# y pica desde lo alto. Lo dibuja tools/rig_enemigos.js con las primitivas de tools/lib/raster.js',
+    '# (no usa el esqueleto humanoide); para cambiarlo se edita el script y se regenera.',
+    '# Cada fotograma es un lienzo completo de 64x48 con el cuerpo centrado en (32, 24).',
+    '# Leyenda: ver art/palette.txt. El punto (.) es transparente.'];
+  const info = R.writeSprite('art/source/cuervo.sprite', header, 'res://game/enemy/cuervo_sheet.png', ['idle', 'windup', 'strike', 'hit'], CROW, crow);
+  console.log('cuervo', JSON.stringify(info));
+}

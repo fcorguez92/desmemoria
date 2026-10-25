@@ -1,0 +1,81 @@
+[gd_scene load_steps=13 format=3]
+
+[ext_resource type="Script" path="res://game/enemy/enemy.gd" id="1_enemy"]
+[ext_resource type="Script" path="res://core/components/health_component.gd" id="2_health"]
+[ext_resource type="Script" path="res://core/components/hit_flash_component.gd" id="3_flash"]
+[ext_resource type="Script" path="res://core/components/melee_attack_component.gd" id="4_melee"]
+[ext_resource type="Script" path="res://core/components/knockback_component.gd" id="5_knockback"]
+[ext_resource type="Script" path="res://core/components/fly_ai.gd" id="6_ai"]
+[ext_resource type="Script" path="res://core/components/attack_visual_component.gd" id="7_attack_visual"]
+[ext_resource type="Texture2D" path="res://game/enemy/cuervo_sheet.png" id="8_sheet"]
+[ext_resource type="Script" path="res://core/components/sheet_animator.gd" id="9_animator"]
+[ext_resource type="Script" path="res://core/ui/overhead_bar.gd" id="10_bar"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_body"]
+size = Vector2(24, 16)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_attack"]
+size = Vector2(30, 22)
+
+[node name="Cuervo" type="CharacterBody2D"]
+motion_mode = 1
+script = ExtResource("1_enemy")
+ecos_reward = 2
+voice = &"acechador"
+strike_sound = &"enemy_lunge"
+flying = true
+attack_kind = 3
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("RectangleShape2D_body")
+
+[node name="Visual" type="Sprite2D" parent="."]
+texture = ExtResource("8_sheet")
+hframes = 6
+vframes = 4
+
+[node name="SheetAnimator" type="Node" parent="." node_paths=PackedStringArray("sprite")]
+script = ExtResource("9_animator")
+sprite = NodePath("../Visual")
+animations = {"hit": [3, 2, 12.0, false], "idle": [0, 6, 12.0, true], "strike": [2, 2, 8.0, false], "walk": [0, 6, 12.0, true], "windup": [1, 4, 10.0, false]}
+
+[node name="AttackHitbox" type="Area2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="AttackHitbox"]
+shape = SubResource("RectangleShape2D_attack")
+
+[node name="HealthComponent" type="Node" parent="."]
+script = ExtResource("2_health")
+max_health = 2
+
+[node name="HitFlashComponent" type="Node" parent="." node_paths=PackedStringArray("target")]
+script = ExtResource("3_flash")
+target = NodePath("../Visual")
+flash_color = Color(1, 0.35, 0.35, 1)
+duration = 0.08
+
+[node name="MeleeAttackComponent" type="Node" parent="." node_paths=PackedStringArray("hitbox")]
+script = ExtResource("4_melee")
+hitbox = NodePath("../AttackHitbox")
+cooldown = 0.0
+reach = 8.0
+target_group = &"player"
+
+[node name="KnockbackComponent" type="Node" parent="."]
+script = ExtResource("5_knockback")
+speed = 220.0
+duration = 0.12
+
+[node name="FlyAI" type="Node" parent="."]
+script = ExtResource("6_ai")
+windup_time = 0.45
+recovery_time = 1.2
+
+[node name="AttackVisualComponent" type="Node" parent="." node_paths=PackedStringArray("animator")]
+script = ExtResource("7_attack_visual")
+animator = NodePath("../SheetAnimator")
+
+[node name="HealthBar" type="Node2D" parent="." node_paths=PackedStringArray("health")]
+position = Vector2(0, -20)
+script = ExtResource("10_bar")
+health = NodePath("../HealthComponent")

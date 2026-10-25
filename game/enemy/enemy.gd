@@ -8,10 +8,12 @@ extends CharacterBody2D
 ## el golpe cuando cae:
 ## - MELEE: golpea lo que haya dentro de su hitbox (tajo, estocada, mazazo).
 ## - PROJECTILE: lanza `projectile_scene` desde `muzzle` (a distancia).
+## - DIVE: solo con FlyAI; la IA decide el picado y el enemigo golpea al tocar (la IA
+##   acaba el picado al acertar).
 ## - LUNGE: se lanza hacia delante a `lunge_speed` durante `lunge_time` y golpea
 ##   a lo que toque por el camino (embestida).
 
-enum AttackKind { MELEE, PROJECTILE, LUNGE }
+enum AttackKind { MELEE, PROJECTILE, LUNGE, DIVE }
 
 const TELEGRAPH_COLOR := Color(1.0, 0.85, 0.3)
 ## Aviso de un ataque que no se puede parar: hay que esquivarlo.
@@ -31,6 +33,8 @@ const ROOM_ENTRY_MARGIN := 64.0
 @export var parry_stun_time: float = 1.2
 ## Si es false, su golpe atraviesa la guardia (aviso rojo en vez de amarillo).
 @export var parryable: bool = true
+## Volador: sin gravedad (el cuerpo va en modo FLOATING y la IA es una FlyAI).
+@export var flying: bool = false
 
 @export_group("Sonido")
 ## Prefijo de su voz: busca `<voz>_alert`, `_attack`, `_hurt` y `_die` (ver tools/sonidos.js).
@@ -57,7 +61,8 @@ var _was_chasing: bool = false
 
 @onready var health: HealthComponent = $HealthComponent
 @onready var hit_flash: HitFlashComponent = $HitFlashComponent
-@onready var ai: PatrolChaseAI = $PatrolChaseAI
+## La IA: PatrolChaseAI (terrestre) o FlyAI (volador, nodo "FlyAI"); comparten contrato.
+@onready var ai: Node = _pick_ai()
 @onready var melee: MeleeAttackComponent = $MeleeAttackComponent
 @onready var knockback: KnockbackComponent = $KnockbackComponent
 @onready var attack_visual: AttackVisualComponent = $AttackVisualComponent
@@ -74,7 +79,8 @@ func _ready() -> void:
 	ai.attack_started.connect(_on_attack_started)
 	ai.attack_landed.connect(_on_attack_landed)
 	ai.attack_cancelled.connect(_on_attack_cancelled)
-	ai.woke_up.connect(_on_woke_up)
+	if ai.has_signal(&"woke_up"):
+		ai.woke_up.connect(_on_woke_up)
 	melee.hit_landed.connect(_on_hit_landed)
 	_limit_to_room()
 	animator.frame_changed.connect(_on_animation_frame)
@@ -87,18 +93,25 @@ func _physics_process(delta: float) -> void:
 		if _stun_timer <= 0.0:
 			visual.modulate = Color.WHITE
 
-	if is_on_floor():
+	if flying:
+		pass
+	elif is_on_floor():
 		velocity.y = 0.0
 	else:
 		velocity.y += gravity * delta
 
 	if knockback.is_active:
 		_lunge_timer = 0.0
+		if flying:
+			velocity.y = 0.0
 		knockback.step(self, delta)
 	else:
 		ai.step(self, delta)
 		if _lunge_timer > 0.0:
 			_step_lunge(delta)
+		# El picado hace daño al tocar; al acertar, la IA da por terminado el picado.
+		if attack_kind == AttackKind.DIVE and ai.state == FlyAI.State.DIVE:
+			melee.try_attack(self, ai.facing)
 
 	move_and_slide()
 	if _lunge_timer > 0.0 and is_on_wall():
@@ -108,6 +121,11 @@ func _physics_process(delta: float) -> void:
 	else:
 		animator.play("walk" if absf(velocity.x) > 5.0 else "idle")
 	_play_alert_sound()
+
+
+## La IA del enemigo: un nodo FlyAI si lo tiene (voladores) o, si no, PatrolChaseAI.
+func _pick_ai() -> Node:
+	return get_node_or_null("FlyAI") if has_node("FlyAI") else $PatrolChaseAI
 
 
 ## Contrato "golpeable" (ver docs/arquitectura.md).
@@ -252,6 +270,8 @@ func _step_lunge(delta: float) -> void:
 
 
 func _on_hit_landed(body: Node) -> void:
+	if attack_kind == AttackKind.DIVE:
+		ai.end_dive()
 	_lunge_hit = true
 	_lunge_timer = 0.0 if attack_kind == AttackKind.LUNGE else _lunge_timer
 	HitSpark.spawn(get_parent(), (body as Node2D).global_position)
