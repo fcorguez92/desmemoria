@@ -1,6 +1,6 @@
 # Estado del proyecto (documento vivo)
 
-Última actualización: ciclo (`Cycle`) y plataforma sobre carril (`RailPlatform`) con un rincón de ejemplo en las Galerías Bajas (fase W3); antes, registro de Nombres y el Paño (K22 y K23: `game/names.gd`, pestaña de la pausa, "Callar un nombre" en el menú del Ancla); antes, pinchos laterales `{ }` (fase W4, con un pozo de ejemplo en la Torre de Riego); antes, compuerta, disparadores y muro frágil (fase W2, sin "Volver al Ancla"); antes, FlagStore y coleccionables `!` con id guardado (fase W1); antes, primer jefe (el Centinela Hueco), pinchos y el puzle del dash.
+Última actualización: primeras salas del Cinturón alto (El Surco Ciego, El Campo de los Ferrán y El Cruce del Pan, rama `feat/cinturon-alto-1`); antes, ciclo (`Cycle`) y plataforma sobre carril (`RailPlatform`) con un rincón de ejemplo en las Galerías Bajas (fase W3); antes, registro de Nombres y el Paño (K22 y K23: `game/names.gd`, pestaña de la pausa, "Callar un nombre" en el menú del Ancla); antes, pinchos laterales `{ }` (fase W4, con un pozo de ejemplo en la Torre de Riego); antes, compuerta, disparadores y muro frágil (fase W2, sin "Volver al Ancla"); antes, FlagStore y coleccionables `!` con id guardado (fase W1); antes, primer jefe (el Centinela Hueco), pinchos y el puzle del dash.
 
 ## Dónde estamos en la metodología
 
@@ -17,8 +17,8 @@
 
 ```
 core/         Base reutilizable: 14 componentes + 12 objetos + 2 efectos + 5 piezas de interfaz + guardado y marcas del mundo (ver core/README.md)
-game/         player, enemy, boss (el Centinela Hueco y su sala), echo, memory_anchor, ability_pickup, pickups (coleccionables `!`), environment, levels (el mundo y sus 8 salas + banco de pruebas)
-tests/        smoke_test.gd — 547 comprobaciones, todas en verde
+game/         player, enemy, boss (el Centinela Hueco y su sala), echo, memory_anchor, ability_pickup, pickups (coleccionables `!`), environment, levels (el mundo y sus 11 salas + banco de pruebas)
+tests/        smoke_test.gd — comprobaciones todas en verde (incluye las del Cinturón alto)
 docs/         Diseño, decisiones, arquitectura y estado
 ```
 
@@ -28,6 +28,16 @@ de esta fase era validar cómo se siente, no cómo se ve.
 Base de arte (H0-01 a H0-03, rama `art/base-pipeline`): paleta de 31 colores (`z` reservado); primitivas de rasterizado en `tools/lib/raster.js` (los rigs regeneran `art/source/` idéntico byte a byte); lienzo del Caminante a 112×96, con `Sprite2D.offset` (0, -24) y el Caminante del título subido 32 px para que los pies no se muevan. `node tools/comparar_lienzo.js <antiguo.sprite> <nuevo.sprite>` comprueba que los 58 fotogramas nuevos son idénticos a los antiguos desplazados.
 
 Ataques verticales (K06, K07, K08, rama `feat/ataque-arriba-y-abajo`): Arriba + X golpea sobre la cabeza (36×44) y Abajo + X en el aire golpea bajo los pies (30×36) con rebote de ~126 px si el blanco está en el grupo `pogoable` (enemigos y jefe); el rebote no recarga dash ni doble salto y los pinchos no rebotan. `MeleeAttackComponent` gana golpe direccional; el Caminante gana `attack_up` y `attack_down` (hoja de 10 filas). Falta jugarlo a mano para afinar la sensación.
+
+## Cinturón alto (1): Surco Ciego, Campo de los Ferrán y Cruce del Pan
+
+**Elección (criterio):** tras la Torre de Riego, el mapa macro (`01-mapa-macro.md` §4) sigue por el eje CIN-08 Surco Ciego → CIN-10 Campo de los Ferrán → CIN-11 Cruce del Pan. Se eligen estas tres, consecutivas y en la misma franja (y -36 a 0), porque: (1) la salida ya existe (la cornisa de la Torre, retoque R3, que aquí se abre en las filas 1-6); (2) piden solo lo que el jugador ya tiene en ese punto del guion (dash del Aljibe y doble salto de la Torre; el Agarre llega con Jacinto en La Era, que va después); (3) incluyen el Ancla A10 del Cruce del Pan y el Nombre de Eulalia Ferrán; y (4) la Casa Varga (CIN-09) y la Acequia (CIN-12) quedan para la siguiente tanda como ramas hacia arriba. Quedan cerrados a propósito: el norte del Surco (Casa Varga), el norte del Campo y del Cruce (Acequia, Segunda Torre) y el este del Cruce (puerta de un solo sentido a la Chimenea alta, B3/S3).
+
+**Desviaciones del macro:** anchuras 64/66/54 en lugar de 72/72/40 (la regla de 54 de ancho mínimo, C12, y el Cruce no cabe en 40 sin ser "estrecha"; se coloca en x 330 para que acabe pegado a la Chimenea en x 384). Sin mojones giratorios (M12), sin Excavar ni luz (M9): P08 y P10 tienen versión base (ver `puzles.md`). Techo cerrado y sin cielo, como la Torre. Arte provisional con las baldosas existentes.
+
+**Nuevo en la base:** `room.gd` aplica `piece_params` también a palancas, placas y botones (p. ej. `hold_time`), y C17 lo valida para `_`. `tools/maniobras_puzle.js` admite tramos (`legs`) con doble salto y la prueba de humo repite el segundo salto; hay 6 maniobras nuevas en `tests/puzzle_plans.json`. Cuatro pruebas nuevas (conexión caminando, nicho y repisa del Surco, palanca y cercado del Campo, placas y nicho del Cruce).
+
+**A jugar a mano:** el ritmo del recorrido; si el doble salto a la repisa del Surco y el de la repisa alta del Cruce se sienten justos; la ventana de 6 s de las placas yendo de la A a la C; que el cercado del Campo se lea (reja y palanca visibles) y la dificultad del coloso con los cascarones; si las salas anchas piden más enemigos; y que el nicho de la Bolsa se descubra sin pista.
 
 ## Controles actuales
 

@@ -391,12 +391,12 @@ El mundo se hace de **salas**: cada una es un mapa de texto (`game/levels/*.map`
 - **Mapa:** se descubre explorando, baldosa a baldosa: solo se dibuja lo que ha quedado a menos de 12 baldosas del jugador (`REVEAL_RADIUS` en `world.gd`), no la sala entera al entrar. La primera vez que se entra en una sala se anuncia su nombre. El minimapa (arriba a la izquierda) y el mapa completo (Esc → Mapa) muestran al jugador (dorado), las Anclas (azul) y el Eco de la última muerte (violeta), estos dos solo si se ha pasado cerca. Sin comprar mapas ni cartógrafos. **Una sala puede declarar `reveal_map = false`** (El Archivo en Blanco, ARC-19): el mapa no dibuja nada ahí y se confía en la luz (cambio mínimo en `world.gd`; pendiente de construir).
 - **Enemigos:** solo actúan dentro de su sala y cuando el jugador lleva unas 4 baldosas dentro (`ROOM_ENTRY_MARGIN` en `enemy.gd`, `PatrolChaseAI.territory`).
 - **Qué se guarda:** la partida (`user://`, `SaveSlot`) guarda al jugador, las salas visitadas, los jefes vencidos y lo explorado del mapa. Los puzles y secretos guardarán sus **marcas** (`flags`) y los coleccionables sus listas, como claves nuevas **opcionales** de ese mismo diccionario (ver `puzles.md`); el `FORMAT_VERSION` de `SaveSlot` no se toca, porque cambiarlo descarta las partidas existentes.
-- **Carga:** hoy son ocho salas, todas cargadas; solo la actual y sus vecinas procesan (`_activate_nearby_rooms`). Con ~40 salas habrá que cargar por región (el manifiesto ya define las regiones) y descargar las que están a más de 2 salas; hoy no hace falta.
+- **Carga:** hoy son once salas, todas cargadas; solo la actual y sus vecinas procesan (`_activate_nearby_rooms`). Con ~40 salas habrá que cargar por región (el manifiesto ya define las regiones) y descargar las que están a más de 2 salas; hoy no hace falta.
 - **Verificación del mundo:** `tools/verifica_mundo.js` (Node, sin dependencias, como `sim_saltos.js`; **construido en W0 con C1-C4, C8 y C12**; el resto, con el simulador, por construir) leerá los `.map`, `world.tscn` y `tests/world_manifest.json` y comprobará solapes, aberturas alineadas y ≥ 6, aberturas huérfanas, caracteres válidos y accesibilidad por habilidades; cada fallo imprime región, sala, borde y fila y sale con código ≠ 0. Lo que depende del motor (colisiones, reproducción de maniobras) sigue en `tests/smoke_test.gd`. Fases y comprobaciones, en `puzles.md`.
 
 ## El mundo construido hoy
 
-Ocho salas (posiciones en baldosas, de `world.tscn`):
+Once salas (posiciones en baldosas, de `world.tscn`):
 
 | Sala | ID | Posición | Tamaño |
 |---|---|---|---|
@@ -408,6 +408,9 @@ Ocho salas (posiciones en baldosas, de `world.tscn`):
 | La Chimenea | CIN-05 | (384,-21) | 40×69 |
 | La Pasarela de los Mensajeros y El Mirador | CIN-06 | (424,-21) | 100×24 |
 | La Torre de Riego | CIN-07 | (144,-20) | 56×44 |
+| El Surco Ciego | CIN-08 | (200,-36) | 64×36 (macro: 72×36) |
+| El Campo de los Ferrán | CIN-10 | (264,-36) | 66×36 (macro: 72×36, en (272,-36)) |
+| El Cruce del Pan | CIN-11 | (330,-36) | 54×36 (macro: 40×36, en (344,-36)) |
 
 ```
                         ┌────────────┐
@@ -428,7 +431,11 @@ El recorrido sigue el ritmo de un primer tramo de Hollow Knight (un pueblo, una 
 5. **El Aljibe** (64×33) — la **arena** del **Centinela Hueco** (ver `jefes.md`): al cruzar la línea de la sala caen dos rastrillos y no se puede huir hasta vencerlo. Al vencerlo aparece el recuerdo del **dash**.
 6. **La Chimenea** (40×69) — el puzle del dash: un eje abierto, sin techos, con escalones anchos y **tres cruces de 16 baldosas que solo se salvan con dash**. Cada fallo cuesta caer a un escalón inferior o a los pinchos. Tiene un **Ancla** al acabar el primer cruce y otra a mitad.
 7. **La Pasarela de los Mensajeros** (100×24) — al aire libre: tres huecos de 17 baldosas sobre un abismo de pinchos, todos con dash, hasta **El Mirador**, con un **Ancla** y una inscripción. Es un callejón sin salida (ver la lógica espacial): el camino al este sale por la Cuesta del Segador (CIN-19), no por aquí.
-8. **La Torre de Riego** — al otro lado del foso de las Terrazas. Escalera de tablones hasta el recuerdo del **doble salto**; con él se alcanza la cornisa del Ancla. Su pared derecha queda cerrada hasta el retoque R3.
+8. **La Torre de Riego** — al otro lado del foso de las Terrazas. Escalera de tablones hasta el recuerdo del **doble salto**; con él se alcanza la cornisa del Ancla. Su pared derecha se abrió (retoque R3, filas 1-6, a la altura de la cornisa) y da al Surco Ciego.
+
+9. **El Surco Ciego** (CIN-08, 64×36) — la primera sala del Cinturón alto, en calma y sin enemigos: bancales que bajan hacia el este desde la cornisa de la Torre, dos surcos con pinchos (se cae, se pierde 1 de vida y se vuelve al suelo) y la placa «Aquí se sembraba trigo». Opcionales: un **nicho de muro frágil** bajo el primer bancal (un muro de 6 celdas que cae a 3 golpes; dentro, una Bolsa de Rastro) y una **repisa alta** (el «tejado de la Casa Varga») que solo se alcanza con **doble salto** desde un tablón y guarda la Semilla gris. La salida norte hacia la Casa Varga (CIN-09) está cerrada: se abre cuando se construya.
+10. **El Campo de los Ferrán** (CIN-10, 66×36) — combate en campo abierto (dos cascarones y un coloso, a más de 10 baldosas de las puertas) y un **cercado** de piedra con el espantapájaros de Eulalia (**Nombre: Eulalia Ferrán**) cerrado con una reja. La palanca está arriba, en una repisa a la que se sube por una escalera de tablones sin habilidades; la marca es permanente (`p:campo_de_los_ferran.cercado`). Falta el parche gris con luz de revelado (P10, recortado): hoy el suelo es normal. El texto del mojón del lindero no tiene sala todavía (una sola `note` por sala).
+11. **El Cruce del Pan** (CIN-11, 54×36) — calma con el **Ancla A10** junto a la entrada, la mesa de piedra con tres sitios (la `note`), el trompo de Telmo (objeto) y el puzle P09: tres **placas** con 6 s de retención (suelo, repisa a 8 baldosas y repisa a 13 con doble salto) abren una compuerta de 6 celdas; detrás, la Página de Corvel 2 (objeto). El suelo del nicho son tablones: si la compuerta se cierra con el jugador dentro, se baja atravesándolos. El este queda cerrado: ahí irá la puerta de un solo sentido a la Chimenea alta (B3/S3).
 
 Es el primer bucle metroidvania del mundo real: ves un foso que no puedes cruzar, caes, abres el camino bajo tierra con un jefe, vuelves con el dash y cruzas ese mismo foso; y el puzle del dash pone a prueba lo aprendido. Las maniobras de referencia del puzle están en `tests/puzzle_plans.json` y la prueba de humo las repite en el motor (ver `jefes.md` y `docs/arquitectura.md#verificación`).
 

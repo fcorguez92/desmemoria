@@ -213,8 +213,11 @@ function main() {
   // Propiedades de los nodos (mantener en sincronía con core/objects/cycle.gd y rail_platform.gd).
   const KNOWN = {
     y: ["period", "on_fraction", "phase", "warning_time", "blink_rate", "cells", "cell_size", "blockers", "flag_id", "body_color", "edge_color"],
+    "_": ["mode", "flag_id", "toggle", "hold_time", "reach_rect", "target_groups", "action_interact", "lit_color", "dim_color", "sound", "sound_volume_db"],
     "<": ["mode", "end_offset", "size", "speed", "wait_time", "return_delay", "blocked_time", "rider_height", "activation_flag", "action_interact", "rider_groups", "blocker_groups", "body_color", "edge_color", "rail_color"],
   };
+  KNOWN.z = KNOWN._;  // palancas y botones son el mismo Trigger (core/objects/trigger.gd)
+  KNOWN["*"] = KNOWN._;
   for (const room of rooms) {
     const groups = (c) => groupsOf(room, c);
     const starts = groups("<"), ends = groups(">");
@@ -241,14 +244,14 @@ function main() {
     const text = scene ? fs.readFileSync(path.join(LEVELS, scene.scene + ".tscn"), "utf8") : "";
     const m = text.match(/^piece_params = (\{[\s\S]*?\n\})\s*$/m);
     if (!m) continue;
-    const ids = new Set([...starts, ...groups("y")].map((g) => g.id));
+    const ids = new Set([...starts, ...groups("y"), ...groups("_"), ...groups("z"), ...groups("*")].map((g) => g.id));
     let current = null;
     for (const line of m[1].split("\n")) {
       const k = line.match(/^"([^"]+)"\s*:\s*(.*)$/);
       if (!k) continue;
       if (k[1].includes("@")) {
         current = k[1];
-        if (!ids.has(current)) fail("C17", room.id, "", `el ajuste "${current}" no es la primera celda de un < ni de una y del mapa`);
+        if (!ids.has(current)) fail("C17", room.id, "", `el ajuste "${current}" no es la primera celda de un <, una y ni una _ del mapa`);
       } else if (current && ids.has(current) && !KNOWN[current[0]].includes(k[1])) {
         fail("C17", room.id, current, `la propiedad "${k[1]}" no existe; conocidas: ${KNOWN[current[0]].join(", ")}`);
       }
