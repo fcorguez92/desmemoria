@@ -14,6 +14,7 @@ extends SceneTree
 
 const Stats := preload("res://game/player/stats.gd")
 const Skills := preload("res://game/player/skills.gd")
+const Economy := preload("res://game/economy.gd")
 const LEVEL := "res://game/levels/test_level.tscn"
 const WORLD := "res://game/levels/world.tscn"
 ## Partida de las pruebas: nunca la de quien juega.
@@ -51,6 +52,7 @@ func _run() -> void:
 	await _test_sprites_and_animations()
 	await _test_enemies_respawn_on_rest_and_death()
 	await _test_skill_tree_at_anchor()
+	_test_skill_prices_and_graph()
 	await _test_enemy_damage_feedback()
 	await _test_anchor_menu_keyboard_and_pause()
 	await _test_pause_menu()
@@ -104,6 +106,8 @@ func _run() -> void:
 	await _test_loading_restores_progress()
 	await _test_flag_store()
 	await _test_collectibles_are_saved_once()
+	await _test_life_fragments_and_bags()
+	await _test_ecos_budget()
 	await _test_names_registry()
 	await _test_gate_opens_with_marks()
 	await _test_gate_never_closes_on_someone()
@@ -689,12 +693,12 @@ func _test_skill_tree_at_anchor() -> void:
 	_player.add_ecos(3)
 	_check(not _player.try_buy_skill(&"vitalidad"), "no se compra sin Ecos suficientes")
 	_check(_player.ecos == 3 and skills.level(&"vitalidad") == 0, "una compra fallida no cobra nada")
-	_player.add_ecos(2)
+	_player.add_ecos(7)
 	_check(_player.try_buy_skill(&"vitalidad"), "se compra con Ecos suficientes")
 	_check(_player.ecos == 0 and skills.level(&"vitalidad") == 1, "comprar cobra el coste y sube un nivel")
 	_check(_player.health.max_health == 6 and _player.health.health == 6, "Vitalidad sube la vida máxima y cura esa vida")
 
-	_player.add_ecos(100)
+	_player.add_ecos(400)
 	_check(not _player.try_buy_skill(&"ritmo"), "una mejora bloqueada no se puede comprar aunque sobren Ecos")
 	_check(_player.try_buy_skill(&"frascos") and _player.health.max_heal_charges == 4 and _player.health.heal_charges == 4, "Frascos da una carga más, llena")
 	_check(_player.try_buy_skill(&"filo") and _player.melee.damage == 2, "Filo afilado sube el daño")
@@ -704,6 +708,7 @@ func _test_skill_tree_at_anchor() -> void:
 	_check(_player.try_buy_skill(&"impulso") and _player.dash.cooldown < 0.4, "Impulso acorta la espera del dash")
 	_check(_player.try_buy_skill(&"temple") and _player.health.invulnerability_time > 0.6, "Temple alarga la invulnerabilidad")
 	_check(_player.try_buy_skill(&"contragolpe"), "Contragolpe se compra al tener la anterior")
+	_check(_player.try_buy_skill(&"aliento") and _player.health.heal_amount == 4, "Aliento sube la cura de cada frasco")
 
 	# Los niveles máximos no se pasan, y morir no pierde las mejoras (los Ecos sí).
 	while not skills.is_max(&"filo"):
@@ -718,7 +723,7 @@ func _test_skill_tree_at_anchor() -> void:
 	# Desde el menú del Ancla: abrir el árbol, moverse, comprar y volver.
 	await _fresh_level("Árbol de habilidades en el menú")
 	var menu = _player.anchor_menu
-	_player.add_ecos(30)
+	_player.add_ecos(30)  # Vitalidad I cuesta 10.
 	_player.rest_at(_player.global_position)
 	_check(menu.is_open() and not menu.is_tree_open(), "descansar abre el menú principal del Ancla")
 	_check(menu.menu.activate() and menu.is_tree_open(), "la primera opción abre el árbol")
@@ -730,7 +735,7 @@ func _test_skill_tree_at_anchor() -> void:
 	await _press_action("ui_left")
 	await _press_action("ui_up")
 	await _press_action("ui_accept")
-	_check(_player.skills.level(&"vitalidad") == 1 and _player.ecos == 25, "aceptar compra la mejora seleccionada, sin cerrar el menú")
+	_check(_player.skills.level(&"vitalidad") == 1 and _player.ecos == 20, "aceptar compra la mejora seleccionada, sin cerrar el menú")
 	_check(menu.is_open() and menu.is_tree_open() and paused, "el menú sigue abierto en el árbol")
 	await _press_action("ui_cancel")
 	_check(menu.is_open() and not menu.is_tree_open(), "Esc en el árbol vuelve al menú del Ancla")
@@ -2427,6 +2432,198 @@ func _test_collectibles_are_saved_once() -> void:
 	SaveSlot.new(TEST_SAVE).write({ player = {}, flags = 5, fragments = ["cisterna.c37f05", "cisterna.c37f05", "sala.inventada", 3], bags = "x" })
 	await _load_world(true)
 	_check(_level.fragment_count() == 1 and _level.bag_count() == 0 and _level.flags.count() == 0, "claves con tipos equivocados, ids repetidos o ids que no existen en el mundo se toleran (solo cuenta el real)")
+
+
+# --- Vida máxima por fragmentos (K10) y Bolsas de Rastro (K12) ----------------
+
+func _test_life_fragments_and_bags() -> void:
+	print("\n[Vida máxima: 5 + Vitalidad + fragmentos/4 + hueco de reliquias, con tope 13]")
+	_check(Stats.life_max(0, 0) == 5 and Stats.life_max(0, 3) == 5, "3 fragmentos = vida base")
+	_check(Stats.life_max(0, 4) == 6 and Stats.life_max(0, 7) == 6 and Stats.life_max(0, 8) == 7, "4 fragmentos = +1, 7 siguen en +1, 8 = +2")
+	_check(Stats.life_max(0, 12) == 8 and Stats.life_max(4, 12) == 12, "12 fragmentos = +3; con Vitalidad IV, 12")
+	_check(Stats.life_max(4, 12, 1) == 13 and Stats.life_max(4, 12, 5) == 13 and Stats.life_max(4, 99, 9) == 13, "con todo comprado y el Trapo el tope 13 se respeta")
+	_check(Stats.life_max(0, 0) == Skills.stat(&"vitalidad", 0), "la fórmula sin fragmentos coincide con el árbol")
+
+	await _load_world()
+	var scene: PackedScene = load("res://game/pickups/collectible.tscn")
+	var health: HealthComponent = _player.health
+	for i in 3:
+		var fragment: Node = scene.instantiate()
+		fragment.id = StringName("test.f%d" % i)
+		fragment.kind = &"fragment"
+		_level.add_child(fragment)
+		_level._on_collectible_collected(fragment)
+		fragment.free()
+	_check(_level.fragment_count() == 3 and health.max_health == 5, "en el mundo, 3 fragmentos no suben la vida máxima")
+	health.health = 2
+	var fourth: Node = scene.instantiate()
+	fourth.id = &"test.f3"
+	fourth.kind = &"fragment"
+	_level.add_child(fourth)
+	_level._on_collectible_collected(fourth)
+	fourth.free()
+	_check(health.max_health == 6 and health.health == 6, "el 4.º sube la vida máxima en 1 y cura del todo")
+	await _wait(2)
+	var data := _saved()
+	_check(data.get("fragments", []).size() == 4, "los 4 fragmentos se guardan")
+	# Al cargar solo cuentan ids que existen en el mundo: se añaden 4 coleccionables
+	# reales (en el grupo) y se aplica una partida con esos 4 ids.
+	await _load_world()
+	var ids: Array = []
+	for i in 4:
+		var extra: Node = scene.instantiate()
+		extra.id = StringName("test.carga%d" % i)
+		extra.kind = &"fragment"
+		_level.add_child(extra)
+		ids.append("test.carga%d" % i)
+	_level._apply_save({ player = {}, fragments = ids })
+	_check(_level.fragment_count() == 4 and _player.health.max_health == 6 and _player.health.health == 6, "al cargar, la vida máxima (6) y la salud salen de los 4 fragmentos guardados")
+	_level._apply_save({ player = {}, fragments = ids.slice(0, 3) })
+	_check(_level.fragment_count() == 3 and _player.health.max_health == 5 and _player.health.health == 5, "y con 3 fragmentos guardados, 5")
+	_player.set_life_fragments(8, true)
+	_check(_player.health.max_health == 7 and _player.health.health == 7, "set_life_fragments(8) deja 7 de vida, llena")
+	_player.life_bonus = 1
+	_player.set_life_fragments(8)
+	_check(_player.health.max_health == 8, "el hueco de reliquias (Trapo) suma a la fórmula")
+	_player.life_bonus = 0
+	_player.set_life_fragments(0)
+
+	print("\n[Bolsas de Rastro: dan Ecos según la región, una sola vez]")
+	await _load_world()
+	var bag: Node = scene.instantiate()
+	bag.id = &"test.bolsa1"
+	bag.kind = &"bag"
+	bag.region = &"umbral"
+	_level.add_child(bag)
+	var before: int = _player.ecos
+	_level._on_collectible_collected(bag)
+	_check(_player.ecos == before + 12 and _level.bag_count() == 1, "una Bolsa del Umbral da 12 Ecos y cuenta")
+	_level._on_collectible_collected(bag)
+	_check(_player.ecos == before + 12 and _level.bag_count() == 1, "el mismo id no da Ecos dos veces")
+	bag.id = &"test.bolsa2"
+	bag.region = &"herida"
+	_level._on_collectible_collected(bag)
+	_check(_player.ecos == before + 12 + 30, "una Bolsa de La Herida da 30")
+	bag.free()
+	var in_range := true
+	for region in Economy.BAG_ECOS_BY_REGION:
+		var amount: int = Economy.bag_ecos(region)
+		if amount < Economy.MIN_BAG_ECOS or amount > Economy.MAX_BAG_ECOS:
+			in_range = false
+	_check(in_range and Economy.bag_ecos(&"inventada") == 0, "todas las regiones dan entre 12 y 30 Ecos; una región inventada, 0")
+
+
+# --- Presupuesto de Ecos (K12) ------------------------------------------------
+
+## Suma los Ecos que da el mundo (enemigos, jefes y Bolsas) y los compara con lo que
+## cuesta el camino principal. Con pocas salas NO falla por falta de contenido: solo
+## informa. Sí falla por datos incoherentes (recompensas no positivas, Bolsas fuera de
+## 12-30, una sala cuya región no coincide con la del manifiesto, regiones desconocidas)
+## y, cuando el manifiesto ya tiene las seis regiones, por salirse del 90-110 %.
+func _test_ecos_budget() -> void:
+	print("\n[Presupuesto de Ecos: enemigos + jefes + Bolsas frente al camino principal]")
+	await _load_world()
+	var manifest: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://tests/world_manifest.json"))
+	_check(manifest is Dictionary and manifest.has("salas"), "el manifiesto del mundo se lee")
+	var coherent := true
+	var regions := {}
+	for entry in manifest.get("salas", []):
+		regions[StringName(entry.region)] = true
+		if not Economy.BAG_ECOS_BY_REGION.has(StringName(entry.region)):
+			coherent = false
+		var room: Node = _level.get_node_or_null("Rooms/" + String(entry.id).to_pascal_case())
+		if room != null and room.region != StringName(entry.region):
+			coherent = false
+			print("      región distinta en ", entry.id, ": escena ", room.region, ", manifiesto ", entry.region)
+	_check(coherent, "las regiones de las salas coinciden con el manifiesto y todas tienen precio de Bolsa")
+	var enemies := 0
+	var enemy_ecos := 0
+	var boss_ecos := 0
+	var positive := true
+	for node in get_nodes_in_group("enemy"):
+		var reward: int = node.ecos_reward
+		if reward <= 0:
+			positive = false
+		if node.get_script().resource_path.begins_with("res://game/boss/"):
+			boss_ecos += reward
+		else:
+			enemies += 1
+			enemy_ecos += reward
+	var bags := 0
+	var bag_ecos := 0
+	var bags_ok := true
+	for pickup in get_nodes_in_group(&"collectible"):
+		if pickup.kind == &"bag":
+			bags += 1
+			var amount: int = Economy.bag_ecos(pickup.region)
+			bag_ecos += amount
+			if amount < Economy.MIN_BAG_ECOS or amount > Economy.MAX_BAG_ECOS:
+				bags_ok = false
+	_check(positive, "todo enemigo y jefe da al menos 1 Eco")
+	_check(bags_ok, "toda Bolsa del mundo da entre 12 y 30 Ecos")
+	var gross := int(enemy_ecos * Economy.ROUNDS_FACTOR) + boss_ecos + bag_ecos
+	var low := int(Economy.MAIN_PATH_SINKS * Economy.BUDGET_MIN_RATIO)
+	var high := int(Economy.MAIN_PATH_SINKS * Economy.BUDGET_MAX_RATIO)
+	print("      %d enemigos (%d Ecos), jefes %d, %d Bolsas (%d): bruto %d de %d-%d (%d %% del camino)" % [
+		enemies, enemy_ecos, boss_ecos, bags, bag_ecos, gross, low, high, roundi(100.0 * gross / Economy.MAIN_PATH_SINKS)])
+	if regions.size() >= Economy.BAG_ECOS_BY_REGION.size():
+		_check(gross >= low and gross <= high, "el mundo completo da entre el 90 y el 110 % del coste del camino principal")
+	else:
+		_check(gross <= high, "(informativo) con %d de %d regiones, lo que hay no pasa del 110 %% del coste" % [regions.size(), Economy.BAG_ECOS_BY_REGION.size()])
+
+
+# --- Precios y grafo del árbol (K11) -----------------------------------------
+
+func _test_skill_prices_and_graph() -> void:
+	print("\n[Árbol: precios de la tabla final y grafo sin requisitos rotos]")
+	var implemented := 0
+	var levels := 0
+	var ids: Array[StringName] = []
+	for skill in Skills.LIST:
+		ids.append(skill.id)
+		for cost in skill.costs:
+			implemented += cost
+		levels += skill.costs.size()
+	var pending := 0
+	var pending_levels := 0
+	for id in Skills.PENDING_COSTS:
+		for cost in Skills.PENDING_COSTS[id]:
+			pending += cost
+		pending_levels += Skills.PENDING_COSTS[id].size()
+	_check(implemented == 1210, "lo implementado suma 1.210 Ecos (tabla del doc: 510 Cuerpo + 390 Filo + 310 Espíritu); suma %d" % implemented)
+	_check(implemented + pending == Skills.FINAL_TOTAL_COST, "con las pendientes (Brasa, Castigo, Paso fantasma, Voz) suma %d, la cifra del doc" % Skills.FINAL_TOTAL_COST)
+	_check(Skills.LIST.size() + Skills.PENDING_COSTS.size() == 14 and levels + pending_levels == 29, "14 mejoras y 29 niveles en total")
+	var unique := {}
+	var graph_ok := true
+	for skill in Skills.LIST:
+		unique[skill.id] = true
+		if skill.requires != &"" and not ids.has(skill.requires):
+			graph_ok = false
+		# Siguiendo los requisitos hacia atrás se llega a una raíz sin dar más vueltas que mejoras.
+		var current: StringName = skill.id
+		var steps := 0
+		while current != &"" and steps <= ids.size():
+			var next: StringName = &"?"
+			for other in Skills.LIST:
+				if other.id == current:
+					next = other.requires
+					break
+			if next == &"?":
+				break
+			current = next
+			steps += 1
+		if current != &"":
+			graph_ok = false
+		if skill.costs.is_empty() or skill.branch < 0 or skill.branch >= Skills.BRANCHES.size() or skill.row > 4:
+			graph_ok = false
+	_check(unique.size() == Skills.LIST.size(), "los ids del árbol no se repiten")
+	_check(graph_ok, "ningún requisito apunta a una mejora inexistente ni hay ciclos; ramas y filas caben en el menú")
+	var increasing := true
+	for skill in Skills.LIST:
+		for i in range(1, skill.costs.size()):
+			if skill.costs[i] <= skill.costs[i - 1]:
+				increasing = false
+	_check(increasing, "dentro de cada mejora, cada nivel cuesta más que el anterior")
 
 
 # --- Compuertas, disparadores y muros frágiles (W2) --------------------------

@@ -16,6 +16,8 @@ const COLORS := {
 
 ## Identificador estable `sala.cXXfYY`; lo asigna la sala antes de añadirlo al árbol.
 @export var id: StringName
+## Región de la sala donde está (la pone la sala): decide los Ecos de una Bolsa.
+@export var region: StringName = &"cinturon"
 ## `fragment`, `bag` o `item`.
 @export var kind: StringName = &"fragment"
 
