@@ -8,6 +8,8 @@ extends RefCounted
 ## el menú. Un nivel cuesta lo que dice `costs` (en Ecos): conseguirlo todo cuesta
 ## muchos más de los que da una vida, así que hay que elegir.
 
+const Stats := preload("res://game/player/stats.gd")
+
 const BRANCHES := ["Cuerpo", "Filo", "Espíritu"]
 
 const BASE_HEALTH := 5
@@ -54,9 +56,9 @@ const LIST := [
 static func stat(id: StringName, level: int) -> float:
 	match id:
 		&"vitalidad":
-			return BASE_HEALTH + level
+			return Stats.max_health(BASE_HEALTH + level)
 		&"frascos":
-			return BASE_FLASKS + level
+			return Stats.max_flasks(BASE_FLASKS + level)
 		&"temple":
 			return BASE_INVULNERABILITY + INVULNERABILITY_STEP * level
 		&"filo":

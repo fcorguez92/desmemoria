@@ -98,11 +98,11 @@ El difuminado de Olvido tiene su opción de accesibilidad ("Olvido sin ocultar l
 
 ## Vida, curación y frascos
 
-### Hoy [Impl.]
+### Antes (histórico)
 
-Vida base 5 (hasta 9 con Vitalidad). El frasco (**H**; **B / Círculo** en el mando) cura **del todo y al instante**, 3 cargas (hasta 5 con el árbol), y no se puede usar a vida completa. Las cargas se recargan al descansar. Al morir se reaparece con vida y frascos al máximo.
+Hasta este cambio el frasco (**H**; **B / Círculo** en el mando) curaba del todo y al instante, 3 cargas, y no se podía usar a vida completa. Las cargas se recargan al descansar y al morir se reaparece con vida y frascos al máximo (esto último no ha cambiado).
 
-### Decisión: el frasco deja de curar del todo [Pend.]
+### Decisión: el frasco deja de curar del todo [Impl.]
 
 Con 13 de vida y 5 frascos, una cura total instantánea son 65 vidas de colchón y ningún jefe sería peligroso. Se adopta una cura **fija, con sorbo comprometido**, la mitad de lo que proponía la sala original (que llegaba a 6 frascos y 30 vidas de cura de campaña).
 

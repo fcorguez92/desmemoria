@@ -12,6 +12,8 @@ extends SceneTree
 ## - Si el jugador muere sin haberse alejado de su punto de reaparición, el Eco
 ##   nace bajo sus pies y lo recoge al instante; por eso `_stand_at()`.
 
+const Stats := preload("res://game/player/stats.gd")
+const Skills := preload("res://game/player/skills.gd")
 const LEVEL := "res://game/levels/test_level.tscn"
 const WORLD := "res://game/levels/world.tscn"
 ## Partida de las pruebas: nunca la de quien juega.
@@ -130,6 +132,30 @@ func _test_health_and_healing() -> void:
 	_check(health.use_heal_charge(), "puede curarse con cargas y vida incompleta")
 	_check(health.health == 5 and health.heal_charges == 2, "curar restaura vida y gasta 1 carga")
 	_check(not health.use_heal_charge(), "no gasta carga a vida completa")
+
+	# El frasco del juego: 3 vidas por sorbo de 0,70 s.
+	_check(health.heal_amount == 3 and absf(health.heal_time - 0.7) < 0.001, "el frasco cura 3 vidas en 0,70 s")
+	health.heal_charges = 3
+	health.health = 1
+	_check(health.begin_heal() and health.is_healing(), "empieza el sorbo")
+	_check(health.health == 1 and health.heal_charges == 3, "durante el sorbo no se ha curado ni gastado nada")
+	await _wait(50)
+	_check(health.health == 4 and health.heal_charges == 2 and not health.is_healing(), "el sorbo cura exactamente heal_amount y gasta 1 carga")
+	health.health = 4
+	_check(health.begin_heal(), "se vuelve a beber")
+	await _wait(10)
+	_player.take_hit(1, 0)
+	_check(not health.is_healing() and health.heal_charges == 2 and health.health == 3, "un golpe durante el sorbo lo cancela sin gastar carga")
+	await _wait(50)
+	_check(health.health == 3 and health.heal_charges == 2, "y no se cura después")
+	health.health = health.max_health
+	_check(not health.begin_heal() and not health.is_healing(), "no se bebe con vida llena")
+	health.health = 2
+	_check(health.begin_heal(), "(preparado) sorbo para cancelar saltando")
+	_player.motor.jumped.emit(&"ground")
+	_check(not health.is_healing() and health.heal_charges == 2, "saltar cancela el sorbo sin coste")
+	_check(Stats.max_flasks(99) == 5 and Stats.max_health(99) == 13 and Stats.heal_amount(99) == 5 and absf(Stats.heal_time(9.0) - 0.3) < 0.001, "los topes de estadísticas se respetan")
+	_check(Stats.heal_amount(-99) == 1 and Skills.stat(&"frascos", 99) == 5.0 and Skills.stat(&"vitalidad", 99) == 13.0, "y las mejoras no los superan")
 
 
 func _test_death_drops_echo_at_last_ground() -> void:
@@ -646,7 +672,9 @@ func _test_gamepad_controls() -> void:
 	_check(_player.animator.current == "attack", "X / Cuadrado ataca")
 	await _wait(30)
 	_player.take_hit(1, 0)
+	await _wait(30)
 	await _press_event(_pad_button(JOY_BUTTON_B))
+	await _wait(60)
 	_check(_player.health.health == _player.health.max_health and not paused, "B / Círculo cura y no abre la pausa")
 	await _press_event(_pad_axis(JOY_AXIS_TRIGGER_LEFT))
 	_check(_player.parry.is_active, "LT / L2 alza la guardia")
