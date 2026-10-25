@@ -134,6 +134,7 @@ func _run() -> void:
 	await _test_cruce_del_pan_plates_and_the_niche()
 	await _test_dormant_ai_and_espantapajaros()
 	await _test_fly_ai_and_cuervo()
+	await _test_telegraph_zone()
 	await _test_title_screen()
 	await _test_pause_returns_to_title()
 	await _test_menu_list_survives_leaving_the_tree()
@@ -4748,6 +4749,94 @@ func _test_dormant_ai_and_espantapajaros() -> void:
 	spawner.reset()
 	await _wait(3)
 	_check(spawner.instance != placed and spawner.instance.ai.state == PatrolChaseAI.State.DORMANT, "al reiniciar la sala reaparece dormido")
+
+
+func _make_zone(at: Vector2, kind: TelegraphZone.Shape, size: Vector2, duration: float, parryable: bool) -> TelegraphZone:
+	# El jugador siempre en el mismo punto (un golpe anterior lo habrá empujado).
+	_player.global_position = Vector2(100.0, 296.0)
+	_player.velocity = Vector2.ZERO
+	var zone := TelegraphZone.new()
+	zone.shape_kind = kind
+	zone.size = size
+	zone.duration = duration
+	zone.parryable = parryable
+	_room.add_child(zone)
+	zone.global_position = at
+	return zone
+
+
+func _test_telegraph_zone() -> void:
+	print("\n[Aviso de zona (K29): marca amarilla o roja, daño solo al terminar y solo a lo que hay dentro]")
+	await _load_world()
+	_player.health.max_health = 99
+	_player.health.health = 99
+	await _clear_enemies(_room)
+	var enemy_script: Script = load("res://game/enemy/enemy.gd")
+	var enemy_yellow: Color = enemy_script.TELEGRAPH_COLOR
+	var enemy_red: Color = enemy_script.TELEGRAPH_RED
+	var zone := _make_zone(Vector2(100.0, 296.0), TelegraphZone.Shape.RECT, Vector2(80.0, 60.0), 0.5, true)
+	_player.global_position = Vector2(100.0, 296.0)
+	_player.velocity = Vector2.ZERO
+	_check(zone.warning_color() == enemy_yellow, "una zona que se puede parar se pinta del amarillo de aviso de los enemigos")
+	zone.parryable = false
+	_check(zone.warning_color() == enemy_red, "una que no se puede parar, del rojo de aviso")
+	zone.parryable = true
+	var hp: int = _player.health.health
+	await _wait(15)
+	_check(_player.health.health == hp and not zone.is_resolved, "durante el aviso, dentro de la marca, no hace daño")
+	_check(zone.progress() > 0.3 and zone.progress() < 0.7, "el aviso avanza (%d %%)" % int(zone.progress() * 100.0))
+	var seen := []
+	zone.resolved.connect(func(hit: Array) -> void: seen.append(hit.size()))
+	await _wait(25)
+	_check(_player.health.health == hp - 1 and seen == [1], "al terminar el aviso hace daño a lo que hay dentro, una sola vez")
+	await _wait(30)
+	_check(not is_instance_valid(zone) and _player.health.health == hp - 1, "después de golpear se borra sola y no repite")
+
+	# Fuera de la zona no pasa nada; un círculo mide su radio, no su caja.
+	await _wait(40)
+	hp = _player.health.health
+	zone = _make_zone(Vector2(160.0, 296.0), TelegraphZone.Shape.RECT, Vector2(40.0, 40.0), 0.3, false)
+	await _wait(30)
+	_check(_player.health.health == hp, "quien está fuera de la marca no recibe daño")
+	await _wait(40)
+	zone = _make_zone(Vector2(100.0, 296.0), TelegraphZone.Shape.CIRCLE, Vector2(30.0, 0.0), 0.3, false)
+	await _wait(30)
+	_check(_player.health.health == hp - 1, "un círculo de radio 30 alcanza al jugador que está en su centro")
+	await _wait(60)
+	hp = _player.health.health
+	zone = _make_zone(Vector2(220.0, 296.0), TelegraphZone.Shape.CIRCLE, Vector2(30.0, 0.0), 0.3, false)
+	await _wait(30)
+	_check(_player.health.health == hp, "y no al que está a 120 px")
+
+	# El rojo atraviesa la guardia; el amarillo se puede parar (sin daño).
+	await _wait(40)
+	hp = _player.health.health
+	_player.global_position = Vector2(100.0, 296.0)
+	_player.velocity = Vector2.ZERO
+	zone = _make_zone(Vector2(130.0, 296.0), TelegraphZone.Shape.RECT, Vector2(120.0, 60.0), 0.3, false)
+	await _wait(8)
+	_player.parry.try_start()
+	await _wait(16)
+	_check(_player.health.health == hp - 1, "un golpe de zona rojo atraviesa la guardia del jugador (con la ventana de parry abierta)")
+	await _wait(60)
+	hp = _player.health.health
+	_player.global_position = Vector2(100.0, 296.0)
+	_player.velocity = Vector2.ZERO
+	zone = _make_zone(Vector2(130.0, 296.0), TelegraphZone.Shape.RECT, Vector2(120.0, 60.0), 0.3, true)
+	var parried := [0]
+	zone.parried.connect(func() -> void: parried[0] += 1)
+	await _wait(8)
+	_player.parry.try_start()
+	await _wait(14)
+	_check(_player.health.health == hp and parried[0] == 1, "uno amarillo se puede parar: sin daño y con la señal parried")
+	# Cancelar antes de tiempo no golpea.
+	await _wait(60)
+	hp = _player.health.health
+	zone = _make_zone(Vector2(100.0, 296.0), TelegraphZone.Shape.RECT, Vector2(80.0, 60.0), 0.4, true)
+	await _wait(10)
+	zone.cancel()
+	await _wait(40)
+	_check(_player.health.health == hp, "cancelar el aviso evita el golpe")
 
 
 ## Un cuervo en El Último Umbral, en `at` (el suelo está en y = 320).
