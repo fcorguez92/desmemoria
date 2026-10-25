@@ -8,6 +8,15 @@
 script = ExtResource("1_room")
 title = "Las Galerías Bajas"
 has_sky = false
+piece_params = {
+"<@45,25": {
+"mode": 1
+},
+"y@52,13": {
+"period": 4.0,
+"on_fraction": 0.75
+}
+}
 note = "El Aljibe queda sellado por orden del Archivo. El Custodio de guardia no abandonará su puesto hasta que alguien lo releve. Nadie ha venido a relevarlo."
 
 [node name="Tiles" type="TileMapLayer" parent="."]

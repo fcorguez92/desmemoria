@@ -21,6 +21,9 @@
 // Terreno: sólidos T G B C g % (y $ # = + salvo --roto; = y + son compuertas
 // cerradas), pared lisa % (sólida, sin agarre), tablones S p (de un solo sentido) y
 // peligro ^ v ~ - { } (los laterales con su caja girada) siempre activos.
+// NO se modelan las piezas móviles ni con ritmo: las plataformas de carril (< >) y
+// los ciclos (y) cuentan como aire. Una ruta que dependa de ellas se prueba en el motor
+// (tests/smoke_test.gd), no aquí.
 const fs = require('fs');
 const DT = 1 / 60, CELL = 16;
 const P = {

@@ -2,7 +2,8 @@
 // (tests/world_manifest.json) de docs/puzles.md ("Comprobaciones automáticas").
 // Hechas hoy: C1 sin solapes, C2 alineación y anchura de las puertas, C3 aberturas
 // huérfanas, C4 manifiesto frente a world.tscn, C8 enemigos y tablones, C12
-// caracteres válidos y anchura, C13 coleccionables, C16 enlaces de las piezas.
+// caracteres válidos y anchura, C13 coleccionables, C16 enlaces de las piezas,
+// C17 extremos de carril en pares y ajustes de piezas (piece_params).
 // Sale con código 1 si algún fallo; cada fallo dice
 // comprobación, sala, borde y fila/columna.
 //
@@ -59,7 +60,7 @@ function piecesOf(room) {
   const out = new Set();
   const seen = new Set();
   room.rows.forEach((row, r) => [...row].forEach((c, col) => {
-    if (!'=+z_*#$'.includes(c) || seen.has(`${col},${r}`)) return;
+    if (!'=+z_*#$<>y'.includes(c) || seen.has(`${col},${r}`)) return;
     out.add(`${c}@${col},${r}`);
     const queue = [[col, r]];
     seen.add(`${col},${r}`);
@@ -70,6 +71,28 @@ function piecesOf(room) {
         if (!seen.has(`${nx},${ny}`) && ny >= 0 && ny < room.h && room.rows[ny][nx] === c) { seen.add(`${nx},${ny}`); queue.push([nx, ny]); }
       }
     }
+  }));
+  return out;
+}
+
+// Piezas de un carácter: grupos conexos por lados, con id, y centro en celdas.
+function groupsOf(room, c) {
+  const out = [];
+  const seen = new Set();
+  room.rows.forEach((row, r) => [...row].forEach((ch2, col) => {
+    if (ch2 !== c || seen.has(`${col},${r}`)) return;
+    const cells = [];
+    const queue = [[col, r]];
+    seen.add(`${col},${r}`);
+    while (queue.length) {
+      const [x, y] = queue.pop();
+      cells.push([x, y]);
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const nx = x + dx, ny = y + dy;
+        if (!seen.has(`${nx},${ny}`) && ny >= 0 && ny < room.h && room.rows[ny][nx] === c) { seen.add(`${nx},${ny}`); queue.push([nx, ny]); }
+      }
+    }
+    out.push({ x0: Math.min(...cells.map((p) => p[0])), x1: Math.max(...cells.map((p) => p[0])), y0: Math.min(...cells.map((p) => p[1])), y1: Math.max(...cells.map((p) => p[1])), id: `${c}@${col},${r}`, cx: cells.reduce((a, p) => a + p[0], 0) / cells.length, cy: cells.reduce((a, p) => a + p[1], 0) / cells.length });
   }));
   return out;
 }
@@ -180,6 +203,55 @@ function main() {
     for (const v of m[1].matchAll(/"([^"]+)"/g)) {
       if (v[1].includes('@')) continue;  // es una clave
       if (!/^[pdsitn]:[a-z0-9_]+\.[a-z0-9_]+$/.test(v[1])) fail('C16', room.id, '', `la marca "${v[1]}" no tiene la forma prefijo:sala.objeto (minúsculas, sin acentos)`);
+    }
+  }
+
+  // C17: extremos de carril. Cada < debe tener su > (se emparejan por cercanía, como en
+  // room.gd: primero los pares más próximos) y los dos extremos de un par no pueden
+  // estar en la misma celda. Las claves de piece_params (ajustes de ciclos y plataformas)
+  // deben ser el id de una pieza < o y que exista en el mapa.
+  // Propiedades de los nodos (mantener en sincronía con core/objects/cycle.gd y rail_platform.gd).
+  const KNOWN = {
+    y: ["period", "on_fraction", "phase", "warning_time", "blink_rate", "cells", "cell_size", "blockers", "flag_id", "body_color", "edge_color"],
+    "<": ["mode", "end_offset", "size", "speed", "wait_time", "return_delay", "blocked_time", "rider_height", "activation_flag", "action_interact", "rider_groups", "blocker_groups", "body_color", "edge_color", "rail_color"],
+  };
+  for (const room of rooms) {
+    const groups = (c) => groupsOf(room, c);
+    const starts = groups("<"), ends = groups(">");
+    // Compatibles: mismo ancho y misma columna o fila. Desempate por orden de lectura (como room.gd).
+    const cand = [];
+    starts.forEach((a, i) => ends.forEach((b, j) => {
+      if (a.x1 - a.x0 === b.x1 - b.x0 && (a.x0 === b.x0 || a.y0 === b.y0)) cand.push([Math.hypot(a.cx - b.cx, a.cy - b.cy), i, j]);
+    }));
+    cand.sort((p, q) => (Math.abs(p[0] - q[0]) > 1e-9 ? p[0] - q[0] : p[1] - q[1] || p[2] - q[2]));
+    const usedS = new Set(), usedE = new Set();
+    for (const [d, i, j] of cand) {
+      if (usedS.has(i) || usedE.has(j)) continue;
+      usedS.add(i); usedE.add(j);
+      const a = starts[i], b = ends[j];
+      if (d < 1) fail("C17", room.id, a.id, "el inicio y el fin del carril están en la misma celda");
+      const x0 = Math.min(a.x0, b.x0), x1 = Math.max(a.x1, b.x1), y0 = Math.min(a.y0, b.y0), y1 = Math.max(a.y1, b.y1);
+      outer: for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+        if (SOLID.has(ch(room, x, y))) { fail("C17", room.id, a.id, `hay un sólido ("${ch(room, x, y)}") en fila ${y} columna ${x} en el tramo del carril`); break outer; }
+      }
+    }
+    starts.forEach((a, i) => { if (!usedS.has(i)) fail("C17", room.id, a.id, "el extremo < no tiene un > del mismo ancho y alineado (misma columna o fila)"); });
+    ends.forEach((b, j) => { if (!usedE.has(j)) fail("C17", room.id, b.id, "el extremo > no tiene un < del mismo ancho y alineado"); });
+    const scene = worldRooms().find((w) => sceneMap(w.scene) === room.id);
+    const text = scene ? fs.readFileSync(path.join(LEVELS, scene.scene + ".tscn"), "utf8") : "";
+    const m = text.match(/^piece_params = (\{[\s\S]*?\n\})\s*$/m);
+    if (!m) continue;
+    const ids = new Set([...starts, ...groups("y")].map((g) => g.id));
+    let current = null;
+    for (const line of m[1].split("\n")) {
+      const k = line.match(/^"([^"]+)"\s*:\s*(.*)$/);
+      if (!k) continue;
+      if (k[1].includes("@")) {
+        current = k[1];
+        if (!ids.has(current)) fail("C17", room.id, "", `el ajuste "${current}" no es la primera celda de un < ni de una y del mapa`);
+      } else if (current && ids.has(current) && !KNOWN[current[0]].includes(k[1])) {
+        fail("C17", room.id, current, `la propiedad "${k[1]}" no existe; conocidas: ${KNOWN[current[0]].join(", ")}`);
+      }
     }
   }
 

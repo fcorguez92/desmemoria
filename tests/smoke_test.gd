@@ -113,6 +113,16 @@ func _run() -> void:
 	await _test_cracked_wall_stays_broken_after_loading()
 	await _test_room_places_mechanics_from_markers()
 	await _test_cistern_lever_opens_the_nook()
+	await _test_cycle_period_phase_and_warning()
+	await _test_cycle_never_traps_or_crushes()
+	await _test_rail_platform_waits_at_the_ends()
+	await _test_rail_platform_carries_the_player()
+	await _test_rail_platform_never_crushes()
+	await _test_rail_platform_on_demand_and_flags()
+	await _test_room_places_cycles_and_rails()
+	await _test_galerias_bajas_has_the_rail_and_the_cycle()
+	await _test_moving_pieces_are_not_safe_ground()
+	await _test_cycle_flag_survives_reset_and_pairing_is_strict()
 	await _test_title_screen()
 	await _test_pause_returns_to_title()
 	await _test_menu_list_survives_leaving_the_tree()
@@ -3698,3 +3708,401 @@ func _clear_enemies(room: Node) -> void:
 		if child is EntitySpawner:
 			child.queue_free()
 	await _wait(2)
+
+
+# --- W3: Ciclo (M11) y plataforma sobre carril (M7) --------------------------
+## Un sólido estático (capa 1) para las pruebas de ciclo y carril.
+func _mech_wall(rect: Rect2) -> StaticBody2D:
+	var wall := StaticBody2D.new()
+	var shape := CollisionShape2D.new()
+	var box := RectangleShape2D.new()
+	box.size = rect.size
+	shape.shape = box
+	wall.add_child(shape)
+	wall.position = rect.get_center()
+	_level.add_child(wall)
+	return wall
+
+
+func _mech_cycle(at: Vector2, period: float, on_fraction: float, phase: float = 0.0, warning: float = 0.4) -> Cycle:
+	var cycle := Cycle.new()
+	cycle.period = period
+	cycle.on_fraction = on_fraction
+	cycle.phase = phase
+	cycle.warning_time = warning
+	cycle.position = at
+	_level.add_child(cycle)
+	return cycle
+
+
+func _mech_rail(at: Vector2, end_offset: Vector2, mode: RailPlatform.Mode, flag: StringName = &"") -> RailPlatform:
+	var platform := RailPlatform.new()
+	platform.mode = mode
+	platform.end_offset = end_offset
+	platform.activation_flag = flag
+	platform.position = at
+	_level.add_child(platform)
+	return platform
+
+
+func _test_cycle_period_phase_and_warning() -> void:
+	print("\n[Ciclo (M11): periodo, fase y aviso respetados, determinista]")
+	await _mech_sandbox()
+	var cycle := _mech_cycle(Vector2(100, 100), 4.0, 0.5)
+	_check(cycle.state_at(0.0) == Cycle.State.ON and cycle.state_at(1.5) == Cycle.State.ON, "el ciclo empieza presente (ON)")
+	_check(cycle.state_at(1.7) == Cycle.State.WARNING_OFF and cycle.state_at(1.99) == Cycle.State.WARNING_OFF, "avisa 0,4 s antes de desaparecer")
+	_check(cycle.state_at(2.0) == Cycle.State.OFF and cycle.state_at(3.5) == Cycle.State.OFF, "desaparece a la mitad del periodo")
+	_check(cycle.state_at(3.7) == Cycle.State.WARNING_ON and cycle.state_at(4.0) == Cycle.State.ON, "avisa también antes de volver y repite cada periodo")
+	_check(cycle.state_at(40.5) == cycle.state_at(0.5) and cycle.state_at(41.7) == Cycle.State.WARNING_OFF, "es periódico y no depende de nada aleatorio")
+	var shifted := _mech_cycle(Vector2(200, 100), 4.0, 0.5, 0.5)
+	await _wait(2)
+	_check(cycle.is_solid() and not shifted.is_solid() and shifted.state == Cycle.State.OFF, "con fase 0,5 arranca a mitad de ciclo (opuesto al otro)")
+	var opposite := true
+	var blinks := {}
+	var solid_while_warning := true
+	var switched_at := -1
+	for i in 280:
+		await physics_frame
+		var steady := cycle.state in [Cycle.State.ON, Cycle.State.OFF] and shifted.state in [Cycle.State.ON, Cycle.State.OFF]
+		if steady and cycle.is_solid() == shifted.is_solid():
+			opposite = false
+		if cycle.state == Cycle.State.WARNING_OFF:
+			blinks[snappedf(cycle.visual_alpha(), 0.01)] = true
+			solid_while_warning = solid_while_warning and cycle.is_solid()
+		if switched_at < 0 and not cycle.is_solid():
+			switched_at = i
+	_check(opposite, "dos ciclos con fases opuestas nunca están sólidos a la vez fuera de los avisos")
+	_check(blinks.size() == 2 and solid_while_warning, "durante el aviso alterna dos fotogramas y sigue sólido hasta cambiar")
+	_check(absf(switched_at / 60.0 - 2.0) < 0.1, "se hace no sólido a los 2 s (periodo 4 s, 50 %%): %.2f s" % [switched_at / 60.0])
+	cycle.time = 0.0
+	await _wait(3)
+	_check(cycle.is_solid() and cycle.visual_alpha() == 1.0, "al volver a ON es sólido y opaco")
+	var shape: CollisionShape2D = cycle.get_child(0).get_child(0)
+	_check(shape.disabled == (not cycle.is_solid()), "la colisión coincide con su estado")
+
+
+func _test_cycle_never_traps_or_crushes() -> void:
+	print("\n[Ciclo (M11): no atrapa a quien está dentro ni aplasta a quien está encima]")
+	await _mech_sandbox()
+	var cycle := _mech_cycle(Vector2(100, 100), 4.0, 0.5)
+	cycle.time = 2.5  # ausente
+	await _wait(3)
+	_check(not cycle.is_solid(), "ausente: no es sólido")
+	var inside := _mech_body(Vector2(100, 100))
+	await _wait(3)
+	_check(cycle.is_blocked(), "detecta a quien está dentro de la celda")
+	cycle.time = 3.99  # le toca volver (ON)
+	await _wait(8)
+	_check(cycle.state == Cycle.State.ON and not cycle.is_solid() and cycle.visual_alpha() < 1.0, "le toca estar, pero con alguien dentro espera (fantasma) y no lo atrapa")
+	inside.position = Vector2(100, 200)
+	await _wait(4)
+	_check(cycle.is_solid(), "en cuanto sale, se hace sólida")
+	var on_top := _mech_body(Vector2(100, 100.0 - 8.0 - 5.0))
+	await _wait(3)
+	_check(not cycle.is_blocked(), "quien está encima no cuenta como dentro")
+	cycle.time = 2.0  # desaparece bajo sus pies
+	await _wait(5)
+	_check(not cycle.is_solid(), "al desaparecer deja de ser sólido (el de encima cae, nada lo empuja)")
+	var marked := _mech_cycle(Vector2(300, 100), 4.0, 0.5)
+	marked.flag_id = &"t:prueba.ciclo"
+	marked.time = 2.2
+	await _wait(4)
+	marked.time = 0.0
+	await _wait(4)
+	_check(_marks.has_flag(&"t:prueba.ciclo"), "con flag_id escribe la marca mientras es sólido")
+	marked.time = 2.2
+	await _wait(5)
+	_check(not _marks.has_flag(&"t:prueba.ciclo"), "y la borra cuando deja de serlo")
+
+
+func _test_rail_platform_waits_at_the_ends() -> void:
+	print("\n[Plataforma sobre carril (M7): continua, espera en los extremos]")
+	await _mech_sandbox()
+	var platform := _mech_rail(Vector2(100, 200), Vector2(0, -48), RailPlatform.Mode.CONTINUOUS)
+	platform.speed = 160.0
+	platform.wait_time = 0.5
+	var arrivals: Array[int] = []
+	var frame := [0]
+	platform.arrived.connect(func(at_end: bool) -> void: arrivals.append(frame[0] * (1 if at_end else -1)))
+	var last_moved := 0
+	var idle_frames_at_end := 0
+	var previous := platform.position
+	for i in 240:
+		frame[0] = i + 1
+		await physics_frame
+		if platform.position != previous:
+			last_moved = i
+		elif platform.is_at(true) and i - last_moved > 1:
+			idle_frames_at_end += 1
+		previous = platform.position
+	_check(arrivals.size() >= 2 and arrivals[0] > 0 and arrivals[1] < 0, "va al final, vuelve al inicio y sigue yendo y viniendo")
+	var round_trip := float(-arrivals[1] - arrivals[0]) / 60.0
+	_check(absf(round_trip - (0.5 + 0.3)) < 0.12, "tarda la espera (0,5 s) más el viaje (0,3 s) en volver: %.2f s" % round_trip)
+	_check(idle_frames_at_end >= 20, "espera quieta en el extremo (%d fotogramas)" % idle_frames_at_end)
+	var shape: CollisionShape2D = platform.get_child(0)
+	_check(shape.one_way_collision and platform.sync_to_physics, "es de un solo sentido y va sincronizada con la física")
+
+
+func _mech_rail_in_level(at: Vector2, end_offset: Vector2, mode: RailPlatform.Mode) -> RailPlatform:
+	var platform := RailPlatform.new()
+	platform.mode = mode
+	platform.end_offset = end_offset
+	platform.position = at
+	_level.add_child(platform)
+	return platform
+
+
+func _test_rail_platform_carries_the_player() -> void:
+	print("\n[Plataforma sobre carril (M7): lleva al jugador sin patinar]")
+	await _fresh_level("rail carries", false)
+	await _stand_at(200.0)
+	var ground_top: float = _player.global_position.y + 24.0
+	# Vertical, a demanda: al pisarla sube.
+	var start := Vector2(300.0, ground_top - 40.0 + 4.0)
+	var platform := _mech_rail_in_level(start, Vector2(0, -160), RailPlatform.Mode.ON_DEMAND)
+	platform.return_delay = 0.5
+	_player.global_position = Vector2(300.0, start.y - 4.0 - 24.0 - 2.0)
+	_player.velocity = Vector2.ZERO
+	await _wait(20)
+	_check(_player.is_on_floor(), "el jugador aterriza encima de la plataforma")
+	var max_slip := 0.0
+	for i in 150:
+		await physics_frame
+		max_slip = maxf(max_slip, absf((_player.global_position.y + 24.0) - (platform.global_position.y - 4.0)))
+	_check(platform.is_at(true), "al pisarla (a demanda) sube hasta el final")
+	_check(max_slip < 2.5, "sube con el jugador pegado a los pies (desfase máximo %.2f px)" % max_slip)
+	_check(_player.is_on_floor() and absf(_player.global_position.x - 300.0) < 3.0, "sigue de pie y en su sitio (sin patinar)")
+	# Sin nadie encima ni marca, vuelve sola (con la espera acortada).
+	_player.global_position = Vector2(600.0, ground_top - 24.0 - 2.0)
+	_player.velocity = Vector2.ZERO
+	await _wait(220)
+	_check(platform.is_at(false), "sin nadie encima ni marca, vuelve sola al inicio")
+	# Horizontal: el jugador, quieto, acompaña a la plataforma.
+	var flat := _mech_rail_in_level(Vector2(800.0, ground_top - 40.0 + 4.0), Vector2(160, 0), RailPlatform.Mode.CONTINUOUS)
+	flat.wait_time = 0.1
+	_player.global_position = Vector2(800.0, flat.position.y - 4.0 - 24.0 - 2.0)
+	_player.velocity = Vector2.ZERO
+	await _wait(30)
+	var offset_a: float = _player.global_position.x - flat.global_position.x
+	await _wait(60)
+	var offset_b: float = _player.global_position.x - flat.global_position.x
+	_check(flat.global_position.x > 805.0 and absf(offset_a - offset_b) < 2.5 and _player.is_on_floor(), "en horizontal también va con ella (desfase %.2f -> %.2f px)" % [offset_a, offset_b])
+
+
+func _test_rail_platform_never_crushes() -> void:
+	print("\n[Plataforma sobre carril (M7): nunca aplasta, se detiene y retrocede]")
+	await _fresh_level("rail crush", false)
+	await _stand_at(200.0)
+	var ground_top: float = _player.global_position.y + 24.0
+	var start := Vector2(300.0, ground_top - 40.0 + 4.0)
+	var ceiling_bottom := start.y - 4.0 - 80.0
+	_mech_wall(Rect2(250.0, ceiling_bottom - 20.0, 100.0, 20.0))
+	var platform := _mech_rail_in_level(start, Vector2(0, -160), RailPlatform.Mode.ON_DEMAND)
+	var retreats := [0]
+	platform.retreated.connect(func() -> void: retreats[0] += 1)
+	_player.global_position = Vector2(300.0, start.y - 4.0 - 24.0 - 2.0)
+	_player.velocity = Vector2.ZERO
+	var min_gap := 1000.0
+	for i in 200:
+		await physics_frame
+		if _player.is_on_floor():
+			min_gap = minf(min_gap, (_player.global_position.y - 24.0) - ceiling_bottom)
+	_check(retreats[0] >= 1, "con un techo sobre el pasajero se detiene y retrocede")
+	_check(min_gap > -0.5, "la cabeza del jugador nunca llega al techo (hueco mínimo %.1f px)" % min_gap)
+	# Un cuerpo en su camino (sin pasajero): se para y retrocede.
+	await _mech_sandbox()
+	var down := _mech_rail(Vector2(100, 100), Vector2(0, 100), RailPlatform.Mode.CONTINUOUS)
+	down.wait_time = 5.0
+	var blocker := _mech_body(Vector2(100, 190))
+	var retreated := [false]
+	down.retreated.connect(func() -> void: retreated[0] = true)
+	await _wait(68)
+	var stopped_y := down.position.y
+	await _wait(3)
+	_check(stopped_y > 100.0 and stopped_y < 190.0 - 5.0 and absf(down.position.y - stopped_y) < 1.0 and not retreated[0], "un cuerpo en su camino la detiene sin tocarlo")
+	await _wait(40)
+	_check(retreated[0] and down.position.y < stopped_y - 1.0, "tras 0,3 s bloqueada, retrocede")
+	blocker.queue_free()
+
+
+func _test_rail_platform_on_demand_and_flags() -> void:
+	print("\n[Plataforma sobre carril (M7): a demanda y viaje con FlagStore]")
+	await _mech_sandbox()
+	var demand := _mech_rail(Vector2(100, 300), Vector2(0, -64), RailPlatform.Mode.ON_DEMAND, &"t:prueba.llama")
+	demand.speed = 160.0
+	demand.return_delay = 0.5
+	await _wait(30)
+	_check(demand.is_at(false), "a demanda: espera en el inicio mientras nadie la llame")
+	_marks.set_flag(&"t:prueba.llama")
+	await _wait(40)
+	_check(demand.is_at(true), "al ponerse su marca, va al final")
+	await _wait(60)
+	_check(demand.is_at(true), "y se queda mientras la marca siga puesta")
+	_marks.reset_transient()
+	await _wait(60)
+	_check(demand.is_at(false), "al reiniciar (descansar o morir borran las temporales) vuelve al inicio")
+	var rider := _mech_body(Vector2(100, 300.0 - 4.0 - 5.0 - 1.0))
+	await _wait(10)
+	rider.position = Vector2(500, 500)
+	await _wait(20)
+	_check(demand.is_at(true), "a demanda: al pisarla también se mueve (el pasajero ya se ha ido)")
+	await _wait(5)
+	_check(demand.is_at(true), "y mantiene el final hasta pasado return_delay")
+	await _wait(75)
+	_check(demand.is_at(false), "y vuelve a los return_delay segundos sin nadie encima")
+	# Una marca permanente ya puesta (partida cargada): nace en el final, sin viajar.
+	_marks.set_flag(&"d:prueba.cargada")
+	var loaded := _mech_rail(Vector2(300, 300), Vector2(0, -64), RailPlatform.Mode.ON_DEMAND, &"d:prueba.cargada")
+	await _wait(3)
+	_check(loaded.is_at(true) and is_equal_approx(loaded.position.y, 236.0), "con su marca permanente ya puesta al cargar, nace en el final")
+	# Viaje: va y se queda; la marca lo manda a uno y otro extremo.
+	var trip := _mech_rail(Vector2(500, 300), Vector2(120, 0), RailPlatform.Mode.TRAVEL, &"t:prueba.viaje")
+	trip.speed = 240.0
+	await _wait(10)
+	_check(trip.is_at(false), "viaje: espera en el inicio")
+	_marks.set_flag(&"t:prueba.viaje")
+	await _wait(50)
+	_check(trip.is_at(true), "con su marca cruza hasta el otro extremo")
+	await _wait(500)
+	_check(trip.is_at(true), "y se queda: no vuelve sola")
+	_marks.clear_flag(&"t:prueba.viaje")
+	await _wait(50)
+	_check(trip.is_at(false), "borrada la marca, vuelve")
+	# Viaje con Z estando a bordo.
+	var boat := _mech_rail(Vector2(700, 300), Vector2(120, 0), RailPlatform.Mode.TRAVEL)
+	boat.speed = 240.0
+	var passenger := _mech_body(Vector2(700, 300.0 - 4.0 - 5.0 - 1.0))
+	await _wait(5)
+	await _press_action(&"interact")
+	await _wait(50)
+	_check(boat.is_at(true), "viaje: con alguien a bordo, Z la manda al otro extremo")
+	passenger.queue_free()
+
+
+func _test_room_places_cycles_and_rails() -> void:
+	print("\n[Sala: coloca ciclos (y) y plataformas (< >) por piezas y los ajusta con piece_params]")
+	await _mech_sandbox()
+	var file := FileAccess.open("user://prueba_carril.map", FileAccess.WRITE)
+	file.store_string("..........................\n..>>......................\n..........................\n.yyy.........y............\n..........................\n..<<..........<...........\n..........................\nTTTTTTTTTTTTTTTTTTTTTTTTTT\n")
+	file.close()
+	var room := Node2D.new()
+	room.set_script(load("res://game/levels/room.gd"))
+	room.piece_params = {
+		"<@2,5": { "mode": "on_demand", "activation_flag": "t:prueba.carril", "speed": 120.0, "no_existe": 1 },
+		"y@13,3": { "phase": 0.5, "period": 6.0, "flag_id": "t:prueba.ola" },
+	}
+	var tiles := TextTileMap.new()
+	tiles.name = "Tiles"
+	tiles.tile_set = load("res://game/levels/tiles_umbral.tres")
+	tiles.legend = { "T": Vector2i(0, 0) }
+	tiles.map_file = "user://prueba_carril.map"
+	room.add_child(tiles)
+	_level.add_child(room)
+	await _wait(3)
+	var cycles: Array[Cycle] = []
+	var platforms: Array[RailPlatform] = []
+	for child in room.get_children():
+		if child is Cycle:
+			cycles.append(child)
+		elif child is RailPlatform:
+			platforms.append(child)
+	_check(cycles.size() == 2 and platforms.size() == 1, "una entidad por pieza: 2 ciclos y una plataforma (el < suelto queda sin pareja)")
+	var wide: Cycle = cycles[0] if cycles[0].cells.size() == 3 else cycles[1]
+	var single: Cycle = cycles[1] if wide == cycles[0] else cycles[0]
+	_check(wide.cells.size() == 3 and wide.period == 4.0 and single.period == 6.0 and is_equal_approx(single.phase, 0.5) and single.flag_id == &"t:prueba.ola", "piece_params aplica periodo y fase a su pieza y no a la otra")
+	var rail := platforms[0]
+	_check(rail.mode == RailPlatform.Mode.ON_DEMAND and rail.activation_flag == &"t:prueba.carril" and is_equal_approx(rail.speed, 120.0), "y el modo, la marca y la velocidad a la plataforma")
+	_check(is_equal_approx(rail.size.x, 32.0), "la plataforma mide lo que el extremo < (2 celdas)")
+	_check(rail.position.is_equal_approx(room.global_position + Vector2(48.0, 5.0 * 16.0 + 4.0)), "empieza con su borde de arriba en el de la celda del <")
+	_check(rail.end_offset.is_equal_approx(Vector2(0.0, -64.0)), "y acaba en el extremo > (4 celdas más arriba)")
+	var pairs: Array = room.rail_pairs([[Vector2i(0, 0)], [Vector2i(10, 0)]], [[Vector2i(10, 4)], [Vector2i(0, 5)]])
+	_check(pairs.size() == 2 and pairs[0][0][0] == Vector2i(10, 0) and pairs[0][1][0] == Vector2i(10, 4) and pairs[1][0][0] == Vector2i(0, 0) and pairs[1][1][0] == Vector2i(0, 5), "rail_pairs une cada < con el > más cercano")
+	room.queue_free()
+	DirAccess.remove_absolute(ProjectSettings.globalize_path("user://prueba_carril.map"))
+
+
+func _test_galerias_bajas_has_the_rail_and_the_cycle() -> void:
+	print("\n[Ejemplo jugable: la plataforma y el puente de tinta de las Galerías Bajas]")
+	await _load_world()
+	var room: Node2D = _level.get_node("Rooms/GaleriasBajas")
+	await _clear_enemies(room)
+	var platform: RailPlatform = null
+	var cycle: Cycle = null
+	for child in room.get_children():
+		if child is RailPlatform:
+			platform = child
+		elif child is Cycle:
+			cycle = child
+	_check(platform != null and cycle != null, "las Galerías Bajas tienen una plataforma de carril y un ciclo puestos por los marcadores < > y y")
+	if platform == null or cycle == null:
+		return
+	_check(platform.mode == RailPlatform.Mode.ON_DEMAND and cycle.cells.size() == 3, "la plataforma es a demanda y el puente de tinta mide 3 celdas")
+	_player.global_position = platform.global_position + Vector2(0.0, -4.0 - 24.0 - 2.0)
+	_player.velocity = Vector2.ZERO
+	await _wait(260)
+	_check(platform.is_at(true) and _player.is_on_floor(), "al subirse sube con el jugador hasta la repisa")
+	_player.global_position.x = room.global_position.x + 49.0 * 16.0
+	await _wait(40)
+	_check(_player.is_on_floor() and _player.global_position.y < room.global_position.y + 14.0 * 16.0, "y desde allí se pasa a la repisa")
+
+
+func _test_moving_pieces_are_not_safe_ground() -> void:
+	print("\n[Ciclo y carril: no cuentan como último suelo seguro (puente de tinta sobre pinchos)]")
+	await _fresh_level("no checkpoint", false)
+	await _stand_at(200.0)
+	var ground_top: float = _player.global_position.y + 24.0
+	var spikes: Node2D = load("res://game/environment/spikes.tscn").instantiate()
+	spikes.position = Vector2(300.0, ground_top - 8.0)
+	_level.add_child(spikes)
+	var bridge := _mech_cycle_in_level(Vector2(300.0, ground_top - 80.0), 4.0, 0.5)
+	bridge.cells = PackedVector2Array([Vector2(-8, 0), Vector2(8, 0)])
+	await _wait(3)
+	var firm_x: float = _player.respawn.last_grounded_position.x
+	_player.global_position = Vector2(300.0, ground_top - 88.0 - 24.0 - 2.0)
+	_player.velocity = Vector2.ZERO
+	await _wait(30)
+	_check(_player.is_on_floor() and _player.global_position.y < ground_top - 100.0, "el jugador está de pie sobre el puente de tinta")
+	_check(absf(_player.respawn.last_grounded_position.x - firm_x) < 1.0, "pisar el puente no cambia el último suelo seguro (sigue en el suelo firme)")
+	var health_before: int = _player.health.health
+	bridge.time = 2.1  # el puente desaparece
+	await _wait(120)
+	_check(_player.health.health == health_before - 1, "cae sobre los pinchos y recibe un solo daño (sin bucle)")
+	_check(_player.is_on_floor() and absf(_player.global_position.x - firm_x) < 20.0 and _player.global_position.y > ground_top - 40.0, "y vuelve al suelo firme de verdad, no al puente")
+	var rail := _mech_rail_in_level(Vector2(600.0, ground_top - 10.0), Vector2(0, -64), RailPlatform.Mode.CONTINUOUS)
+	rail.wait_time = 5.0
+	_player.global_position = Vector2(600.0, rail.position.y - 4.0 - 24.0 - 2.0)
+	_player.velocity = Vector2.ZERO
+	await _wait(20)
+	_check(_player.is_on_floor() and absf(_player.respawn.last_grounded_position.x - 600.0) > 100.0, "tampoco una plataforma de carril")
+
+
+func _mech_cycle_in_level(at: Vector2, period: float, on_fraction: float) -> Cycle:
+	var cycle := Cycle.new()
+	cycle.period = period
+	cycle.on_fraction = on_fraction
+	cycle.position = at
+	_level.add_child(cycle)
+	return cycle
+
+
+func _test_cycle_flag_survives_reset_and_pairing_is_strict() -> void:
+	print("\n[Ciclo: la marca se resincroniza; carriles: emparejado estricto; propiedades validadas]")
+	await _mech_sandbox()
+	var cycle := _mech_cycle(Vector2(100, 100), 4.0, 0.5)
+	cycle.flag_id = &"t:prueba.sincro"
+	await _wait(3)
+	_check(_marks.has_flag(&"t:prueba.sincro"), "sólido: la marca está puesta")
+	_marks.reset_transient()
+	await _wait(3)
+	_check(cycle.is_solid() and _marks.has_flag(&"t:prueba.sincro"), "tras reiniciar (borra las temporales) y seguir sólido, la marca vuelve")
+	var room: Node2D = Node2D.new()
+	room.set_script(load("res://game/levels/room.gd"))
+	var wide: Array = [Vector2i(0, 0), Vector2i(1, 0)]
+	var narrow: Array = [Vector2i(0, 5)]
+	var pairs: Array = room.rail_pairs([wide], [narrow])
+	_check(pairs.is_empty(), "un < de 2 celdas no se empareja con un > de 1")
+	pairs = room.rail_pairs([[Vector2i(0, 0)]], [[Vector2i(3, 5)]])
+	_check(pairs.is_empty(), "ni si no están en la misma columna ni en la misma fila")
+	pairs = room.rail_pairs([[Vector2i(0, 0)]], [[Vector2i(0, 4)], [Vector2i(0, -4)]])
+	_check(pairs.size() == 1 and pairs[0][1][0] == Vector2i(0, 4), "a igual distancia gana el primero en orden de lectura (determinista)")
+	room.free()

@@ -1,6 +1,6 @@
 # Estado del proyecto (documento vivo)
 
-Última actualización: registro de Nombres y el Paño (K22 y K23: `game/names.gd`, pestaña de la pausa, "Callar un nombre" en el menú del Ancla); antes, pinchos laterales `{ }` (fase W4, con un pozo de ejemplo en la Torre de Riego); antes, compuerta, disparadores y muro frágil (fase W2, sin "Volver al Ancla"); antes, FlagStore y coleccionables `!` con id guardado (fase W1); antes, primer jefe (el Centinela Hueco), pinchos y el puzle del dash.
+Última actualización: ciclo (`Cycle`) y plataforma sobre carril (`RailPlatform`) con un rincón de ejemplo en las Galerías Bajas (fase W3); antes, registro de Nombres y el Paño (K22 y K23: `game/names.gd`, pestaña de la pausa, "Callar un nombre" en el menú del Ancla); antes, pinchos laterales `{ }` (fase W4, con un pozo de ejemplo en la Torre de Riego); antes, compuerta, disparadores y muro frágil (fase W2, sin "Volver al Ancla"); antes, FlagStore y coleccionables `!` con id guardado (fase W1); antes, primer jefe (el Centinela Hueco), pinchos y el puzle del dash.
 
 ## Dónde estamos en la metodología
 

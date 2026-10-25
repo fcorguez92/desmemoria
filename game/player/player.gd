@@ -178,7 +178,12 @@ func _on_firm_ground() -> bool:
 	for side in [-FIRM_GROUND_HALF_WIDTH, FIRM_GROUND_HALF_WIDTH]:
 		var from := global_position + Vector2(side, 20.0)
 		var query := PhysicsRayQueryParameters2D.create(from, from + Vector2(0.0, 12.0), 1, [get_rid()])
-		if space.intersect_ray(query).is_empty():
+		var hit := space.intersect_ray(query)
+		if hit.is_empty():
+			return false
+		# Lo que se mueve o desaparece (plataformas de carril, ciclos) no es suelo seguro.
+		var collider := hit.get("collider") as Node
+		if collider != null and collider.is_in_group(&"no_checkpoint"):
 			return false
 	return true
 
