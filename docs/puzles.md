@@ -241,9 +241,9 @@ Fichas completas en `03` §2 por número. **Estado:** **N** núcleo (camino prin
 | P05 | Las Cuentas del Rosario (2) | CIN-02 | M2f | O | `s:cisterna.rosario` | La escalera real tiene **5 peldaños**, no 7: se rehace el texto (cuentas en el 2 y el 4, nicho al lado del 5). Reliquia Cuenta del Rosario aquí; en Terrazas solo el aviso. Retoque diferido R9 |
 | P06 | La Rueda de Tomasa (3) | CIN-07 | M4 M7 | O | `p:torre_de_riego.rueda` | Atajo; el camino principal sigue siendo la cornisa (Doble) |
 | P07 | Las Torres en Cadena (3) | CIN-13 | M7 M4 | O | `p:segunda_torre_de_riego.torre_1`, `.torre_2` | Versión base: plataformas fijas (puzle de Doble por saltos, sin rueda) |
-| P08 | El Surco Ciego (3) | CIN-08 | M12 M2h | A | `p:surco_ciego.mojones`, `s:surco_ciego.hondo` | 60 Ecos y Semilla gris |
-| P09 | El Cruce del Pan (3) | CIN-11 | M4 M3 | O | `p:cruce_del_pan.mesa` | Tres placas; Página de Corvel 2 |
-| P10 | El Campo Gris (3) | CIN-10 | M9 | R | — | El Nombre Eulalia se lee en el mojón; el parche gris es visual |
+| P08 | El Surco Ciego (3) | CIN-08 | M12 M2h | A | `p:surco_ciego.mojones`, `s:surco_ciego.hondo` | 60 Ecos y Semilla gris. **Versión base construida** (sin M12 ni Excavar): nicho de muro frágil con una Bolsa (`s:surco_ciego.nicho`) y repisa alta con la Semilla gris, que pide doble salto |
+| P09 | El Cruce del Pan (3) | CIN-11 | M4 M3 | O | `p:cruce_del_pan.mesa` | Tres placas; Página de Corvel 2. **Construido** con placas de 6 s sobre tres alturas (suelo, repisa a 8, repisa a 13 con doble salto) y una compuerta de 6 celdas; no hay marca permanente (no existe el pestillo "Y"): la Página es un objeto que se recoge una vez y el nicho no atrapa (suelo de tablones) |
+| P10 | El Campo Gris (3) | CIN-10 | M9 | R | — | El Nombre Eulalia se lee en el mojón; el parche gris es visual. Versión base construida: sin parche gris; el Nombre está tras un cercado con reja que abre una palanca en lo alto (`p:campo_de_los_ferran.cercado`) |
 | P11 | El Manantial (4) | CIN-20 / 12 / 07 | M2h M3 M7 | R | — | Dedal de la Torre queda en CIN-07 |
 | P12 | El Mirador de Oda (3) | CIN-06 | M6 M11 M3 | N (canon, opcional) | `p:pasarela.ultima_carrera`, `i:insignia` | Eco a 330 px/s; puentes de luz de 2 s; piedra `mirador` |
 | P13 | El Relevo de la Guardia (1) | CIN-04 | M5 | N (canon, epílogo) | `p:aljibe.relevo` | Pide `p:aun.compartido` e `i:insignia` |
