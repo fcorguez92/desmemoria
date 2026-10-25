@@ -26,6 +26,30 @@ func set_heal_charges(charges: int, max_charges: int) -> void:
 	heal_flasks.set_values(charges, max_charges)
 
 
+const DRINKING_TINT := Color(1.0, 0.82, 0.4)
+
+var _drink_bar: ColorRect
+var _drink_tween: Tween
+
+
+## Estado "bebiendo": los frascos se tiñen de ámbar y una barrita bajo ellos se
+## llena durante el sorbo. Se apaga al terminar o al ser interrumpido.
+func set_drinking(active: bool, duration: float = 0.0) -> void:
+	if _drink_tween:
+		_drink_tween.kill()
+	heal_flasks.modulate = DRINKING_TINT if active else Color.WHITE
+	if _drink_bar == null:
+		_drink_bar = ColorRect.new()
+		_drink_bar.color = DRINKING_TINT
+		_drink_bar.position = Vector2(0.0, heal_flasks.size.y + 2.0)
+		heal_flasks.add_child(_drink_bar)
+	_drink_bar.visible = active
+	if active:
+		_drink_bar.size = Vector2(0.0, 3.0)
+		_drink_tween = create_tween()
+		_drink_tween.tween_property(_drink_bar, "size:x", 60.0, maxf(duration, 0.01))
+
+
 ## Sin mapa (p. ej. en el banco de pruebas) el minimapa no se muestra.
 func set_map(data: MapData) -> void:
 	minimap.data = data

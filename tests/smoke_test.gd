@@ -12,6 +12,8 @@ extends SceneTree
 ## - Si el jugador muere sin haberse alejado de su punto de reaparición, el Eco
 ##   nace bajo sus pies y lo recoge al instante; por eso `_stand_at()`.
 
+const Stats := preload("res://game/player/stats.gd")
+const Skills := preload("res://game/player/skills.gd")
 const LEVEL := "res://game/levels/test_level.tscn"
 const WORLD := "res://game/levels/world.tscn"
 ## Partida de las pruebas: nunca la de quien juega.
@@ -83,6 +85,7 @@ func _run() -> void:
 	await _test_no_platform_has_a_cramped_ceiling()
 	await _test_spikes_hurt_and_return_to_safe_ground()
 	await _test_pulsing_hazards_cycle()
+	await _test_side_spikes()
 	await _test_the_way_to_the_boss()
 	await _test_boss_phases_and_reward()
 	await _test_boss_attacks_and_parry()
@@ -100,6 +103,7 @@ func _run() -> void:
 	await _test_loading_restores_progress()
 	await _test_flag_store()
 	await _test_collectibles_are_saved_once()
+	await _test_names_registry()
 	await _test_gate_opens_with_marks()
 	await _test_gate_never_closes_on_someone()
 	await _test_aljibe_gates_are_core_gates()
@@ -128,6 +132,30 @@ func _test_health_and_healing() -> void:
 	_check(health.use_heal_charge(), "puede curarse con cargas y vida incompleta")
 	_check(health.health == 5 and health.heal_charges == 2, "curar restaura vida y gasta 1 carga")
 	_check(not health.use_heal_charge(), "no gasta carga a vida completa")
+
+	# El frasco del juego: 3 vidas por sorbo de 0,70 s.
+	_check(health.heal_amount == 3 and absf(health.heal_time - 0.7) < 0.001, "el frasco cura 3 vidas en 0,70 s")
+	health.heal_charges = 3
+	health.health = 1
+	_check(health.begin_heal() and health.is_healing(), "empieza el sorbo")
+	_check(health.health == 1 and health.heal_charges == 3, "durante el sorbo no se ha curado ni gastado nada")
+	await _wait(50)
+	_check(health.health == 4 and health.heal_charges == 2 and not health.is_healing(), "el sorbo cura exactamente heal_amount y gasta 1 carga")
+	health.health = 4
+	_check(health.begin_heal(), "se vuelve a beber")
+	await _wait(10)
+	_player.take_hit(1, 0)
+	_check(not health.is_healing() and health.heal_charges == 2 and health.health == 3, "un golpe durante el sorbo lo cancela sin gastar carga")
+	await _wait(50)
+	_check(health.health == 3 and health.heal_charges == 2, "y no se cura después")
+	health.health = health.max_health
+	_check(not health.begin_heal() and not health.is_healing(), "no se bebe con vida llena")
+	health.health = 2
+	_check(health.begin_heal(), "(preparado) sorbo para cancelar saltando")
+	_player.motor.jumped.emit(&"ground")
+	_check(not health.is_healing() and health.heal_charges == 2, "saltar cancela el sorbo sin coste")
+	_check(Stats.max_flasks(99) == 5 and Stats.max_health(99) == 13 and Stats.heal_amount(99) == 5 and absf(Stats.heal_time(9.0) - 0.3) < 0.001, "los topes de estadísticas se respetan")
+	_check(Stats.heal_amount(-99) == 1 and Skills.stat(&"frascos", 99) == 5.0 and Skills.stat(&"vitalidad", 99) == 13.0, "y las mejoras no los superan")
 
 
 func _test_death_drops_echo_at_last_ground() -> void:
@@ -661,7 +689,9 @@ func _test_gamepad_controls() -> void:
 	_check(_player.animator.current == "attack", "X / Cuadrado ataca")
 	await _wait(30)
 	_player.take_hit(1, 0)
+	await _wait(30)
 	await _press_event(_pad_button(JOY_BUTTON_B))
+	await _wait(60)
 	_check(_player.health.health == _player.health.max_health and not paused, "B / Círculo cura y no abre la pausa")
 	await _press_event(_pad_axis(JOY_AXIS_TRIGGER_LEFT))
 	_check(_player.parry.is_active, "LT / L2 alza la guardia")
@@ -2213,7 +2243,7 @@ func _test_collectibles_are_saved_once() -> void:
 	_check(_level.fragment_count() == 1 and _level.flags.has_flag(&"d:test.puerta"), "tras cargar siguen el contador y las marcas")
 	var respawned := 0
 	for pickup in get_nodes_in_group(&"collectible"):
-		if not pickup.is_queued_for_deletion():
+		if not pickup.is_queued_for_deletion() and String(pickup.id) == "cisterna.c37f05":
 			respawned += 1
 	_check(respawned == 0, "el coleccionable ya recogido no reaparece")
 
@@ -2861,6 +2891,70 @@ func _test_spikes_hurt_and_return_to_safe_ground() -> void:
 	_check(_player.active_echo != null, "con 1 de vida los pinchos matan (queda un Eco)")
 
 
+## Cuántos golpes recibe un cuerpo cuadrado de 10 px centrado en `at` de unos pinchos
+## colocados en `origin` y girados `degrees` (como los coloca room.gd).
+func _hits_on_side_spikes(degrees: float, origin: Vector2, at: Vector2) -> int:
+	var dummy := HazardDummy.new()
+	var shape := CollisionShape2D.new()
+	shape.shape = RectangleShape2D.new()
+	(shape.shape as RectangleShape2D).size = Vector2(10, 10)
+	dummy.add_child(shape)
+	dummy.add_to_group("player")
+	_level.add_child(dummy)
+	dummy.global_position = at
+	var spikes: Hazard = load("res://game/environment/spikes.tscn").instantiate()
+	spikes.rotation_degrees = degrees
+	_level.add_child(spikes)
+	spikes.global_position = origin
+	await _wait(4)
+	var hits: int = dummy.hits
+	dummy.queue_free()
+	spikes.queue_free()
+	return hits
+
+
+func _test_side_spikes() -> void:
+	await _fresh_level("Pinchos laterales { }: una tira fina pegada a la pared, solo por el lado libre")
+	var origin := Vector2(5000.0, 5000.0)
+	# `{` (pared a la izquierda, celda de 16 px que empieza en origin.x - 8): daña de 0 a 9 px.
+	_check(await _hits_on_side_spikes(90.0, origin, origin + Vector2(-3.0, 0.0)) > 0, "{ daña a quien la toca por su lado libre")
+	_check(await _hits_on_side_spikes(90.0, origin, origin + Vector2(-14.0, 0.0)) == 0, "{ no daña por el lado de la pared")
+	_check(await _hits_on_side_spikes(90.0, origin, origin + Vector2(7.0, 0.0)) == 0, "{ no alcanza más allá de su tira de 9 px")
+	_check(await _hits_on_side_spikes(90.0, origin, origin + Vector2(-3.0, 13.0)) == 0, "{ no daña por encima ni por debajo de su celda")
+	# `}` es su espejo: pared a la derecha.
+	_check(await _hits_on_side_spikes(-90.0, origin, origin + Vector2(3.0, 0.0)) > 0, "} daña a quien la toca por su lado libre")
+	_check(await _hits_on_side_spikes(-90.0, origin, origin + Vector2(14.0, 0.0)) == 0, "} no daña por el lado de la pared")
+	_check(await _hits_on_side_spikes(-90.0, origin, origin + Vector2(-7.0, 0.0)) == 0, "} no alcanza más allá de su tira de 9 px")
+
+	# En el mundo: el pozo de la Torre de Riego (pinchos { en la cara del pilar, en 48,16-21).
+	await _load_world()
+	var tower: Node2D = _level.get_node("Rooms/TorreDeRiego")
+	await _clear_enemies(tower)
+	var strips := 0
+	for child in tower.get_children():
+		if child is Hazard and absf(absf(child.rotation_degrees) - 90.0) < 0.1:
+			strips += 1
+	_check(strips == 12, "la sala pone una tira por cada { y } del mapa (%d)" % strips)
+	_player.unlock_ability(&"wall_jump")
+	_player.global_position = _standing_on("TorreDeRiego", 50, 28)
+	_player.velocity = Vector2.ZERO
+	await _wait(20)
+	var floor_y: float = _player.global_position.y
+	_check(_player.is_on_floor(), "se está de pie en el suelo del pozo")
+	_player.health.health = 2
+	# Pegado a la cara del pilar, a media altura de la tira, empujando hacia ella.
+	_player.global_position = _cell("TorreDeRiego", 48, 18) + Vector2(10.0, 0.0)
+	_player.velocity = Vector2.ZERO
+	Input.action_press(&"ui_left")
+	await _wait(25)
+	Input.action_release(&"ui_left")
+	await _wait(20)
+	_check(_player.health.health == 1, "rozar la tira quita 1 de vida (%d)" % _player.health.health)
+	_check(_player.active_echo == null, "pero no mata ni deja un Eco")
+	_check(_player.is_on_floor() and absf(_player.global_position.y - floor_y) < 4.0, "devuelve al suelo firme del pozo, sin atravesar la tira")
+	_check(_player.global_position.y > _cell("TorreDeRiego", 0, 22).y, "y no lo deja a la altura de la tira (y=%s)" % _player.global_position.y)
+
+
 func _test_pulsing_hazards_cycle() -> void:
 	await _fresh_level("Pinchos pulsantes: salen, avisan y se retraen; solo hacen daño al salir")
 	var dummy := HazardDummy.new()
@@ -3473,6 +3567,129 @@ func _test_the_bridge_ends_in_a_lookout() -> void:
 	await _wait(120)
 	Input.action_release(&"ui_right")
 	_check(_player.global_position.x < _level.get_node("Rooms/Pasarela").global_position.x + 98.0 * 16.0, "el mirador acaba en una pared: de momento no se sigue más allá")
+
+
+## Los textos de las filas de una lista de opciones.
+func _row_texts(list: MenuList) -> PackedStringArray:
+	var texts := PackedStringArray()
+	for row in list.get_children():
+		texts.append((row.get_child(1) as Label).text)
+	return texts
+
+
+## La inscripción de una sala que contiene el Nombre `id`, o null.
+func _name_stone(room_name: String, id: StringName) -> Node:
+	for child in _level.get_node("Rooms/" + room_name).get_children():
+		if child is Readable and child.get("name_id") == id:
+			return child
+	return null
+
+
+func _test_names_registry() -> void:
+	print("\n[Nombres y el Paño: registro, inscripciones, diario, callar y guardado]")
+	const Names := preload("res://game/names.gd")
+	await _load_world()
+	var names: Node = _level.names
+	var per_region := {}
+	var unique := {}
+	for entry in Names.LIST:
+		per_region[entry.region] = per_region.get(entry.region, 0) + 1
+		unique[entry.id] = true
+	_check(Names.LIST.size() == 30 and unique.size() == 30, "hay 30 Nombres con id único")
+	var five_each: bool = per_region.size() == Names.REGIONS.size()
+	for region in per_region:
+		five_each = five_each and per_region[region] == 5
+	_check(five_each, "5 por región, en las 6 regiones")
+	_check(names.read_count() == 0 and names.held_count() == 0, "una partida nueva no ha leído ninguno")
+	_check(not names.read_name(&"inventado") and names.read_count() == 0, "un id desconocido se ignora")
+
+	# Una inscripción con Nombre lo registra al leerla, y se avisa.
+	var stone := _name_stone("TorreDeRiego", &"tomasa")
+	_check(stone != null and stone.text.begins_with("Torre de Riego. Vigía: Tomasa."), "la Torre de Riego tiene la placa de Tomasa")
+	_player.global_position = stone.global_position
+	_player.velocity = Vector2.ZERO
+	await _wait(10)
+	_check(not names.is_read(&"tomasa"), "estar al lado no lo lee")
+	Input.action_press("interact")
+	await _wait(2)
+	Input.action_release("interact")
+	await _wait(2)
+	_check(names.is_held(&"tomasa") and names.held_count() == 1, "leer la placa registra a Tomasa como sostenido")
+	_check(_player.hud.message_label.text == stone.text + "\n\nNombre: Tomasa. Lo sostienes.", "se enseña la placa con el aviso del Nombre")
+	Input.action_press("interact")
+	await _wait(2)
+	Input.action_release("interact")
+	await _wait(2)
+	_check(_player.hud.message_label.text == stone.text and names.read_count() == 1, "leerla otra vez no repite el aviso ni lo cuenta dos veces")
+	var plain_stone: Node = null
+	for child in _room.get_children():
+		if child is Readable:
+			plain_stone = child
+	_check(plain_stone != null and plain_stone.name_id == &"", "las inscripciones sin name_id siguen siendo normales")
+	await _wait(3)
+	_check(_saved().get("names", {}).get("read", []) == ["tomasa"], "leer un Nombre guarda la partida")
+
+	# El diario de la pausa: solo lo leído.
+	var pause = _player.pause_menu
+	await _press_action("pause")
+	for i in pause.OPTION_NAMES:
+		await _press_action("ui_down")
+	await _press_action("ui_accept")
+	_check(pause.title_label.text == "Nombres que sostienes" and pause.info.visible, "la pausa tiene la pestaña Nombres que sostienes")
+	var text: String = pause.info_label.text
+	_check("Cinturón 1/5  ·  Tomasa" in text and "Umbral 0/5" in text and "Sostenidos: 1/30" in text, "muestra el contador por región y el total")
+	_check("Ossenna" not in text and "Oda Bellver" not in text and "Rufo" not in text, "no revela los que no se han leído")
+	await _press_action("ui_cancel")
+	await _press_action("ui_cancel")
+	_check(not pause.is_open(), "la pausa se cierra")
+
+	# El Paño: callar pide confirmación, con "No" por defecto.
+	var menu = _player.anchor_menu
+	_player.rest_at(_player.global_position)
+	_check(_row_texts(menu.menu) == PackedStringArray(["Árbol de habilidades", "Callar un nombre", "Salir"]), "con un Nombre sostenido, el menú del Ancla ofrece Callar un nombre")
+	await _press_action("ui_down")
+	await _press_action("ui_accept")
+	_check(_row_texts(menu.menu) == PackedStringArray(["Tomasa"]), "la lista ofrece los Nombres que se sostienen")
+	await _press_action("ui_accept")
+	_check(menu.menu.selected == 0 and _row_texts(menu.menu) == PackedStringArray(["No", "Callar"]), "la confirmación empieza en No")
+	_check("Es para siempre." in menu.stats_label.text and "Sostenidos: 1 → 0 (hacen falta 20)" in menu.stats_label.text and "ya no podrías llegar a 20" in menu.stats_label.text, "avisa de que es para siempre, con el contador y el aviso de los 20")
+	await _press_action("ui_accept")
+	_check(names.is_held(&"tomasa") and _player.ecos == 0, "aceptar el No por defecto no calla nada")
+	await _press_action("ui_cancel")
+	_check(menu.is_open() and _row_texts(menu.menu).size() == 3, "atrás vuelve al menú del Ancla sin callar")
+	await _press_action("ui_down")
+	await _press_action("ui_accept")
+	await _press_action("ui_accept")
+	await _press_action("ui_down")
+	await _press_action("ui_accept")
+	_check(_player.ecos == Names.SILENCE_REWARD and Names.SILENCE_REWARD == 50, "callar un Nombre da 50 Ecos")
+	_check(names.is_silenced(&"tomasa") and not names.is_held(&"tomasa") and names.is_read(&"tomasa"), "callado sale de sostenidos pero no de leídos")
+	_check("Ecos: 50" in menu.stats_label.text and "El Hito ya no dice «Tomasa». Tú sí lo sabes." in menu.stats_label.text, "el menú muestra los Ecos nuevos y el resultado")
+	_check(_row_texts(menu.menu) == PackedStringArray(["Árbol de habilidades", "Salir"]), "sin Nombres que sostener, la entrada desaparece")
+	_check(_saved().get("names", {}).get("silenced", []) == ["tomasa"] and _saved().get("player", {}).get("ecos") == 50, "callar guarda el Nombre y los Ecos")
+	# No se puede callar uno no leído ni volver a callar el mismo.
+	menu.silence_requested.emit(&"ossenna")
+	menu.silence_requested.emit(&"tomasa")
+	_check(_player.ecos == 50 and not names.is_read(&"ossenna"), "no se puede callar un Nombre no leído ni dos veces el mismo")
+	_check(not names.read_name(&"tomasa") and names.is_silenced(&"tomasa"), "un Nombre callado no vuelve a sostenerse al leerlo")
+	await _press_action("ui_cancel")
+	_check(not menu.is_open(), "se cierra el menú")
+	_check("Cinturón 0/5" in pause.names_text() and "Sostenidos: 0/30" in pause.names_text(), "el diario ya no cuenta al callado como sostenido")
+
+	# Guardado: ida y vuelta, partida antigua e ids desconocidos.
+	names.read_name(&"ossenna")
+	await _wait(3)
+	await _load_world(true)
+	_check(_level.names.is_silenced(&"tomasa") and _level.names.is_held(&"ossenna") and _level.names.read_count() == 2, "tras cargar siguen leídos y callados")
+	SaveSlot.new(TEST_SAVE).write({ player = {}, rooms = [], bosses = [], seen = {} })
+	await _load_world(true)
+	_check(_level.names.read_count() == 0, "una partida antigua sin la clave names carga sin Nombres")
+	SaveSlot.new(TEST_SAVE).write({ player = {}, names = { read = ["tomasa", "inventado", 3, "tomasa"], silenced = ["inventado", "ossenna"] } })
+	await _load_world(true)
+	_check(_level.names.is_held(&"tomasa") and _level.names.is_silenced(&"ossenna") and _level.names.read_count() == 2, "los ids desconocidos o de tipo equivocado se ignoran")
+	SaveSlot.new(TEST_SAVE).write({ player = {}, names = 5 })
+	await _load_world(true)
+	_check(_level.names.read_count() == 0, "una clave names con otro tipo se tolera")
 
 
 ## Quita los enemigos de una sala (para pruebas que no tratan de combatir).
