@@ -159,8 +159,8 @@ Las piezas singulares (props únicos de cada región) no usan letra: se listan e
 
 | Car. | Qué es | Estado |
 |---|---|---|
-| `5` | Enemigo nuevo, rol **volador** (cuervo, polilla, murciélago, gaviota, vela...) | nuevo (04) |
-| `6` | Enemigo nuevo, rol **guardia** (escudo o coraza que bloquea de frente, o emboscador durmiente) | nuevo (04) |
+| `5` | Enemigo nuevo, rol **volador** (cuervo, polilla, murciélago, gaviota, vela...). Por defecto: cuervo de rastrojo (picado) | ✔ (K28) |
+| `6` | Enemigo nuevo, rol **guardia** (escudo o coraza que bloquea de frente, o emboscador durmiente). Por defecto: espantapájaros (dormido) | ✔ (K30) |
 | `7` | Enemigo nuevo, rol **corredor** (carga, salto o rodadura, o rastrero) | nuevo (04) |
 | `8` | Enemigo nuevo, rol **de zona o de apoyo** (crea una zona o un estado, o da escudo) | nuevo (04) |
 | `9` | **Élite o minijefe** de la sala (uno por sala) | nuevo (04) |
