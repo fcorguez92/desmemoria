@@ -45,6 +45,7 @@ func _run() -> void:
 	await _test_enemy_chases_telegraphs_and_hits()
 	await _test_enemy_attack_can_be_dodged_and_interrupted()
 	await _test_attack_feedback()
+	await _test_vertical_attacks()
 	await _test_hit_stop()
 	await _test_parry()
 	await _test_sprites_and_animations()
@@ -459,6 +460,114 @@ func _test_parry() -> void:
 		if _player.health.health < 5:
 			break
 	_check(_player.health.health == 4, "un parry demasiado pronto no evita el golpe")
+
+
+## Cuerpo golpeable que cuenta golpes. Vive en la capa de "rompibles" (no estorba
+## al jugador) y puede ser rebotable (grupo `pogoable`).
+class HitDummy extends StaticBody2D:
+	var hits: int = 0
+
+	func take_hit(_damage: int, _from_direction: int, _attacker: Node = null) -> void:
+		hits += 1
+
+
+func _make_dummy(at: Vector2, pogoable: bool) -> HitDummy:
+	var dummy := HitDummy.new()
+	dummy.collision_layer = 2
+	dummy.collision_mask = 0
+	var shape := CollisionShape2D.new()
+	shape.shape = RectangleShape2D.new()
+	(shape.shape as RectangleShape2D).size = Vector2(16, 16)
+	dummy.add_child(shape)
+	if pogoable:
+		dummy.add_to_group(&"pogoable")
+	_level.add_child(dummy)
+	dummy.global_position = at
+	return dummy
+
+
+func _tap_attack_with(direction_action: String) -> void:
+	if direction_action != "":
+		Input.action_press(direction_action)
+	Input.action_press("attack")
+	await _wait(2)
+	Input.action_release("attack")
+	if direction_action != "":
+		Input.action_release(direction_action)
+
+
+func _test_vertical_attacks() -> void:
+	await _fresh_level("Ataque hacia arriba y hacia abajo (pogo)")
+	var animator: SheetAnimator = _player.animator
+
+	# Arriba golpea lo que hay sobre la cabeza y no lo que hay delante.
+	await _stand_at(665.0)
+	var above := _make_dummy(Vector2(665, 285), true)
+	var ahead := _make_dummy(Vector2(705, 330), true)
+	await _tap_attack_with("ui_up")
+	_check(above.hits == 1 and ahead.hits == 0, "Arriba + X golpea al de la cabeza y no al de delante")
+	_check(animator.current == "attack_up", "el ataque hacia arriba reproduce su animación")
+	_check(not _player.is_on_floor() or _player.velocity.y >= 0.0, "el ataque hacia arriba no empuja al jugador")
+	await _wait(25)
+
+	# Sin dirección sigue siendo el tajo de lado; en el suelo, Abajo + X también.
+	await _tap_attack_with("")
+	_check(ahead.hits == 1 and above.hits == 1, "X sola golpea al de delante y no al de arriba")
+	await _wait(25)
+	await _tap_attack_with("ui_down")
+	_check(ahead.hits == 2 and animator.current == "attack", "en el suelo, Abajo + X es el ataque normal")
+	_check(_player.velocity.y >= 0.0, "en el suelo, Abajo + X no rebota")
+	await _wait(25)
+	above.queue_free()
+	ahead.queue_free()
+
+	# Abajo en el aire golpea y rebota unos 126 px sin recargar dash ni doble salto.
+	_player.global_position = Vector2(665, 200)
+	_player.velocity = Vector2.ZERO
+	_player.motor.max_air_jumps = 1
+	await _wait(2)  # el suelo del frame anterior ya no cuenta: ahora está en el aire
+	_player.motor._air_jumps_left = 0
+	_player.dash._air_dash_used = true
+	var below := _make_dummy(_player.global_position + Vector2(0, 40), true)
+	var start_y: float = _player.global_position.y
+	await _tap_attack_with("ui_down")
+	_check(below.hits == 1, "Abajo + X en el aire golpea lo que hay bajo los pies")
+	_check(animator.current == "attack_down", "el ataque hacia abajo reproduce su animación")
+	var apex: float = _player.global_position.y
+	for i in 40:
+		await _wait(1)
+		apex = minf(apex, _player.global_position.y)
+		if _player.velocity.y > 0.0:
+			break  # en el vértice: aún en el aire, antes de que aterrizar recargue nada
+	var rise: float = start_y - apex
+	_check(rise > 105.0 and rise < 145.0, "el rebote sube unos 126 px (sube %.0f)" % rise)
+	_check(_player.motor._air_jumps_left == 0 and _player.dash._air_dash_used, "el rebote no recarga el doble salto ni el dash (saltos %d, dash usado %s, suelo %s)" % [_player.motor._air_jumps_left, _player.dash._air_dash_used, _player.is_on_floor()])
+	below.queue_free()
+
+	# Sin rebote en algo no rebotable ni en pinchos.
+	await _wait(60)
+	_player.global_position = Vector2(665, 200)
+	_player.velocity = Vector2.ZERO
+	var plain := _make_dummy(Vector2(665, 240), false)
+	await _tap_attack_with("ui_down")
+	_check(plain.hits == 1 and _player.velocity.y > -100.0, "un objeto golpeable pero no rebotable no hace rebotar")
+	plain.queue_free()
+	await _wait(60)
+	_player.global_position = Vector2(665, 200)
+	_player.velocity = Vector2.ZERO
+	var spikes: Hazard = load("res://game/environment/spikes.tscn").instantiate()
+	_level.add_child(spikes)
+	spikes.global_position = Vector2(665, 245)
+	await _tap_attack_with("ui_down")
+	_check(_player.velocity.y > -100.0, "los pinchos no hacen rebotar")
+	spikes.queue_free()
+
+	# Las animaciones existen y caben en la hoja.
+	var sprite: Sprite2D = _player.visual
+	for animation in ["attack_up", "attack_down"]:
+		var data: Array = animator.animations.get(animation, [])
+		_check(data.size() == 4 and int(data[0]) < sprite.vframes and int(data[1]) <= sprite.hframes, "la animación %s está declarada y cabe en la hoja" % animation)
+	_check(sprite.texture.get_size() == Vector2(sprite.hframes * 112, sprite.vframes * 96), "la hoja con los ataques verticales sigue cuadrando con 112x96")
 
 
 func _test_sprites_and_animations() -> void:

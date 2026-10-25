@@ -27,9 +27,11 @@ de esta fase era validar cómo se siente, no cómo se ve.
 
 Base de arte (H0-01 a H0-03, rama `art/base-pipeline`): paleta de 31 colores (`z` reservado); primitivas de rasterizado en `tools/lib/raster.js` (los rigs regeneran `art/source/` idéntico byte a byte); lienzo del Caminante a 112×96, con `Sprite2D.offset` (0, -24) y el Caminante del título subido 32 px para que los pies no se muevan. `node tools/comparar_lienzo.js <antiguo.sprite> <nuevo.sprite>` comprueba que los 58 fotogramas nuevos son idénticos a los antiguos desplazados.
 
+Ataques verticales (K06, K07, K08, rama `feat/ataque-arriba-y-abajo`): Arriba + X golpea sobre la cabeza (36×44) y Abajo + X en el aire golpea bajo los pies (30×36) con rebote de ~126 px si el blanco está en el grupo `pogoable` (enemigos y jefe); el rebote no recarga dash ni doble salto y los pinchos no rebotan. `MeleeAttackComponent` gana golpe direccional; el Caminante gana `attack_up` y `attack_down` (hoja de 10 filas). Falta jugarlo a mano para afinar la sensación.
+
 ## Controles actuales
 
-- Flecha izq/dcha: moverse · Espacio: saltar · Flecha arriba/abajo: mirar · Abajo + Espacio sobre un tablón: bajar atravesándolo
+- Flecha izq/dcha: moverse · Espacio: saltar · Flecha arriba/abajo: mirar · Arriba + X: atacar hacia arriba · Abajo + X en el aire: ataque hacia abajo con rebote (pogo) sobre enemigos · Abajo + Espacio sobre un tablón: bajar atravesándolo
 - En el aire, Espacio otra vez: doble salto (tras conseguirlo) · Junto a una pared, mantén la dirección hacia ella para agarrarte y pulsa Espacio para saltar de ella (tras conseguirlo)
 - Esc: pausa (continuar, mapa, personaje, controles, menú principal, salir) · X: atacar · V: parry · Shift izquierdo: dash · H: curarse (si quedan cargas y no estás a vida completa) · Z: descansar en un Ancla y abrir su menú (Intro o Z eligen, Esc cierra; en todos los menús Z vale como aceptar)
 
