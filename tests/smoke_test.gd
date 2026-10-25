@@ -51,6 +51,7 @@ func _run() -> void:
 	await _test_sprites_and_animations()
 	await _test_enemies_respawn_on_rest_and_death()
 	await _test_skill_tree_at_anchor()
+	_test_skill_prices_and_graph()
 	await _test_enemy_damage_feedback()
 	await _test_anchor_menu_keyboard_and_pause()
 	await _test_pause_menu()
@@ -689,12 +690,12 @@ func _test_skill_tree_at_anchor() -> void:
 	_player.add_ecos(3)
 	_check(not _player.try_buy_skill(&"vitalidad"), "no se compra sin Ecos suficientes")
 	_check(_player.ecos == 3 and skills.level(&"vitalidad") == 0, "una compra fallida no cobra nada")
-	_player.add_ecos(2)
+	_player.add_ecos(7)
 	_check(_player.try_buy_skill(&"vitalidad"), "se compra con Ecos suficientes")
 	_check(_player.ecos == 0 and skills.level(&"vitalidad") == 1, "comprar cobra el coste y sube un nivel")
 	_check(_player.health.max_health == 6 and _player.health.health == 6, "Vitalidad sube la vida máxima y cura esa vida")
 
-	_player.add_ecos(100)
+	_player.add_ecos(400)
 	_check(not _player.try_buy_skill(&"ritmo"), "una mejora bloqueada no se puede comprar aunque sobren Ecos")
 	_check(_player.try_buy_skill(&"frascos") and _player.health.max_heal_charges == 4 and _player.health.heal_charges == 4, "Frascos da una carga más, llena")
 	_check(_player.try_buy_skill(&"filo") and _player.melee.damage == 2, "Filo afilado sube el daño")
@@ -704,6 +705,7 @@ func _test_skill_tree_at_anchor() -> void:
 	_check(_player.try_buy_skill(&"impulso") and _player.dash.cooldown < 0.4, "Impulso acorta la espera del dash")
 	_check(_player.try_buy_skill(&"temple") and _player.health.invulnerability_time > 0.6, "Temple alarga la invulnerabilidad")
 	_check(_player.try_buy_skill(&"contragolpe"), "Contragolpe se compra al tener la anterior")
+	_check(_player.try_buy_skill(&"aliento") and _player.health.heal_amount == 4, "Aliento sube la cura de cada frasco")
 
 	# Los niveles máximos no se pasan, y morir no pierde las mejoras (los Ecos sí).
 	while not skills.is_max(&"filo"):
@@ -718,7 +720,7 @@ func _test_skill_tree_at_anchor() -> void:
 	# Desde el menú del Ancla: abrir el árbol, moverse, comprar y volver.
 	await _fresh_level("Árbol de habilidades en el menú")
 	var menu = _player.anchor_menu
-	_player.add_ecos(30)
+	_player.add_ecos(30)  # Vitalidad I cuesta 10.
 	_player.rest_at(_player.global_position)
 	_check(menu.is_open() and not menu.is_tree_open(), "descansar abre el menú principal del Ancla")
 	_check(menu.menu.activate() and menu.is_tree_open(), "la primera opción abre el árbol")
@@ -730,7 +732,7 @@ func _test_skill_tree_at_anchor() -> void:
 	await _press_action("ui_left")
 	await _press_action("ui_up")
 	await _press_action("ui_accept")
-	_check(_player.skills.level(&"vitalidad") == 1 and _player.ecos == 25, "aceptar compra la mejora seleccionada, sin cerrar el menú")
+	_check(_player.skills.level(&"vitalidad") == 1 and _player.ecos == 20, "aceptar compra la mejora seleccionada, sin cerrar el menú")
 	_check(menu.is_open() and menu.is_tree_open() and paused, "el menú sigue abierto en el árbol")
 	await _press_action("ui_cancel")
 	_check(menu.is_open() and not menu.is_tree_open(), "Esc en el árbol vuelve al menú del Ancla")
@@ -2427,6 +2429,60 @@ func _test_collectibles_are_saved_once() -> void:
 	SaveSlot.new(TEST_SAVE).write({ player = {}, flags = 5, fragments = ["cisterna.c37f05", "cisterna.c37f05", "sala.inventada", 3], bags = "x" })
 	await _load_world(true)
 	_check(_level.fragment_count() == 1 and _level.bag_count() == 0 and _level.flags.count() == 0, "claves con tipos equivocados, ids repetidos o ids que no existen en el mundo se toleran (solo cuenta el real)")
+
+
+# --- Precios y grafo del árbol (K11) -----------------------------------------
+
+func _test_skill_prices_and_graph() -> void:
+	print("\n[Árbol: precios de la tabla final y grafo sin requisitos rotos]")
+	var implemented := 0
+	var levels := 0
+	var ids: Array[StringName] = []
+	for skill in Skills.LIST:
+		ids.append(skill.id)
+		for cost in skill.costs:
+			implemented += cost
+		levels += skill.costs.size()
+	var pending := 0
+	var pending_levels := 0
+	for id in Skills.PENDING_COSTS:
+		for cost in Skills.PENDING_COSTS[id]:
+			pending += cost
+		pending_levels += Skills.PENDING_COSTS[id].size()
+	_check(implemented == 1210, "lo implementado suma 1.210 Ecos (tabla del doc: 510 Cuerpo + 390 Filo + 310 Espíritu); suma %d" % implemented)
+	_check(implemented + pending == Skills.FINAL_TOTAL_COST, "con las pendientes (Brasa, Castigo, Paso fantasma, Voz) suma %d, la cifra del doc" % Skills.FINAL_TOTAL_COST)
+	_check(Skills.LIST.size() + Skills.PENDING_COSTS.size() == 14 and levels + pending_levels == 29, "14 mejoras y 29 niveles en total")
+	var unique := {}
+	var graph_ok := true
+	for skill in Skills.LIST:
+		unique[skill.id] = true
+		if skill.requires != &"" and not ids.has(skill.requires):
+			graph_ok = false
+		# Siguiendo los requisitos hacia atrás se llega a una raíz sin dar más vueltas que mejoras.
+		var current: StringName = skill.id
+		var steps := 0
+		while current != &"" and steps <= ids.size():
+			var next: StringName = &"?"
+			for other in Skills.LIST:
+				if other.id == current:
+					next = other.requires
+					break
+			if next == &"?":
+				break
+			current = next
+			steps += 1
+		if current != &"":
+			graph_ok = false
+		if skill.costs.is_empty() or skill.branch < 0 or skill.branch >= Skills.BRANCHES.size() or skill.row > 4:
+			graph_ok = false
+	_check(unique.size() == Skills.LIST.size(), "los ids del árbol no se repiten")
+	_check(graph_ok, "ningún requisito apunta a una mejora inexistente ni hay ciclos; ramas y filas caben en el menú")
+	var increasing := true
+	for skill in Skills.LIST:
+		for i in range(1, skill.costs.size()):
+			if skill.costs[i] <= skill.costs[i - 1]:
+				increasing = false
+	_check(increasing, "dentro de cada mejora, cada nivel cuesta más que el anterior")
 
 
 # --- Compuertas, disparadores y muros frágiles (W2) --------------------------

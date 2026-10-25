@@ -573,7 +573,7 @@ func _apply_skills() -> void:
 	var old_flasks := health.max_heal_charges
 	health.max_health = int(Skills.stat(&"vitalidad", skills.level(&"vitalidad")))
 	health.max_heal_charges = int(Skills.stat(&"frascos", skills.level(&"frascos")))
-	health.heal_amount = Stats.heal_amount()
+	health.heal_amount = int(Skills.stat(&"aliento", skills.level(&"aliento")))
 	health.heal_time = Stats.heal_time()
 	health.invulnerability_time = Skills.stat(&"temple", skills.level(&"temple"))
 	if health.max_health > old_health:
