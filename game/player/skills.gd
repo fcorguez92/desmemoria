@@ -94,7 +94,8 @@ static func describe(id: StringName, level: int) -> String:
 	var value := stat(id, level)
 	match id:
 		&"vitalidad":
-			return "Vida máxima: %d" % int(value)
+			# Sin cifra absoluta: la vida real también depende de los fragmentos.
+			return "Vida máxima: +%d" % level
 		&"frascos":
 			return "Frascos: %d" % int(value)
 		&"temple":

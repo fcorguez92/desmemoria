@@ -2466,8 +2466,20 @@ func _test_life_fragments_and_bags() -> void:
 	await _wait(2)
 	var data := _saved()
 	_check(data.get("fragments", []).size() == 4, "los 4 fragmentos se guardan")
-	await _load_world(true)
-	_check(_level.fragment_count() == 0 or _player.health.max_health == Stats.life_max(0, _level.fragment_count()), "al cargar, la vida máxima sale de los fragmentos guardados")
+	# Al cargar solo cuentan ids que existen en el mundo: se añaden 4 coleccionables
+	# reales (en el grupo) y se aplica una partida con esos 4 ids.
+	await _load_world()
+	var ids: Array = []
+	for i in 4:
+		var extra: Node = scene.instantiate()
+		extra.id = StringName("test.carga%d" % i)
+		extra.kind = &"fragment"
+		_level.add_child(extra)
+		ids.append("test.carga%d" % i)
+	_level._apply_save({ player = {}, fragments = ids })
+	_check(_level.fragment_count() == 4 and _player.health.max_health == 6 and _player.health.health == 6, "al cargar, la vida máxima (6) y la salud salen de los 4 fragmentos guardados")
+	_level._apply_save({ player = {}, fragments = ids.slice(0, 3) })
+	_check(_level.fragment_count() == 3 and _player.health.max_health == 5 and _player.health.health == 5, "y con 3 fragmentos guardados, 5")
 	_player.set_life_fragments(8, true)
 	_check(_player.health.max_health == 7 and _player.health.health == 7, "set_life_fragments(8) deja 7 de vida, llena")
 	_player.life_bonus = 1

@@ -374,6 +374,8 @@ func _on_collectible_collected(pickup: Node) -> void:
 				player.set_life_fragments(count, true)
 				if player.health.max_health > before:
 					message += ": vida máxima %d" % player.health.max_health
+				else:
+					message += ": vida máxima ya al tope"
 			else:
 				player.set_life_fragments(count)
 		&"bag":
