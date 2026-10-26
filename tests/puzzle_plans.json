@@ -447,23 +447,54 @@
    "c0": 40,
    "c1": 46
   },
-  "sx": 452,
+  "sx": 530,
   "plan": {
    "d1": 0,
    "d2": 1,
    "delay": 0,
-   "hold": 18,
-   "k": 0,
+   "hold": 9,
+   "k": 26,
    "dashAt": null,
    "dashDir": 0,
-   "dj": 26,
+   "dj": 18,
+   "facing": 1
+  },
+  "margin": {
+   "hold": 10,
+   "k": 9,
+   "dash": 99,
+   "dj": 14,
+   "pos": 44
+  },
+  "dash": false
+ },
+ {
+  "room": "CruceDelPan",
+  "from": {
+   "row": 10,
+   "c0": 40,
+   "c1": 46
+  },
+  "to": {
+   "row": 6,
+   "c0": 41,
+   "c1": 45
+  },
+  "sx": 696,
+  "plan": {
+   "d1": 0,
+   "d2": -1,
+   "delay": 0,
+   "hold": 18,
+   "k": 38,
+   "dashAt": null,
+   "dashDir": 0,
    "facing": 1
   },
   "margin": {
    "hold": 17,
    "k": 17,
    "dash": 99,
-   "dj": 17,
    "pos": 62
   },
   "dash": false

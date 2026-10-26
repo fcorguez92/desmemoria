@@ -1,0 +1,23 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://game/boss/boss_room.gd" id="1_room"]
+[ext_resource type="Script" path="res://core/objects/text_tile_map.gd" id="2_tilemap"]
+[ext_resource type="TileSet" path="res://game/levels/tiles_umbral.tres" id="3_tileset"]
+[ext_resource type="PackedScene" path="res://game/boss/jacinto.tscn" id="4_boss"]
+
+[node name="LaEra" type="Node2D"]
+script = ExtResource("1_room")
+title = "La Era"
+note = "Eloy Ferrán, siete años. Esperó a su padre en la era hasta que se hizo de noche."
+note_name_id = &"eloy_ferran"
+boss_scene = ExtResource("4_boss")
+reward_ability = &"wall_jump"
+arena_margin_cells = 6
+after_note = "Jacinto Ferrán segaba para los que venían a comer. No vino nadie. Segó igual."
+after_note_name_id = &"jacinto_ferran"
+
+[node name="Tiles" type="TileMapLayer" parent="."]
+tile_set = ExtResource("3_tileset")
+script = ExtResource("2_tilemap")
+map_file = "res://game/levels/la_era.map"
+legend = {"B": Vector2i(2, 0), "C": Vector2i(3, 0), "G": Vector2i(1, 0), "%": Vector2i(5, 0), "S": Vector2i(4, 0), "T": Vector2i(0, 0)}
