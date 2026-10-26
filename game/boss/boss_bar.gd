@@ -52,6 +52,10 @@ func hide_boss() -> void:
 	visible = false
 
 
+## Un jefe sin armadura (`armor_max` 0) solo enseña la barra de vida; con mucha vida los
+## segmentos se estrechan para que la barra no pase de unos 320 px.
 func set_values(armor: int, armor_max: int, core: int, core_max: int) -> void:
-	_armor_bar.set_values(armor, armor_max)
+	_armor_bar.get_parent().visible = armor_max > 0
+	_armor_bar.set_values(armor, maxi(armor_max, 1))
+	_core_bar.segment_width = clampi(320 / maxi(core_max, 1), 4, 16)
 	_core_bar.set_values(core, core_max)

@@ -1,4 +1,4 @@
-extends CharacterBody2D
+extends "res://game/boss/boss_base.gd"
 ## El Centinela Hueco: la armadura vacía de un Custodio de la Orden, que sigue
 ## guardando el Aljibe por costumbre. Jefe de la primera zona; ver docs/jefes.md.
 ##
@@ -122,9 +122,6 @@ var _last_was_leap: bool = false
 var _flash_left: float = 0.0
 ## Acaba de aterrizar del salto y aún no ha dado el golpe (llega en el fotograma de impacto).
 var _landing: bool = false
-## Mientras salta y justo después de caer no choca con el jugador (ni el jugador con él),
-## para que no se quede subido encima de su cabeza como si fuese suelo.
-var _ghosted: CollisionObject2D
 
 @onready var visual: Sprite2D = $Visual
 @onready var animator: SheetAnimator = $SheetAnimator
@@ -350,11 +347,6 @@ func _die() -> void:
 	tween.tween_callback(_finish_death)
 
 
-func _exit_tree() -> void:
-	if is_instance_valid(_ghosted):
-		_ghosted.remove_collision_exception_with(self)
-
-
 func _finish_death() -> void:
 	var player := get_tree().get_first_node_in_group("player")
 	if player:
@@ -544,10 +536,6 @@ func feet_y() -> float:
 	return global_position.y + HALF_HEIGHT
 
 
-func player_feet_y(player: Node2D) -> float:
-	return player.global_position.y + 24.0
-
-
 ## Si está sobre un tablón y el jugador está claramente más abajo, baja como lo hace
 ## el jugador (abajo + salto): se hunde un poco para atravesarlo y cae.
 func _drop_if_player_is_below() -> void:
@@ -569,21 +557,6 @@ func _slam_supported() -> bool:
 	return true
 
 
-## ¿Hay suelo (no un cuerpo con movimiento) justo bajo `(x, y)`?
-func _has_ground(x: float, y: float) -> bool:
-	var start := Vector2(x, y - 10.0)
-	var space := get_world_2d().direct_space_state
-	for i in 4:
-		var query := PhysicsRayQueryParameters2D.create(start, Vector2(x, y + 24.0), 1, [get_rid()])
-		var hit := space.intersect_ray(query)
-		if hit.is_empty():
-			return false
-		if not hit.collider is CharacterBody2D:
-			return true
-		start = hit.position + Vector2(0.0, 2.0)
-	return false
-
-
 ## Extremos izquierdo y derecho (x) del suelo a la altura `y` que pisa `x`.
 func _platform_span(x: float, y: float) -> Vector2:
 	var left := x
@@ -599,36 +572,14 @@ func _platform_span(x: float, y: float) -> Vector2:
 	return Vector2(left, right)
 
 
-## Deja de chocar con el jugador (en los dos sentidos) hasta separarse de él.
-func _ghost(player: Node2D) -> void:
-	if player is CollisionObject2D and _ghosted == null:
-		_ghosted = player
-		add_collision_exception_with(player)
-		player.add_collision_exception_with(self)
-
-
 ## Si cae encima del jugador, no se queda subido a su cabeza: lo atraviesa, y mientras
 ## sigan solapados se aparta de él a un lado hasta que ya no se tocan.
 func _resolve_overlap_with_player() -> void:
 	if _ghosted == null or state == State.LEAP_AIR:
 		return
-	var offset := _ghosted.global_position - global_position
-	if absf(offset.x) < HALF_WIDTH + SEPARATION and absf(offset.y) < HALF_HEIGHT + 30.0:
-		var away := -signf(offset.x) if offset.x != 0.0 else -float(_facing)
+	var away := _ghost_push(HALF_WIDTH, HALF_HEIGHT, SEPARATION, -_facing)
+	if away != 0:
 		velocity.x = away * 280.0
-	else:
-		remove_collision_exception_with(_ghosted)
-		_ghosted.remove_collision_exception_with(self)
-		_ghosted = null
-
-
-func _player() -> Node2D:
-	return get_tree().get_first_node_in_group("player") as Node2D
-
-
-func _distance_to_player() -> float:
-	var player := _player()
-	return absf(player.global_position.x - global_position.x) if player else INF
 
 
 func _face_player() -> void:
@@ -644,9 +595,3 @@ func _set_facing(facing: int) -> void:
 	_facing = facing
 	visual.scale.x = facing
 	slam_melee.set_facing(facing)
-
-
-func _shake(strength: float, duration: float) -> void:
-	var player := _player()
-	if player and player.get("screen_shake") != null:
-		player.screen_shake.shake(strength, duration)
