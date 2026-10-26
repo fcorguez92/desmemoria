@@ -396,7 +396,7 @@ El mundo se hace de **salas**: cada una es un mapa de texto (`game/levels/*.map`
 
 ## El mundo construido hoy
 
-Once salas (posiciones en baldosas, de `world.tscn`):
+Trece salas (posiciones en baldosas, de `world.tscn`):
 
 | Sala | ID | Posición | Tamaño |
 |---|---|---|---|
@@ -411,6 +411,8 @@ Once salas (posiciones en baldosas, de `world.tscn`):
 | El Surco Ciego | CIN-08 | (200,-36) | 64×36 (macro: 72×36) |
 | El Campo de los Ferrán | CIN-10 | (264,-36) | 66×36 (macro: 72×36, en (272,-36)) |
 | El Cruce del Pan | CIN-11 | (330,-36) | 54×36 (macro: 40×36, en (344,-36)) |
+| El Cercado Vacío | CIN-17 | (363,-70) | 56×34 (macro: 56×40, en (456,-96)) |
+| La Era | CIN-18 | (419,-65) | 60×30 (macro: 80×64, en (512,-120)) |
 
 ```
                         ┌────────────┐
@@ -436,6 +438,8 @@ El recorrido sigue el ritmo de un primer tramo de Hollow Knight (un pueblo, una 
 9. **El Surco Ciego** (CIN-08, 64×36) — la primera sala del Cinturón alto, en calma y sin enemigos: bancales que bajan hacia el este desde la cornisa de la Torre, dos surcos con pinchos (se cae, se pierde 1 de vida y se vuelve al suelo) y la placa «Aquí se sembraba trigo». Opcionales: un **nicho de muro frágil** bajo el primer bancal (un muro de 6 celdas que cae a 3 golpes; dentro, una Bolsa de Rastro) y una **repisa alta** (el «tejado de la Casa Varga») que solo se alcanza con **doble salto** desde un tablón y guarda la Semilla gris. La salida norte hacia la Casa Varga (CIN-09) está cerrada: se abre cuando se construya.
 10. **El Campo de los Ferrán** (CIN-10, 66×36) — combate en campo abierto (dos cascarones y un coloso, a más de 10 baldosas de las puertas) y un **cercado** de piedra con el espantapájaros de Eulalia (**Nombre: Eulalia Ferrán**) cerrado con una reja. La palanca está arriba, en una repisa a la que se sube por una escalera de tablones sin habilidades; la marca es permanente (`p:campo_de_los_ferran.cercado`). Falta el parche gris con luz de revelado (P10, recortado): hoy el suelo es normal. El texto del mojón del lindero no tiene sala todavía (una sola `note` por sala).
 11. **El Cruce del Pan** (CIN-11, 54×36) — calma con el **Ancla A10** junto a la entrada, la mesa de piedra con tres sitios (la `note`), el trompo de Telmo (objeto) y el puzle P09: tres **placas** con 6 s de retención (suelo, repisa a 8 baldosas y repisa a 13 con doble salto) abren una compuerta de 6 celdas; detrás, la Página de Corvel 2 (objeto). El suelo del nicho son tablones: si la compuerta se cierra con el jugador dentro, se baja atravesándolos. El este queda cerrado: ahí irá la puerta de un solo sentido a la Chimenea alta (B3/S3).
+12. **El Cercado Vacío** (CIN-17, 56×34) — calma al aire libre, con el **Ancla A12** (la de antes de Jacinto): un cercado con la puerta abierta, postes rotos, un árbol muerto y un mojón. Se llega **desde abajo, por un pozo de 6 baldosas abierto en el techo del Cruce del Pan** (columnas 41-46), que sale por tablones de un solo sentido: de la plataforma alta del Cruce se salta a un tablón nuevo (fila 6) y de ahí, con el doble salto, hasta el suelo del Cercado; bajando con abajo + salto se vuelve. Es un **atajo provisional** del eje del macro (Cruce → Segunda Torre CIN-13 → Camino de Ronda CIN-14 → Cercado CIN-17): se comprimen CIN-13 y CIN-14 y el Cercado se apoya sobre el Cruce en vez de estar en (456,-96). La puerta este (6 baldosas) da a La Era.
+13. **La Era** (CIN-18, 60×30) — la **arena de Jacinto** (ver `jefes.md`): 48 baldosas de suelo entre dos muros de bancal de 14, cielo abierto, un túnel de entrada por el muro izquierdo con reja, dos peldaños de un solo sentido y postes de adorno. Al vencerlo, la hoz clavada (Nombre) y el recuerdo del **salto de pared**. Sin salida este por ahora (la Cuesta del Segador, CIN-19, la abrirá), así que se vuelve por donde se vino hasta el Ancla del Cercado.
 
 Es el primer bucle metroidvania del mundo real: ves un foso que no puedes cruzar, caes, abres el camino bajo tierra con un jefe, vuelves con el dash y cruzas ese mismo foso; y el puzle del dash pone a prueba lo aprendido. Las maniobras de referencia del puzle están en `tests/puzzle_plans.json` y la prueba de humo las repite en el motor (ver `jefes.md` y `docs/arquitectura.md#verificación`).
 

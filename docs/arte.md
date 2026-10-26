@@ -158,7 +158,7 @@ Valores de partida (a ajustar jugando):
 | Proyectil | pequeña | 16×16 (32×16) | — | |
 | Prop | ninguna | celda 64×64 o 128×128 | — | ver sección 11 |
 
-Cifras reales de lienzo hoy (cabecera `sheet` de cada `.sprite`): Caminante 112×96, Cascarón 96×64, Lancero 144×64, Arrojador 96×64, Coloso 144×96, Acechador 112×64, Centinela 384×256, Eco 48×64, Ancla 64×80, habilidades 48×48, decorado 48×64.
+Cifras reales de lienzo hoy (cabecera `sheet` de cada `.sprite`): Caminante 112×96, Cascarón 96×64, Lancero 144×64, Arrojador 96×64, Coloso 144×96, Acechador 112×64, Centinela 384×256, Jacinto 224×128 (y su hoz lanzada 72×72), Eco 48×64, Ancla 64×80, habilidades 48×48, decorado 48×64.
 
 ## 6. Hojas, animaciones y manifiesto
 
@@ -177,6 +177,7 @@ Cifras reales de lienzo hoy (cabecera `sheet` de cada `.sprite`): Caminante 112�
 - **Idioma**: los nombres de animación, parámetros y claves del manifiesto, en **inglés** (como el código). Los ids de criatura y los nombres de archivo, en **español sin tildes** (continuidad con `lancero`, `coloso`, `centinela`: `mastin`, `espantapajaros`). Los nombres en español de las propuestas (`pluma`, `cetro`, `tizon`) se traducen al nombrar la animación (`strike_quill`, `strike_scepter`).
 - fps entre 6 y 40 (el jugador va a 40; el resto, ≤ 30).
 - **Manifiesto `<nombre>.anim.json`** junto a cada hoja (una sola fuente de verdad para la hoja y la escena): celda, anclaje, paleta, animaciones (`row`, `frames`, `fps`, `loop`, `impact`) y puntos (`weapon_tip_strike`, `head`, `fist`, `neck`, `shoulder`, `hip`, origen de proyectil). Sustituye a la tabla `animations` duplicada a mano en cada `.tscn`. (Paquete H0-04.)
+- **Jacinto sin atlas recortado**: 17 filas por 8 columnas de 224×128 = 1792×2176 (14,9 MiB de textura, por debajo del tope de 16 de un jefe), porque no tiene animaciones largas. Si se le añaden filas o fotogramas, hay que pasarlo al atlas recortado.
 - **Atlas recortado** solo para hojas que pasen de 4 MB (hoy, el Centinela): se recorta cada fotograma a su recuadro mínimo y se empaquetan solo los existentes; `SheetAnimator` usará región y desplazamiento en lugar de `hframes/vframes` para esas hojas. (Paquete H0-06.)
 - **Fotogramas intermedios sin dibujar piezas nuevas** (pipeline manual): se recorta progresivamente la pierna que va a desaparecer, siempre por filas completas (primero el pie, luego la pantorrilla), nunca caracteres sueltos, o la silueta queda rota.
 - Reglas de movimiento: anticipación proporcional a la amenaza; golpe en 1-2 fotogramas; recuperación que da la ventana al jugador; squash y stretch mínimos (±8 %), solo con `scale` en fotogramas concretos; la capa del Caminante se retrasa 2-3 fotogramas respecto al cuerpo.
@@ -194,7 +195,7 @@ El usuario no dibuja y Claude no genera imágenes, así que los sprites se escri
   godot --headless --path . --import
   ```
 
-- **Generadores por código (Node.js, solo para quien retoque el arte; el juego no lo necesita)**: `rig_lib.js` (esqueleto humanoide lateral), `rig_caminante.js`, `rig_enemigos.js`, `rig_centinela.js`, `rig_eco.js`, `arte_ancla.js`, `arte_habilidades.js`, `arte_titulo.js`. Para cambiar un sprite generado se edita su generador y se regenera (`node tools/rig_enemigos.js`, etc.); el `.sprite` generado se sobrescribe.
+- **Generadores por código (Node.js, solo para quien retoque el arte; el juego no lo necesita)**: `rig_lib.js` (esqueleto humanoide lateral), `rig_caminante.js`, `rig_enemigos.js`, `rig_centinela.js`, `rig_jacinto.js` (Jacinto y su hoz), `rig_eco.js`, `arte_ancla.js`, `arte_habilidades.js`, `arte_titulo.js`. Para cambiar un sprite generado se edita su generador y se regenera (`node tools/rig_enemigos.js`, etc.); el `.sprite` generado se sobrescribe.
 - **Una sola fuente de verdad por sprite**: mientras exista su `.sprite` o su generador, ese texto manda. Si se retoca un PNG a mano (Pixelorama, LibreSprite), se borra antes su fuente. Recomendación pendiente de aprobación (D-12): no versionar en Git los `.sprite` generados por rigs (el del Centinela pesa 8,4 MB; en total hay 11 MB de texto); versionar los generadores y los PNG.
 - Qué se genera y qué se dibuja: **por código** lo que se repite o se mueve mucho (ciclos de movimiento, variantes, baldosas, fondos, props en familia, halos, fuentes de rótulo, iconos sencillos); **a mano** lo que se ve quieto y de cerca o lleva identidad (piezas maestras de baldosa, props singulares, retoque de lo icónico). Quién dibuja ese 15-20 % es una decisión de proyecto abierta (el usuario no dibuja): hasta que se decida, se usa solo código y las piezas singulares se hacen en texto.
 - Rotación de pixel art: solo por pasos (15° o 22,5°), sin interpolar; evita píxeles de distinta escala.
@@ -249,7 +250,7 @@ Resumen y reglas; las 43 fichas, las nueve arenas, los VFX de jefe y la tabla de
 - **Cinco comunes ya existen** (cascarón, lancero, arrojador, coloso, acechador) y solo les falta la fila `death`. El bestiario completo del diseño tiene 48 entradas; el plan de arte construye una versión **reducida** (ver `produccion-arte.md`).
 - **Lecturas obligatorias de silueta**: alcance (la longitud del arma a la vista = el alcance real, ±15 %), peso (lento = más ancho que alto), rol (quien invoca o apoya no lleva arma), estado (escudo arriba/abajo, cerrado/abierto se ven en la pieza, no en una barra). Cada diseño añade un rasgo de contorno propio (joroba, cuerno, arma, tamaño, cola); el tinte nunca basta.
 - **Rojo en criaturas**: un enemigo *lleva* 2-8 píxeles de `s`/`t` (vendas, penacho, cinta), no *es* rojo. Los no hostiles se distinguen por no llevar rojo.
-- **Ámbar** nunca en enemigos (salvo el hueco del Centinela). Quien lleva luz la lleva apagada; la llama es un halo de Godot.
+- **Ámbar** nunca en enemigos (salvo el hueco del Centinela y el trigo de Jacinto: la estela de su hoz y el campo que vuelve al caer; son efectos, no su cuerpo, y su ropa es de tierra y lino). Quien lleva luz la lleva apagada; la llama es un halo de Godot.
 - **Élite** = misma familia que su base, +1 plantilla de tamaño (×1,15-1,3), un elemento nuevo de silueta y paleta propia. **Minijefe**: cuando se pueda, escala + recolor + un rasgo de una base existente.
 - **Variantes**: un cuerpo se declara con cuatro ranuras de paleta (`skin`, `cloth`, `metal`, `accent`). Mientras no exista intercambio de paleta en sombreador, las variantes se obtienen regenerando el rig con otro estilo.
 - **Jefes**: una persona con nombre y un verbo; el arte muestra *quién fue* (un objeto personal siempre visible) y *qué hace* (una silueta que cambia con el ataque). Llevan la menor cantidad de rojo posible. La fase 2 añade un rasgo visual con una capa de daño (sin cambiar de hoja). Los jefes humanoides van por hoja completa con atlas recortado (≤ 16 MB cada uno); solo los no humanoides de gran tamaño van por piezas, y solo se construye ese soporte para Maelis.

@@ -286,6 +286,8 @@ Estructura: **Bajo** (Terrazas, Cisterna, Galerías, Aljibe, Chimenea, Pasarela,
 | CIN-29 | El Camino de los Mojones | 88×60 @(456,-216) | O→CIN-28 · E→ARC-01 (alto) · S→CIN-16 | Combate lineal con mojones de los Mensajeros | Doble | Lanceros; arrojador; densidad media | Mojón "se cortaba cada invierno" |
 | CIN-30 | La Linde Gris | 72×60 @(344,-276) | S→CIN-27 | Plataformas que se borran; secreta | Doble | Parche gris: el suelo desaparece 2 s después de pisarlo | FV; rastro del límite limpio, "como cortado con tijera" |
 
+**Construidas con otra medida (rama `feat/jacinto`):** CIN-17 El Cercado Vacío 56×34 en (363,-70) y CIN-18 La Era 60×30 en (419,-65), con el suelo en y -38 (33 baldosas por encima del suelo del Cruce del Pan): se alcanzan por un **pozo en el techo del Cruce del Pan** (columnas 41-46) en lugar de por CIN-13 y CIN-14, que quedan por construir en otra parte (la Segunda Torre ya no puede ir en (344,-96): lo ocupa el Cercado). La arena de Jacinto no tiene salida este todavía.
+
 **Construidas con otra medida (rama `feat/cinturon-alto-1`):** CIN-08 Surco Ciego 64 de ancho en x 200; CIN-10 Campo de los Ferrán 66 en x 264; CIN-11 Cruce del Pan 54 en x 330 (acaba pegado a la Chimenea, x 384). Todas con y -36 y 36 de alto, puertas este/oeste en las filas 25-30 y suelo en la fila 31. Las salas por construir que se apoyan en ellas **deben alinear sus puertas a estas medidas**: la Casa Varga (CIN-09) sobre el Surco (x 200-264), la Acequia (CIN-12) sobre el Campo/Surco y la Segunda Torre (CIN-13) sobre el Cruce (x 330-384; el macro la ponía en x 344). Sus puertas norte hoy son pared.
 
 (c.) = construida. El Peón (SEC-03), el Palomar (SEC-02), el Silo (SEC-01) y los Establos (SEC-06) están en §4.7 pero se ven en el mapa del Cinturón.
