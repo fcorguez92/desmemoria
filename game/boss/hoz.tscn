@@ -1,0 +1,33 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://core/objects/projectile.gd" id="1_projectile"]
+[ext_resource type="Texture2D" path="res://game/boss/hoz_sheet.png" id="2_sheet"]
+[ext_resource type="Script" path="res://core/components/sheet_animator.gd" id="3_animator"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_hoz"]
+radius = 15.0
+
+[node name="Hoz" type="Area2D" groups=["boss_debris"]]
+z_index = 4
+script = ExtResource("1_projectile")
+speed = 240.0
+lifetime = 6.0
+reflect_group = &"enemy"
+hit_sound = &"hoz_ground"
+hit_volume_db = -6.0
+returns = true
+outbound_time = 0.7
+catch_distance = 22.0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_hoz")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture = ExtResource("2_sheet")
+hframes = 8
+
+[node name="SheetAnimator" type="Node" parent="." node_paths=PackedStringArray("sprite")]
+script = ExtResource("3_animator")
+sprite = NodePath("../Sprite2D")
+animations = {"spin": [0, 8, 24.0, true]}
+default_animation = "spin"

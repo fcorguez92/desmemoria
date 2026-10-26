@@ -37,7 +37,13 @@
       "puertas": [ { "lado": "L", "desde": 25, "hasta": 30, "a": "surco_ciego" }, { "lado": "R", "desde": 25, "hasta": 30, "a": "cruce_del_pan" } ],
       "abiertas": [] },
     { "id": "cruce_del_pan", "region": "cinturon", "x": 330, "y": -36,
-      "puertas": [ { "lado": "L", "desde": 25, "hasta": 30, "a": "campo_de_los_ferran" } ],
-      "abiertas": [] }
+      "puertas": [ { "lado": "L", "desde": 25, "hasta": 30, "a": "campo_de_los_ferran" }, { "lado": "T", "desde": 41, "hasta": 46, "a": "cercado_vacio" } ],
+      "abiertas": [] },
+    { "id": "cercado_vacio", "region": "cinturon", "x": 363, "y": -70,
+      "puertas": [ { "lado": "B", "desde": 8, "hasta": 13, "a": "cruce_del_pan" }, { "lado": "R", "desde": 26, "hasta": 31, "a": "la_era" } ],
+      "abiertas": [ { "lado": "T", "desde": 2, "hasta": 53, "tipo": "cielo" } ] },
+    { "id": "la_era", "region": "cinturon", "x": 419, "y": -65,
+      "puertas": [ { "lado": "L", "desde": 21, "hasta": 26, "a": "cercado_vacio" } ],
+      "abiertas": [ { "lado": "T", "desde": 2, "hasta": 57, "tipo": "cielo" } ] }
   ]
 }

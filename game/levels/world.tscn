@@ -1,4 +1,4 @@
-[gd_scene load_steps=13 format=3]
+[gd_scene load_steps=15 format=3]
 
 [ext_resource type="Script" path="res://game/levels/world.gd" id="1_world"]
 [ext_resource type="PackedScene" path="res://game/levels/ultimo_umbral.tscn" id="2_umbral"]
@@ -12,6 +12,8 @@
 [ext_resource type="PackedScene" path="res://game/levels/surco_ciego.tscn" id="10_surco"]
 [ext_resource type="PackedScene" path="res://game/levels/campo_de_los_ferran.tscn" id="11_campo"]
 [ext_resource type="PackedScene" path="res://game/levels/cruce_del_pan.tscn" id="12_cruce"]
+[ext_resource type="PackedScene" path="res://game/levels/cercado_vacio.tscn" id="13_cercado"]
+[ext_resource type="PackedScene" path="res://game/levels/la_era.tscn" id="14_era"]
 
 [node name="World" type="Node2D"]
 script = ExtResource("1_world")
@@ -434,3 +436,9 @@ position = Vector2(4224, -576)
 
 [node name="CruceDelPan" parent="Rooms" instance=ExtResource("12_cruce")]
 position = Vector2(5280, -576)
+
+[node name="CercadoVacio" parent="Rooms" instance=ExtResource("13_cercado")]
+position = Vector2(5808, -1120)
+
+[node name="LaEra" parent="Rooms" instance=ExtResource("14_era")]
+position = Vector2(6704, -1040)

@@ -22,6 +22,13 @@ const BOSS_HALF_HEIGHT := 80.0
 @export var boss_scene: PackedScene
 ## Habilidad que suelta el jefe al morir (identificador de AbilityPickup).
 @export var reward_ability: StringName = &"dash"
+## Baldosas de pared, a cada lado, que no son arena: el jefe se mueve entre ellas (por defecto,
+## solo el grosor del marco de la sala; La Era, con sus muros de bancal, usa 6).
+@export var arena_margin_cells: int = 2
+## Inscripción que aparece junto a la recompensa al vencer al jefe (p. ej. la hoz clavada de
+## Jacinto) y el Nombre que contiene (un id de game/names.gd), si lo lleva.
+@export_multiline var after_note: String = ""
+@export var after_note_name_id: StringName = &""
 
 var defeated: bool = false
 
@@ -111,10 +118,11 @@ func _spawn_boss() -> void:
 	if boss_scene == null or _boss_at == Vector2.ZERO:
 		return
 	boss = boss_scene.instantiate()
-	boss.arena_left = world_rect().position.x + 2.0 * CELL
-	boss.arena_right = world_rect().end.x - 2.0 * CELL
+	boss.arena_left = world_rect().position.x + arena_margin_cells * CELL
+	boss.arena_right = world_rect().end.x - arena_margin_cells * CELL
 	boss.arena_ceiling = world_rect().position.y + CELL
-	_place(boss, _boss_at, BOSS_HALF_HEIGHT)
+	# Cada jefe dice lo que mide (`half_height`); sin él, el tamaño del Centinela.
+	_place(boss, _boss_at, boss.half_height if "half_height" in boss else BOSS_HALF_HEIGHT)
 	boss.status_changed.connect(_update_bar)
 	boss.defeated.connect(_on_boss_defeated)
 
@@ -146,6 +154,11 @@ func _finish(announce: bool) -> void:
 	var pickup := AbilityPickupScene.instantiate()
 	pickup.ability_id = reward_ability
 	_place(pickup, _reward_at, PICKUP_HALF_HEIGHT)
+	if after_note != "":
+		var stone := InscriptionScene.instantiate()
+		stone.text = after_note
+		stone.name_id = after_note_name_id
+		_place(stone, _reward_at + Vector2(CELL * 3.0, 0.0), INSCRIPTION_HALF_HEIGHT)
 
 
 func _make_gate(at: Vector2) -> Node:

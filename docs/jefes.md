@@ -1,6 +1,6 @@
 # Jefes (documento vivo)
 
-Estado: el primer jefe (el Centinela Hueco) está construido y probado por scripts, **sin jugar a mano todavía**. Los otros nueve están diseñados (fichas abajo) y sin construir. Los números son de partida y se ajustan jugando. Este documento es la versión unificada tras la reunión de diseñadores; el detalle largo de cada pelea (tablas completas de ataques, pruebas clave, animaciones) está en `docs/reunion/disenadores/04-combate-enemigos-jefes.md` (§4), y el arte de cada jefe en `docs/reunion/artistas/05-criaturas-y-jefes.md` (§6). El canon (`personajes.md` §3, `guion-maestro.md`) manda sobre cualquier cifra.
+Estado: los dos primeros jefes (el Centinela Hueco y Jacinto, el Último Segador) están construidos y probados por scripts, **sin jugar a mano todavía**. Los otros ocho están diseñados (fichas abajo) y sin construir. Los números son de partida y se ajustan jugando. Este documento es la versión unificada tras la reunión de diseñadores; el detalle largo de cada pelea (tablas completas de ataques, pruebas clave, animaciones) está en `docs/reunion/disenadores/04-combate-enemigos-jefes.md` (§4), y el arte de cada jefe en `docs/reunion/artistas/05-criaturas-y-jefes.md` (§6). El canon (`personajes.md` §3, `guion-maestro.md`) manda sobre cualquier cifra.
 
 Leyenda: **[Impl.]** construido · **[Pend.]** pendiente. En las tablas de ataques, **P** = aviso **amarillo** (se puede parar) y **R** = aviso **rojo** (solo esquivar). Ver `enemigos.md` para el código de colores y los mínimos de aviso, que valen igual para los jefes.
 
@@ -33,7 +33,7 @@ Cada jefe es una persona con nombre y motivo; el combate es la conversación que
 10. **Los jefes no miran tu equipo:** Castigo, Voz, Diente y similares **no afectan a jefes**. Así la duración depende de pocas variables (daño, ritmo, alcance, Garrán).
 11. **Al morir o descansar:** la pelea se reinicia (jefe entero, rejas abiertas, invocaciones, proyectiles y restos limpiados). **Si se vence:** no vuelve y queda en `bosses` del guardado, con la recompensa esperando en la sala aunque se cargue sin haberla cogido.
 
-### Estructura estándar de una pelea [Pend. salvo el Centinela]
+### Estructura estándar de una pelea [Impl.: Centinela y Jacinto; el resto, pendiente]
 
 | Momento | Duración | Qué ocurre |
 |---|---|---|
@@ -70,13 +70,14 @@ Duración objetivo para un jefe obligatorio sin fallos: 2,5-4 minutos (6-12 con 
 2. Una sala con `script = boss_room.gd`, `boss_scene` y `reward_ability` (o la recompensa genérica), y en el mapa los marcadores `b` `t` `[` `]` `r` (ver `vertical-slice.md`).
 3. Cada ataque declara su aviso, duración, daño, `parryable` y su exposición; un método `debug_force_attack(id)` permite probarlos uno a uno.
 
-**Se extrae al construir Jacinto, no antes** (a partir de `centinela.gd`, que mezcla tres cosas que se repetirán):
+**Se extrajo al construir Jacinto [Impl.]** (a partir de `centinela.gd`, que mezcla tres cosas que se repetirán), y solo lo que los dos jefes usan:
 
 | Pieza | Qué hace | Dónde |
 |---|---|---|
-| `phase_tracker` | Vida en tramos con "suelos" para que el daño no salte de fase (equivale a `CORE_FLOORS`); señal `phase_changed` | `core/components/` |
-| `attack_picker` | Bolsa barajada con pesos por fase y memoria corta | `core/components/` |
-| `boss_base` | Estados comunes (dormido, despertar, recuperarse, aturdido, morir), parpadeo, números de daño, chispas, temblor, tinte de aviso, suelo/tablón | `game/boss/` |
+| `PhaseTracker` | Vida en tramos con "suelos" para que el daño no salte de fase (equivale a `CORE_FLOORS`); señales `floor_reached` y `phase_changed`. Lo usa Jacinto; el Centinela conserva su vida con armadura | `core/components/phase_tracker.gd` |
+| `AttackPicker` | Bolsa barajada sin repetir el último, con sesgo por distancia, equidad y límites. Lo usa Jacinto; el Centinela conserva su decisión propia | `core/components/attack_picker.gd` |
+| `Spawner` | Invocaciones con tope de vivas (la Llamada de Jacinto) | `core/objects/spawner.gd` |
+| `boss_base` | **Mínimo**: buscar al jugador, temblor de cámara, mirar si hay suelo, `_floor_below` y traspasar al jugador cuando el jefe cae encima. Los estados (dormido, despertar, recuperarse...) siguen siendo de cada jefe: aún no se repiten lo bastante para extraerlos | `game/boss/boss_base.gd` |
 
 Los jefes sin armadura (todos menos el Centinela) usan **vida simple repartida en fases por umbrales**, con exposición condicionada a un estado (aturdido por parry, recuperación larga, parte rota). Eudora usa una "Calma" regenerable en lugar de armadura.
 
@@ -129,11 +130,57 @@ La hoja del jefe tiene 11 animaciones (idle, walk, windup, strike, crouch, jump,
 5. **Secuencia final del canon** (el cascarón sale del hueco del pecho, corre hacia el este y se apaga; la coraza queda arrodillada): animación nueva `release` de 6 fotogramas.
 6. Si el salto queda bloqueado por el jugador pegado a una pared, ya se resuelve (cae a su lado), pero conviene mirarlo en juego.
 
-## Los otros nueve jefes [Pend.]
+## Jacinto, el Último Segador [Impl.]
+
+Campesino de los bancales (Jacinto Ferrán) que sigue segando un campo vacío porque su mujer, Eulalia, y su hijo, Eloy, iban a venir a comer. Segundo jefe del juego: **verbo propio, leer un arco y entrar por dentro**. Al vencerlo suelta el recuerdo del **salto de pared** (el Agarre), su Nombre y 60 Ecos. Es el jefe más triste: al caer baja la hoz, camina al muro de bancal y apoya la mano; la era vuelve a tener trigo un instante. **Construido y probado por scripts; sin jugar a mano todavía.**
+
+- **Dónde:** **La Era** (`game/levels/la_era.map`, 60×30 baldosas, posición (419,-65)), en el Cinturón alto. Se llega por **El Cercado Vacío** (`cercado_vacio.map`, 56×34, (363,-70), con el **Ancla A12**), que se sube desde el **Cruce del Pan** por un pozo abierto en su techo (ver `mundo.md`). Sin enemigos entre el Ancla y la puerta: unas 35 baldosas de camino (menos de 10 s).
+- **La arena:** suelo plano de 48 baldosas entre dos **muros de bancal de 22 baldosas** (caras lisas `%`, que no se agarran: ni con doble salto ni con salto de pared se sube a ellos; Jacinto los trepa por código) (columnas 6 y 54; el jugador aún no puede subirlos, Jacinto sí), un disco de piedra en el centro (a ras de suelo), **dos peldaños** de un solo sentido a 3 y 5 baldosas en el lado de la entrada, seis postes de adorno (los espantapájaros), cielo abierto. La entrada es un túnel por el muro izquierdo con **una reja** (2×6 celdas, `core/objects/gate.gd`) que cae al cruzar la línea del disparador y no se abre hasta vencerlo (o morir). **No hay reja de salida**: de momento la arena es un callejón (la salida este, hacia La Cuesta del Segador, se abrirá con esa sala). Una tablilla con el Nombre de **Eloy Ferrán** está en el centro antes de la pelea; al vencer, junto al recuerdo, aparece **la hoz clavada** (Nombre de **Jacinto Ferrán**).
+- **Código:** `game/boss/jacinto.gd` (la pelea; hereda de `game/boss/boss_base.gd`, lo que ahora comparten él y el Centinela), `hoz.tscn` (la hoz lanzada, un `Projectile` de `core/` en modo retorno), `core/components/attack_picker.gd`, `core/components/phase_tracker.gd`, `core/objects/spawner.gd`, `TelegraphZone` con anillo, `boss_room.gd` (sala, ahora con `arena_margin_cells`, `after_note` y tamaño propio del jefe) y `boss_bar.gd` (sin armadura enseña solo la barra de vida).
+- **Arte:** `art/source/jacinto.sprite` y `hoz.sprite` (los genera `tools/rig_jacinto.js` con el esqueleto de `rig_lib.js`): lienzo de 224×128, **17 filas** (idle, walk, windup_swing, swing_low, windup_spin, spin, step_slash, windup_throw, throw, catch, climb, wall_hold, dive, summon, stagger, death, release) y como mucho 8 columnas: **unos 15 MB de textura** (14,9 MiB; tope 16). Cuerpo de 32×80 (el jugador, 24×48). Paleta de tierra y lino: sombrero de paja, camisa de lino, pañuelo verde y una hoz de mango largo con el filo claro; el rojo no se usa en el cuerpo (el rojo es peligro). Las vueltas dejan una estela de trigo; la Llamada levanta paja del suelo; `release` llena el campo de espigas.
+- **Sonido:** voz propia (`jacinto_alert/attack/hurt/die`, grave, ronca y con aire) y cinco sonidos nuevos en `tools/sonidos.js`: `hoz_swing`, `hoz_spin`, `hoz_ground`, `straw_rise`, `wheat_bloom`. Sin música de jefe todavía.
+
+### Reglas de la pelea
+
+Vida simple de 36 con `PhaseTracker` (marcas 24 / 12 / 0), sin armadura. Elige con `AttackPicker`: bolsa barajada sin repetir el último, pesos por **distancia** (cerca: siega y vuelta; lejos: paso y hoz), como mucho **dos vueltas en cinco ataques**, y si una vuelta daña, la siguiente no sale en dos turnos. Entre fases, una **transición de 2 s** (invulnerable y sin atacar: cabe un sorbo del frasco) que abre con una demostración del ataque nuevo (la hoz en la fase 2, la Llamada en la 3). Daño de **1 o 2**; nada mata de un golpe.
+
+| Ataque | Aviso (F1) | Daño | Tipo | Respuesta |
+|---|---|---|---|---|
+| **Siega baja** (barrido a ras, 124 px delante) | 0,75 s (F2 0,64; F3 0,56; mín. 0,40) | 1 | **P** | Saltar, parry, dash. Marca amarilla en el suelo |
+| **Vuelta amplia** (360°, radio 130, hueco seguro de 45 px pegado a él) | 0,90 s (mín. 0,70) | 2 | **P** | **Entrar por dentro** (marca en anillo con el centro libre) o retroceder más de 130 px. Parry: aturdido 1,6 s |
+| **Paso de segador** (avanza 48 px y siega) | 0,55 s (mín. 0,40) | 1 | **P** | Saltar o dash por detrás |
+| **Hoz lanzada** (F2; boomerang a ras de suelo, hasta 260 px) | 0,60 s (mín. 0,40) | 1 | **P** | Saltar; parry la devuelve contra él. **Manos vacías mientras la hoz anda fuera (~1,4 s): recibe el doble** |
+| **Trepa y picado** (F2) | 0,5 s agarrado (amarillo) + sombra roja ≥ 0,5 s | 2 | **R** | Salir de la sombra (círculo de 60 px, con bandas). Solo sale si llevas más de 6 s a más de 4 baldosas. Sube por el muro derecho: demuestra el salto de pared |
+| **Llamada** (F2 y F3) | 0,90-1,00 s | espantapájaros: 1 (aviso 0,65) | — | Levanta espantapájaros (vida 3, sin Ecos, **tope 2 vivos**); matarlos o ignorarlos |
+| **Tres vueltas** (F3, remate) | 0,90 s solo al principio | 2 / 2 / 2 | **P, P, R** | Dentro en las dos primeras; la tercera es una **marca roja de 320×24 a ras de suelo** (0,6 s): saltarla o retroceder. Recuperación 1,4 s |
+
+**Sincronía:** el daño de la siega y del paso llega en el **fotograma de impacto** de su animación (`SWING_IMPACT_FRAME` = 2 de `swing_low`, `STEP_IMPACT_FRAME` = 3 de `step_slash`; la marca amarilla dura el aviso más lo que tarda ese fotograma). Si se redibuja la animación hay que mover esas constantes. Las vueltas hacen daño mientras giran (0,5 s), una vez por vuelta.
+
+**Exposición y parry:** la vuelta amarilla también se esquiva con un salto alto o el doble salto (el anillo es un disco alrededor de su cadera, no una franja a ras de suelo); la marca roja de la tercera vuelta, que sí es a ras, se salta con cualquier salto.  parry en siega, paso o vuelta → aturdido 1,6 s (daño ×2). La hoz devuelta le hace el doble (y el doble por tener las manos vacías). Los avisos rojos (picado y la tercera vuelta) atraviesan la guardia. Recuperación tras cada ataque 1,0 / 0,95 / 0,9 s (la vuelta, 1,1 s) más una pausa de 0,60 / 0,45 / 0,35 s: siempre hay al menos 1,25 s sin ataque.
+
+**Reinicio y victoria:** si el jugador muere o descansa, Jacinto vuelve a dormir con la vida y la fase de partida, la reja se abre y se borran la hoz, los avisos y los espantapájaros. Vencido: no vuelve, queda en `bosses` (`LaEra`) y la recompensa y la hoz clavada siguen en la sala aunque se cargue sin haber cogido el recuerdo.
+
+### Lo que se decidió al construirlo (y se aparta del diseño largo)
+
+- La arena mide 60×30 de sala (48 de suelo entre los muros), no 48×22: hace falta la altura de los muros (22 baldosas, más que lo que sube el doble salto: 19 máx.) y el margen del cielo. Una sola reja (la del túnel de entrada); la segunda llegará con La Cuesta.
+- La Trepa usa siempre el muro **derecho** (el izquierdo tiene el túnel de entrada a ras de suelo). La Llamada pide 2 espantapájaros en la fase 2 y 3 en la 3, pero con tope 2: en la práctica rellena hasta 2.
+- La hoz va y vuelve en ~1,4 s (el diseño decía 1,2): la ida son 0,7 s y la distancia se ajusta a donde está el jugador (100-260 px).
+- Recompensa y progresión: el salto de pared ya existe como habilidad del jugador, pero el mundo no lo daba en ningún sitio; Jacinto suelta su recuerdo (`reward_ability = wall_jump`). Quien ya lo tenga (partida antigua o banco de pruebas) no ve el recuerdo (`world.gd` lo retira al cargar) y conserva el Nombre en la hoz clavada y los 60 Ecos. La puerta del Castigo del canon queda para cuando exista esa sala.
+- Ecos: el diseño largo (`04-combate-enemigos-jefes.md`) dice 80 y el unificado de `jefes.md` 60; se usa **60**.
+
+### Pendiente de Jacinto (por prioridad)
+
+1. **Jugarlo a mano.** Medir intentos (diseño: 4-6), tiempo de pelea limpia (2:30-3:30) y dónde se muere. Con el Filo base el daño es 1: 36 golpes; si sale largo, bajar antes la vida que los ataques.
+2. Que la **marca amarilla del anillo** (radio 130) se entienda de un vistazo, y si el hueco de 45 px es fácil de encontrar en movimiento; que la **sombra roja** del picado deje tiempo de leer (0,5 s mínimo; sube con la distancia).
+3. La **tercera vuelta** (franja roja de 24 px): si saltarla es cómodo con el doble salto y con el dash y si se lee que es el remate.
+4. Música de jefe (hoz y viento, sin percusión hasta la fase 2), cámara lenta en la muerte, y la salida este de la arena cuando exista La Cuesta del Segador.
+5. El arte es provisional pero legible: cara sin rasgos, sin retoques de lienzo; `release` es una animación simple (mano levantada hacia el muro y trigo).
+
+## Los otros ocho jefes [Pend.]
 
 Vida del jefe en puntos y en golpes eficaces (N) con el daño esperado en ese punto. Ecos de la economía (`nucleo-jugable.md`). Todos reutilizan `boss_room.gd`. Las arenas son tamaños en baldosas (ancho × alto).
 
-### 2 · Jacinto, el Último Segador (La Era, ~4:30)
+### 2 · Jacinto, el Último Segador (La Era, ~4:30) [Impl.: ver su sección más arriba; esta es la ficha de diseño]
 
 - **Arena:** 48×22; suelo plano con un disco de piedra central, dos muros de bancal de 14 baldosas (el jugador aún no puede subirlos; Jacinto sí, y lo exhibe), dos peldaños y seis espantapájaros de adorno. Aire abierto.
 - **Vida:** 36 (N = 18 con daño 2), umbrales 24/12, sin armadura. **Ecos 60.** Intentos 4-6.
@@ -152,7 +199,7 @@ Vida del jefe en puntos y en golpes eficaces (N) con el daño esperado en ese pu
 - **Decisión:** máximo dos Vueltas amplias en cinco ataques; la Trepa solo sale si el jugador lleva > 6 s sin acercarse a menos de 4 baldosas (castiga huir).
 - **Recompensa:** recuerdo del **Salto de pared**, el Nombre Jacinto Ferrán y la puerta del Castigo. Final: apoya la mano en el muro y la era vuelve a tener trigo un instante.
 - **Animación (17 filas):** idle, walk, windup_swing, swing_low, windup_spin, spin, step_slash, throw, catch, climb, wall_hold, dive, summon, hit, stagger, death, release. Tipo H, lienzo 224×128.
-- **Motor nuevo:** `boss_base`, `phase_tracker`, `attack_picker`, `telegraph_zone` simple (la sombra), `Spawner` con tope, modo retorno del `Projectile`.
+- **Motor nuevo [Impl.]:** `boss_base` (mínimo), `PhaseTracker`, `AttackPicker`, `TelegraphZone` (la sombra, y ahora anillo), `Spawner` con tope, modo retorno del `Projectile`.
 
 ### 3 · Sor Ilara, la Copista (El Scriptorium Callado, ~6:15)
 
@@ -319,9 +366,9 @@ Reglas para que ningún jefe sea imposible, en forma de lista de control al cons
 | Pieza | La usan | Orden |
 |---|---|---|
 | `parryable` por ataque + aviso rojo | todos | Antes de Jacinto (ver `enemigos.md`) |
-| `phase_tracker`, `attack_picker`, `boss_base` | Jacinto en adelante (refactor opcional del Centinela) | Con Jacinto |
-| `telegraph_zone` | Jacinto (sombra), Ilara, Hesper, Magda, Rufo, Eudora, Maelis | Con Jacinto (versión mínima) |
-| `Spawner` con tope; modo retorno del `Projectile` | Jacinto, Hesper, Casimar, Eudora | Con Jacinto |
+| `PhaseTracker`, `AttackPicker`, `boss_base` (mínimo) | Jacinto en adelante **[Impl.]** | Con Jacinto |
+| `TelegraphZone` (con anillo) | Jacinto (sombra, vueltas) **[Impl.]**, Ilara, Hesper, Magda, Rufo, Eudora, Maelis | Con Jacinto (versión mínima) |
+| `Spawner` con tope; modo retorno del `Projectile` | Jacinto **[Impl.]**, Hesper, Casimar, Eudora | Con Jacinto |
 | `attack_echo` y plataformas con temporizador | Ilara | Con Ilara |
 | `status_effects` (Lento, Fijado) | Ilara, Hesper, Maelis | Antes de Hesper |
 | Bloque sólido destructible | Hesper | Con Hesper |
@@ -335,7 +382,7 @@ Cada pieza se construye cuando llega el primer jefe que la necesita, no antes.
 
 ## Cómo se comprueba
 
-La prueba de humo (`tests/smoke_test.gd`) fuerza cada ataque del Centinela, recorre las tres fases golpeando, comprueba el parry y la onda devuelta, que morir reinicia la pelea y que vencerlo queda guardado. El puzle de después se repite con maniobras de referencia (ver `docs/arquitectura.md#verificación`). Nada de eso sustituye a jugarlo.
+La prueba de humo (`tests/smoke_test.gd`) fuerza cada ataque del Centinela, recorre las tres fases golpeando, comprueba el parry y la onda devuelta, que morir reinicia la pelea y que vencerlo queda guardado. El puzle de después se repite con maniobras de referencia (ver `docs/arquitectura.md#verificación`). Nada de eso sustituye a jugarlo. Jacinto tiene el suyo: sala y puertas alineadas, jefe dormido, fases por marcas (24 / 12 / 0) sin saltarse ninguna, transición invulnerable, cada ataque forzado con `debug_force_attack(id)` (aviso, color y parable o no, daño, sincronía con el fotograma de impacto, parry y exposición), la hoz que vuelve, el picado que no sale de la arena, el tope de 2 espantapájaros, la tercera vuelta roja, la muerte con su recompensa guardada, el reinicio sin restos, 60 s de pelea al azar sin atascos y la tirada del `AttackPicker` (1.000 elecciones sin repetir).
 
 Para los jefes nuevos se propone un banco reutilizable `tests/boss_harness.gd` que cada jefe invoque con su escena. Invariantes por jefe:
 

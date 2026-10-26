@@ -24,11 +24,19 @@ enum Shape { RECT, CIRCLE }
 @export var shape_kind: Shape = Shape.RECT
 ## RECT: ancho y alto. CIRCLE: el radio es `size.x`.
 @export var size: Vector2 = Vector2(64.0, 24.0)
+## Solo CIRCLE: radio del hueco central. Un objetivo cuyo centro esté más cerca que
+## esto del centro de la zona no recibe el golpe (el arco "por dentro" de un jefe: la
+## zona pegada al atacante es segura). 0 = círculo entero.
+@export var inner_radius: float = 0.0
 ## Segundos de aviso antes del golpe (ver los mínimos de docs/enemigos.md).
 @export var duration: float = 0.7
 @export var damage: int = 1
 ## Si es false, el golpe no se puede parar (aviso rojo con bandas).
 @export var parryable: bool = true
+## Hacia dónde viaja el golpe (-1 o 1), para la guardia del jugador (solo desvía los golpes
+## que llegan de frente) y el retroceso. 0 = alejándose del centro de la zona, que sirve para
+## un círculo; en un rectángulo delante del atacante hay que decirlo.
+@export var blow_direction: int = 0
 ## Grupo al que hace daño (con el contrato "golpeable": `take_hit`).
 @export var target_group: StringName = &"player"
 ## Capas de física en las que busca objetivos.
@@ -95,7 +103,7 @@ func _resolve() -> void:
 			continue
 		if not body.has_method("take_hit"):
 			continue
-		var from_direction := 1 if body.global_position.x >= global_position.x else -1
+		var from_direction := blow_direction if blow_direction != 0 else (1 if body.global_position.x >= global_position.x else -1)
 		_deflected = false
 		body.take_hit(damage, from_direction, self)
 		# Un cuerpo que ha parado el golpe (zona amarilla) no cuenta como golpeado.
@@ -119,6 +127,11 @@ func _bodies_inside() -> Array:
 	query.collide_with_areas = false
 	var bodies: Array = []
 	for result in get_world_2d().direct_space_state.intersect_shape(query, 16):
+		var body := result.collider as Node2D
+		# Anillo: el centro de quien está en el hueco central no cuenta.
+		if shape_kind == Shape.CIRCLE and inner_radius > 0.0 and body != null \
+				and body.global_position.distance_to(global_position) < inner_radius:
+			continue
 		bodies.append(result.collider)
 	return bodies
 
@@ -135,7 +148,13 @@ func _draw() -> void:
 		edge_alpha = k
 	var half := size / 2.0
 	if shape_kind == Shape.CIRCLE:
-		draw_circle(Vector2.ZERO, size.x, Color(color, fill_alpha))
+		if inner_radius > 0.0:
+			# Anillo: la banda peligrosa, con el hueco seguro en el centro.
+			var middle := (size.x + inner_radius) / 2.0
+			draw_arc(Vector2.ZERO, middle, 0.0, TAU, 64, Color(color, fill_alpha), size.x - inner_radius)
+			draw_arc(Vector2.ZERO, inner_radius, 0.0, TAU, 48, Color(color, edge_alpha * 0.6), 1.0)
+		else:
+			draw_circle(Vector2.ZERO, size.x, Color(color, fill_alpha))
 		draw_arc(Vector2.ZERO, size.x, 0.0, TAU, 48, Color(color, edge_alpha), 2.0)
 	else:
 		draw_rect(Rect2(-half, size), Color(color, fill_alpha))

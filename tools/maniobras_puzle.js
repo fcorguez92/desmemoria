@@ -19,7 +19,7 @@ const jobs = [
   { room: 'Chimenea', map: 'chimenea.map', startRow: 67, startCol: 3, goal: (S) => S.find((s) => s.row === 8) },
   { room: 'Pasarela', map: 'pasarela.map', startRow: 8, startCol: 3, goal: (S) => S.find((s) => s.row === 8 && s.c0 === 77) },
   { room: 'SurcoCiego', map: 'surco_ciego.map', skills: 'DJ', legs: [[31, 33, 24, 37], [24, 37, 11, 50]] },
-  { room: 'CruceDelPan', map: 'cruce_del_pan.map', skills: 'DJ', legs: [[31, 20, 23, 30], [23, 30, 10, 42]] },
+  { room: 'CruceDelPan', map: 'cruce_del_pan.map', skills: 'DJ', legs: [[31, 20, 23, 30], [23, 30, 10, 42], [10, 42, 6, 43]] },
 ];
 
 // Mejor maniobra entre dos superficies, con el segundo salto después de soltar el primero.

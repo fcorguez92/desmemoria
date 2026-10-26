@@ -1,6 +1,6 @@
 # Estado del proyecto (documento vivo)
 
-Última actualización: primeras salas del Cinturón alto (El Surco Ciego, El Campo de los Ferrán y El Cruce del Pan, rama `feat/cinturon-alto-1`); antes, ciclo (`Cycle`) y plataforma sobre carril (`RailPlatform`) con un rincón de ejemplo en las Galerías Bajas (fase W3); antes, registro de Nombres y el Paño (K22 y K23: `game/names.gd`, pestaña de la pausa, "Callar un nombre" en el menú del Ancla); antes, pinchos laterales `{ }` (fase W4, con un pozo de ejemplo en la Torre de Riego); antes, compuerta, disparadores y muro frágil (fase W2, sin "Volver al Ancla"); antes, FlagStore y coleccionables `!` con id guardado (fase W1); antes, primer jefe (el Centinela Hueco), pinchos y el puzle del dash.
+Última actualización: Jacinto, el Último Segador, segundo jefe (rama `feat/jacinto`: K31 `AttackPicker`, `PhaseTracker`, `Spawner`, modo retorno del `Projectile`, anillo en `TelegraphZone`, `boss_base` mínimo, El Cercado Vacío y La Era); antes, primeras salas del Cinturón alto (El Surco Ciego, El Campo de los Ferrán y El Cruce del Pan, rama `feat/cinturon-alto-1`); antes, ciclo (`Cycle`) y plataforma sobre carril (`RailPlatform`) con un rincón de ejemplo en las Galerías Bajas (fase W3); antes, registro de Nombres y el Paño (K22 y K23: `game/names.gd`, pestaña de la pausa, "Callar un nombre" en el menú del Ancla); antes, pinchos laterales `{ }` (fase W4, con un pozo de ejemplo en la Torre de Riego); antes, compuerta, disparadores y muro frágil (fase W2, sin "Volver al Ancla"); antes, FlagStore y coleccionables `!` con id guardado (fase W1); antes, primer jefe (el Centinela Hueco), pinchos y el puzle del dash.
 
 ## Dónde estamos en la metodología
 
@@ -16,8 +16,8 @@
 ## Qué existe ahora mismo
 
 ```
-core/         Base reutilizable: 14 componentes + 12 objetos + 2 efectos + 5 piezas de interfaz + guardado y marcas del mundo (ver core/README.md)
-game/         player, enemy, boss (el Centinela Hueco y su sala), echo, memory_anchor, ability_pickup, pickups (coleccionables `!`), environment, levels (el mundo y sus 11 salas + banco de pruebas)
+core/         Base reutilizable: 17 componentes + 16 objetos + 3 efectos + piezas de interfaz + guardado y marcas del mundo (ver core/README.md)
+game/         player, enemy, boss (el Centinela Hueco, Jacinto, su base común y sus salas), echo, memory_anchor, ability_pickup, pickups (coleccionables `!`), environment, levels (el mundo y sus 13 salas + banco de pruebas)
 tests/        smoke_test.gd — comprobaciones todas en verde (incluye las del Cinturón alto)
 docs/         Diseño, decisiones, arquitectura y estado
 ```
@@ -47,6 +47,16 @@ Rama `feat/piezas-enemigos-1`, tres piezas en este orden y un commit por pieza. 
 
 **A jugar a mano:** que el Espantapájaros se lea como falso y la emboscada del Surco (leer la inscripción lo despierta) sea justa; el picado del Cuervo (si 0,45 s de aviso y los 1,2 s de pausa se sienten bien, y que el ataque hacia arriba y el pogo lo alcancen cómodamente); que el cuervo del Cruce del Pan no moleste en las placas de 6 s.
 
+## Jacinto, el Último Segador (K31): segundo jefe, La Era y el Cercado Vacío
+
+Rama `feat/jacinto`. **Piezas de base (K31):** `AttackPicker` (bolsa barajada, sesgo por distancia, equidad y límites), `PhaseTracker` (vida en tramos que no se saltan), `Spawner` con tope de vivas, **modo retorno** del `Projectile` (boomerang) y **anillo** en `TelegraphZone` (`inner_radius`: el hueco seguro pegado al atacante). Del Centinela solo se extrajo a `game/boss/boss_base.gd` lo que usan los dos (buscar al jugador, temblor, mirar suelo, traspasarlo al caer encima); el Centinela sigue igual y pasa todas sus pruebas.
+
+**Jacinto** (`game/boss/jacinto.gd`, 36 de vida en fases 24/12/0, sin armadura, 60 Ecos): siega baja, vuelta amplia (anillo de 130 con hueco de 45), paso de segador, hoz lanzada (boomerang; manos vacías = doble daño), trepa y picado (sombra roja, solo si el jugador huye), llamada (espantapájaros, tope 2) y las tres vueltas del remate (la tercera, una franja roja a ras de suelo). Avisos amarillos (parables) y rojos (con bandas), sincronía con el fotograma de impacto, transiciones de 2 s invulnerable, reinicio sin restos y victoria guardada en `bosses`. Recompensa: el **salto de pared** (por fin colocado en el mundo), la hoz clavada con el Nombre de Jacinto Ferrán y la tablilla de Eloy en la arena. Detalle y números en `jefes.md`.
+
+**Salas:** **El Cercado Vacío** (CIN-17, con el Ancla A12) se alcanza por un pozo abierto en el techo del Cruce del Pan (atajo provisional: se comprimen CIN-13 y CIN-14); la puerta este da a **La Era** (CIN-18), la arena. Registradas en `tests/world_manifest.json` (`node tools/verifica_mundo.js` en verde, 13 salas). Arte provisional de Jacinto desde `tools/rig_jacinto.js` (17 animaciones, unos 15 MB de textura), voz y cinco sonidos nuevos desde `tools/sonidos.js`. Pruebas de humo nuevas: el selector, las fases, el `Spawner`, el boomerang, el anillo, el camino hasta La Era (y el pozo del Cruce con doble salto), la sala y las rejas, las fases y la recompensa, cada ataque (aviso, color, daño, parry, sincronía), la hoz, la trepa, la llamada, las tres vueltas, el reinicio y 60 s de pelea al azar.
+
+**A jugar a mano:** la pelea entera (diseño: 4-6 intentos, pelea limpia de 2:30 a 3:30); si el anillo amarillo de la vuelta se entiende y el hueco central se encuentra en movimiento; si la sombra roja del picado da tiempo; si la franja roja de la tercera vuelta se salta cómoda; que el Cercado, el pozo y el tramo del Ancla a la arena (menos de 10 s) se sientan bien; el final (camina al muro, el trigo) y la lectura de su arte; y la sensación del salto de pared recién conseguido (las salas de después aún no lo piden). Falta música de jefe, la salida este de la arena y las salas CIN-13/14.
+
 ## Controles actuales
 
 - Flecha izq/dcha: moverse · Espacio: saltar · Flecha arriba/abajo: mirar · Arriba + X: atacar hacia arriba · Abajo + X en el aire: ataque hacia abajo con rebote (pogo) sobre enemigos · Abajo + Espacio sobre un tablón: bajar atravesándolo
@@ -74,8 +84,7 @@ están cambiadas respecto a Xbox):
   del mundo; cuando el mundo crezca, limitarlo a la región del Ancla.
 - Golpes no parables: `Enemy.parryable = false` hace que el golpe atraviese la guardia y el aviso sea rojo (`TELEGRAPH_RED`) en vez de amarillo. Falta la marca de suelo y usarlo en algún ataque real.
 - Jugar el jefe y el puzle a mano y ajustar (ver la lista de "cosas a vigilar" de `jefes.md`).
-- Colocar el salto de pared en el mundo (hoy solo está en el banco de pruebas) y
-  seguir ampliando el Cinturón Yermo desde la Torre de Riego.
+- El salto de pared ya está colocado en el mundo (lo da Jacinto); falta alguna sala que lo pida y seguir ampliando el Cinturón Yermo (La Cuesta del Segador, CIN-13/14).
 - Viaje entre Anclas, cuando el mundo sea lo bastante grande para que haga falta.
 - Más usos para los Ecos aparte del Filo, y si el Filo mejora también alcance o velocidad (hoy solo sube el daño).
 - Ajustar el ritmo del combate jugando (tiempos de aviso y recuperación, retroceso) y más tipos de enemigo (a distancia, voladores) y jefes.
