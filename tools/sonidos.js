@@ -399,6 +399,8 @@ const VOICES = {
   coloso: { f0: 56, formants: [[280, 90, 1], [560, 140, 0.6]], rough: 16, depth: 0.7, breath: 0.35, size: 1.7 },
   acechador: { f0: 175, formants: [[700, 160, 1], [1500, 260, 0.6]], rough: 46, depth: 0.65, breath: 0.55, size: 0.8 },
   // armadura vacía enorme de un Custodio: más grave y grande que el coloso, hueca y con resonancia metálica
+  // segador cansado: voz de hombre grave y ronca, con mucho aire (el viento de la era)
+  jacinto: { f0: 88, formants: [[420, 110, 1], [900, 170, 0.5], [135, 55, 0.7]], rough: 17, depth: 0.5, breath: 0.65, size: 1.15 },
   centinela: { f0: 38, formants: [[190, 70, 1], [400, 110, 0.6], [95, 40, 0.8]], rough: 11, depth: 0.7, breath: 0.4, size: 1.55, ring: true },
 };
 const EVENTS = {
@@ -515,6 +517,51 @@ def('spikes_pulse', 2, (i, r) => {
   });
   return lp(o, 6500);
 });
+// --- Jacinto, el Último Segador: la hoz, la paja y el trigo ---
+// Aire cortado por la hoja: un barrido de ruido que sube y baja (más agudo cuanto más rápido).
+def('hoz_swing', 2, (i, r) => {
+  const len = 0.5, o = buf(len);
+  mix(o, env(bp(noise(len, r), t => 450 + 2300 * Math.sin(Math.PI * Math.min(t / 0.34, 1)) + i * 260, 1.5), 0.05, 0.13), 1.0);
+  mix(o, env(hp(noise(len, r), 3600), 0.04, 0.08), 0.16);
+  mix(o, env(tone(len, t => 90 + 60 * Math.sin(Math.PI * Math.min(t / 0.3, 1))), 0.03, 0.12), 0.3);
+  return lp(o, 6500);
+});
+// La vuelta entera: un silbido que gira (sube y baja dos veces) con la paja rozando.
+def('hoz_spin', 1, (i, r) => {
+  const len = 0.9, o = buf(len);
+  const wob = t => 0.5 + 0.5 * Math.sin(TAU * 2.2 * t - 1.2);
+  mix(o, mul(env(bp(noise(len, r), t => 700 + 1500 * wob(t), 1.6), 0.08, 0.5), t => 0.35 + 0.65 * wob(t)), 1.0);
+  mix(o, mul(env(hp(noise(len, r), 4200), 0.05, 0.35), t => 0.2 + 0.8 * wob(t)), 0.14);
+  mix(o, env(tone(len, t => 70 + 30 * wob(t)), 0.06, 0.4), 0.3);
+  return lp(o, 6500);
+});
+// La hoja muerde la tierra: arañazo de metal y un golpe sordo.
+def('hoz_ground', 2, (i, r) => {
+  const len = 0.55, o = buf(len);
+  mix(o, env(tone(len, t => 60 + 70 * Math.exp(-t * 30) + i * 6), 0.001, 0.07), 0.9);
+  mix(o, env(lp(noise(len, r), 900), 0.001, 0.1), 0.7);
+  mix(o, bell(len, 780 + i * 90, [1, 2.76, 5.4], [0.09, 0.05, 0.025], [1, 0.5, 0.2], 0.0005), 0.45);
+  mix(o, env(bp(noise(len, r), t => 3400 - 2000 * Math.min(t / 0.2, 1), 2), 0.002, 0.07), 0.5);
+  for (let k = 0; k < 6; k++) mix(o, env(bp(noise(0.05, r), 1500 + r() * 2200, 3), 0.0005, 0.012), 0.12, 0.03 + r() * 0.25);
+  return snap(lp(o, 5000), r, 0.3, 1400);
+});
+// La paja se levanta (Llamada): muchos roces breves que suben.
+def('straw_rise', 1, (i, r) => {
+  const len = 1.1, o = buf(len);
+  for (let k = 0; k < 34; k++) { const at = r() * 0.9; mix(o, env(bp(noise(0.12, r), 1800 + 3200 * at / 0.9 + r() * 800, 1.8), 0.01, 0.03), 0.18 + 0.2 * at, at); }
+  mix(o, env(lp(noise(len, r), 500), 0.2, 0.4), 0.35);
+  mix(o, env(tone(len, t => 55 + 40 * t), 0.2, 0.5), 0.25);
+  return lp(o, 6000);
+});
+// El trigo vuelve un instante: campanillas suaves (pentatónica) sobre un roce de espigas.
+def('wheat_bloom', 1, (i, r) => {
+  const len = 2.2, o = buf(len);
+  [0, 0.25, 0.5, 0.8, 1.1].forEach((at, k) => mix(o, bell(1.0, [392, 494, 587, 659, 784][k], [1, 2.01, 3.0], [0.5, 0.3, 0.15], [1, 0.4, 0.15], 0.01), 0.35, at));
+  for (let k = 0; k < 28; k++) { const at = 0.1 + r() * 1.5; mix(o, env(bp(noise(0.1, r), 2500 + r() * 3000, 1.8), 0.01, 0.03), 0.1, at); }
+  mix(o, env(lp(noise(len, r), 600), 0.4, 0.7), 0.18);
+  return lp(o, 7000);
+});
+
 // ---------- comprobación de arranque ----------
 // Los sonidos de acción (pasos, saltos, golpes...) tienen que sonar a tope desde el
 // primer instante: si empiezan flojos y suben, se perciben tarde. Se exige que en los
