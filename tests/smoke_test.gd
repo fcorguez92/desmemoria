@@ -148,6 +148,7 @@ func _run() -> void:
 	await _test_jacinto_attacks_warn_and_hurt()
 	await _test_jacinto_climb_dive_and_summon()
 	await _test_jacinto_resets_and_leaves_nothing_behind()
+	await _test_jacinto_real_combat_to_the_reward()
 	await _test_the_centinela_still_fights_with_the_shared_base()
 	await _test_title_screen()
 	await _test_pause_returns_to_title()
@@ -5801,3 +5802,44 @@ func _test_the_centinela_still_fights_with_the_shared_base() -> void:
 	var shape := boss.get_node("CollisionShape2D").shape as RectangleShape2D
 	_check(shape.size == Vector2(112.0, 160.0) and _arena().arena_margin_cells == 2, "sin cambios de tamaño ni de márgenes en el Aljibe")
 	_check(is_equal_approx(boss.arena_left, _arena().global_position.x + 32.0), "su arena sigue empezando 2 baldosas dentro")
+
+
+func _test_jacinto_real_combat_to_the_reward() -> void:
+	print("\n[Jacinto: un combate corto de verdad (vida normal, golpes del jugador) hasta la recompensa]")
+	await _load_world()
+	var arena := _era()
+	var boss: Node = arena.boss
+	await _enter_era(false)
+	await _wait(110)
+	var max_hp: int = _player.health.max_health
+	_check(max_hp < 99 and _player.health.health == max_hp, "el jugador va con su vida normal (%d)" % max_hp)
+	# La pelea ya avanzada: última fase y 2 de vida; Jacinto sigue decidiendo solo.
+	boss.phases.phase = 2
+	boss._set_attacks(2)
+	boss.phases.health = 2
+	var ecos_before: int = _player.ecos
+	var frames := 0
+	while is_instance_valid(boss) and boss.state != boss.State.DYING and frames < 900:
+		_player.global_position = Vector2(boss.global_position.x - 44.0, boss.global_position.y + boss.half_height - 24.0)
+		_player.velocity = Vector2.ZERO
+		_player.health.health = maxi(_player.health.health, 1)
+		_player.melee.try_attack(_player, 1)
+		await _wait(1)
+		frames += 1
+	_check(is_instance_valid(boss) and boss.state == boss.State.DYING and boss.core_hp == 0, "los golpes del jugador acaban con él (%d fotogramas)" % frames)
+	var defeated := [false]
+	arena.boss_defeated.connect(func() -> void: defeated[0] = true)
+	var waited := 0
+	while not defeated[0] and waited < 700:
+		await _wait(1)
+		waited += 1
+	_check(defeated[0] and arena.is_defeated(), "su muerte termina y la sala queda vencida")
+	_check(_player.ecos == ecos_before + 60, "paga sus 60 Ecos")
+	var reward: AbilityPickup = null
+	for child in arena.get_children():
+		if child is AbilityPickup and not child.is_queued_for_deletion():
+			reward = child
+	_check(reward != null and not _player.has_ability(&"wall_jump"), "el recuerdo espera y aún no se tiene el salto de pared")
+	_player.global_position = reward.global_position
+	await _wait(8)
+	_check(_player.has_ability(&"wall_jump") and "LaEra" in _saved().get("bosses", []), "al cogerlo se tiene el salto de pared y la victoria está guardada")
