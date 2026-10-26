@@ -135,6 +135,20 @@ func _run() -> void:
 	await _test_dormant_ai_and_espantapajaros()
 	await _test_fly_ai_and_cuervo()
 	await _test_telegraph_zone()
+	await _test_attack_picker()
+	await _test_phase_tracker()
+	await _test_spawner_with_cap()
+	await _test_boomerang_projectile()
+	await _test_telegraph_ring()
+	await _test_era_is_reached_from_the_cruce()
+	await _test_the_shaft_up_to_the_cercado()
+	await _test_the_cercado_drop_is_safe()
+	await _test_jacinto_room_and_gates()
+	await _test_jacinto_phases_and_reward()
+	await _test_jacinto_attacks_warn_and_hurt()
+	await _test_jacinto_climb_dive_and_summon()
+	await _test_jacinto_resets_and_leaves_nothing_behind()
+	await _test_the_centinela_still_fights_with_the_shared_base()
 	await _test_title_screen()
 	await _test_pause_returns_to_title()
 	await _test_menu_list_survives_leaving_the_tree()
@@ -2006,7 +2020,7 @@ func _test_world_is_made_of_connected_rooms() -> void:
 	print("\n[El mundo: varias salas conectadas, un solo jugador]")
 	await _load_world()
 	var rooms: Array = _level.get_node("Rooms").get_children()
-	_check(rooms.size() == 11, "hay once salas")
+	_check(rooms.size() == 13, "hay trece salas")
 	var overlaps := false
 	for i in rooms.size():
 		_check(not rooms[i].title.is_empty(), "%s tiene nombre" % rooms[i].name)
@@ -2024,7 +2038,7 @@ func _test_world_is_made_of_connected_rooms() -> void:
 	for id in data.markers:
 		if String(id).begins_with("anchor_"):
 			anchors += 1
-	_check(anchors == 9, "las nueve Anclas están marcadas en el mapa (se ven al pasar cerca)")
+	_check(anchors == 10, "las diez Anclas están marcadas en el mapa (se ven al pasar cerca)")
 	_check(_player.hud.message_label.text.is_empty(), "la sala de inicio no se anuncia")
 	var dash_pickup := 0
 	var jump_pickup := 0
@@ -4969,3 +4983,821 @@ func _test_fly_ai_and_cuervo() -> void:
 	_player.velocity = Vector2.ZERO
 	await _wait(60)
 	_check(placed.ai.state == FlyAI.State.PATROL, "con el jugador en la sala de al lado sigue merodeando")
+
+
+# --- Jacinto (K31): selector de ataques, fases, invocaciones, boomerang y la pelea -----
+
+func _test_attack_picker() -> void:
+	print("\n[AttackPicker (K31): bolsa barajada, sin repetir, distancia, equidad y límites]")
+	var picker := AttackPicker.new()
+	picker.rng.seed = 11
+	picker.set_attacks({&"a": 2, &"b": 2, &"c": 2})
+	var counts := {&"a": 0, &"b": 0, &"c": 0}
+	var repeats := 0
+	var last: StringName = &""
+	for i in 1000:
+		var id := picker.pick()
+		counts[id] = int(counts[id]) + 1
+		if id == last:
+			repeats += 1
+		last = id
+	_check(repeats == 0, "en 1.000 elecciones nunca se repite el mismo ataque dos veces seguidas")
+	_check(int(counts[&"a"]) > 280 and int(counts[&"b"]) > 280 and int(counts[&"c"]) > 280, "y salen todos en un reparto parejo %s" % [counts])
+	# El sesgo (la distancia) cambia el orden: con a muy favorecido, sale primero casi siempre.
+	var firsts := 0
+	for i in 60:
+		var p := AttackPicker.new()
+		p.set_attacks({&"a": 2, &"b": 2, &"c": 2})
+		if p.pick({&"a": 1000.0, &"b": 0.001, &"c": 0.001}) == &"a":
+			firsts += 1
+	_check(firsts >= 55, "el sesgo por distancia favorece al ataque que toca (%d de 60)" % firsts)
+	# Un sesgo de 0 lo descarta; si solo queda uno, se admite repetirlo.
+	var only := AttackPicker.new()
+	only.set_attacks({&"a": 2, &"b": 2})
+	var never_a := true
+	for i in 40:
+		never_a = never_a and only.pick({&"a": 0.0}) == &"b"
+	_check(never_a, "con sesgo 0 un ataque queda fuera (y si es el único posible, se repite antes que quedarse sin ataque)")
+	var empty := AttackPicker.new()
+	_check(empty.pick() == &"", "sin ataques devuelve vacío")
+	# Equidad: dañar dos veces seguidas con el mismo ataque lo descarta el turno siguiente.
+	var fair := AttackPicker.new()
+	fair.set_attacks({&"a": 1, &"b": 1})
+	fair.report(&"a", true)
+	fair.report(&"a", true)
+	_check(fair.pick() == &"b", "dañar dos veces seguidas con un ataque lo aparta el turno siguiente")
+	fair.reset()
+	for i in 3:
+		fair.report(&"a", false)
+	var a_count := 0
+	for i in 200:
+		var q := AttackPicker.new()
+		q.rng.seed = i
+		q.set_attacks({&"a": 1, &"b": 1})
+		for k in 3:
+			q.report(&"a", false)
+		a_count += 1 if q.pick() == &"a" else 0
+	_check(a_count < 90, "un ataque que lleva tres fallos seguidos sale menos (%d de 200 en vez de ~100)" % a_count)
+	# Límite: como mucho dos "a" entre cinco ataques seguidos.
+	var limited := AttackPicker.new()
+	limited.rng.seed = 5
+	limited.set_attacks({&"a": 6, &"b": 1, &"c": 1, &"d": 1})
+	limited.limit(&"a", 2, 5)
+	var history: Array[StringName] = []
+	var worst := 0
+	for i in 600:
+		history.append(limited.pick())
+		if history.size() >= 5:
+			worst = maxi(worst, history.slice(history.size() - 5).count(&"a"))
+	_check(worst <= 2, "el límite de 2 de cada 5 se respeta (máximo visto: %d)" % worst)
+	# Prohibir un ataque unos turnos.
+	var banned := AttackPicker.new()
+	banned.set_attacks({&"a": 3, &"b": 3})
+	banned.ban(&"a", 3)
+	var got := [banned.pick(), banned.pick(), banned.pick()]
+	_check(got == [&"b", &"b", &"b"], "ban(a, 3) lo aparta tres turnos %s" % [got])
+
+
+func _test_phase_tracker() -> void:
+	print("\n[PhaseTracker (K31): vida en tramos con marcas que no se saltan]")
+	var tracker := PhaseTracker.new()
+	tracker.setup(36, [24, 12, 0])
+	var events: Array = []
+	tracker.floor_reached.connect(func(phase: int) -> void: events.append(["marca", phase]))
+	tracker.phase_changed.connect(func(phase: int) -> void: events.append(["fase", phase]))
+	_check(tracker.health == 36 and tracker.phase == 0 and not tracker.is_dead(), "empieza con 36 en la fase 0")
+	_check(tracker.damage(10) == 10 and tracker.health == 26 and events.is_empty(), "el daño normal baja la vida sin avisar")
+	_check(tracker.damage(100) == 2 and tracker.health == 24 and events == [["marca", 0]], "un golpe enorme no pasa de la marca de la fase (24) y avisa una vez")
+	_check(tracker.damage(5) == 0 and tracker.health == 24 and tracker.at_floor(), "en la marca no baja más hasta cambiar de fase")
+	tracker.advance()
+	_check(tracker.phase == 1 and events[1] == ["fase", 1], "advance() pasa a la fase siguiente")
+	tracker.damage(100)
+	_check(tracker.health == 12 and events[2] == ["marca", 1], "la fase 1 termina en 12")
+	tracker.advance()
+	tracker.damage(100)
+	_check(tracker.health == 0 and tracker.is_dead() and tracker.is_last_phase() and events[4] == ["marca", 2], "la última marca es 0: morir")
+	tracker.advance()
+	_check(tracker.phase == 2, "en la última fase advance() no hace nada")
+	tracker.reset()
+	_check(tracker.health == 36 and tracker.phase == 0, "reset() vuelve a empezar")
+	var open := PhaseTracker.new()
+	open.setup(10, [5])
+	_check(open.floors == [5, 0], "si las marcas no acaban en 0 se añade la del final")
+
+
+func _test_spawner_with_cap() -> void:
+	print("\n[Spawner: crea entidades con un tope de vivas]")
+	await _fresh_level("Spawner con tope")
+	var packed := PackedScene.new()
+	packed.pack(Node2D.new())
+	var spawner := Spawner.new()
+	spawner.scene = packed
+	spawner.max_alive = 2
+	_level.add_child(spawner)
+	var created: Array = []
+	spawner.spawned.connect(func(entity: Node) -> void: created.append(entity))
+	var setup_calls := [0]
+	var first := spawner.spawn(_level, Vector2(10.0, 20.0), func(_entity: Node) -> void: setup_calls[0] += 1)
+	var second := spawner.spawn(_level, Vector2(30.0, 20.0))
+	var third := spawner.spawn(_level, Vector2(50.0, 20.0))
+	_check(first != null and second != null and third == null, "con tope 2, la tercera no se crea")
+	_check(spawner.alive_count() == 2 and not spawner.can_spawn() and created.size() == 2 and setup_calls[0] == 1, "cuenta 2 vivas, avisa de cada una y llama al ajuste previo")
+	_check((first as Node2D).global_position == Vector2(10.0, 20.0), "la entidad queda en la posición pedida")
+	first.queue_free()
+	await _wait(2)
+	_check(spawner.alive_count() == 1 and spawner.can_spawn(), "al morir una deja sitio a otra")
+	spawner.spawn(_level, Vector2(70.0, 20.0))
+	spawner.clear()
+	await _wait(2)
+	_check(spawner.alive_count() == 0 and not is_instance_valid(second), "clear() libera todas")
+
+
+func _test_boomerang_projectile() -> void:
+	print("\n[Projectile con retorno: va, vuelve a su dueño, hiere en las dos pasadas y un parry lo manda de vuelta]")
+	await _fresh_level("Boomerang")
+	_player.health.max_health = 99
+	_player.health.health = 99
+	_player.global_position = Vector2(400.0, 100.0)
+	_player.velocity = Vector2.ZERO
+	var owner_node := Node2D.new()
+	_level.add_child(owner_node)
+	owner_node.global_position = Vector2(100.0, 200.0)
+	var boomerang := Projectile.new()
+	var shape := CollisionShape2D.new()
+	var circle := CircleShape2D.new()
+	circle.radius = 8.0
+	shape.shape = circle
+	boomerang.add_child(shape)
+	boomerang.speed = 200.0
+	boomerang.returns = true
+	boomerang.outbound_time = 0.5
+	boomerang.lifetime = 6.0
+	boomerang.return_to = owner_node
+	boomerang.reflect_group = &"enemy"
+	_level.add_child(boomerang)
+	boomerang.global_position = owner_node.global_position
+	boomerang.launch(Vector2.RIGHT)
+	var returned := [0]
+	boomerang.returned.connect(func() -> void: returned[0] += 1)
+	var max_x := 0.0
+	var was_returning := false
+	for i in 150:
+		await _wait(1)
+		if is_instance_valid(boomerang):
+			max_x = maxf(max_x, boomerang.global_position.x)
+			was_returning = was_returning or boomerang.is_returning
+	_check(max_x > 170.0 and max_x < 230.0, "va hasta donde le toca (%d px de recorrido)" % int(max_x - 100.0))
+	_check(was_returning and returned[0] == 1 and not is_instance_valid(boomerang), "da la vuelta, llega a su dueño, avisa una vez y desaparece")
+	# Atraviesa a su objetivo (hiere a la ida) y sigue; el dueño que desaparece lo borra.
+	var hp: int = _player.health.health
+	_player.global_position = Vector2(100.0, 355.0)
+	_player.velocity = Vector2.ZERO
+	await _wait(10)
+	boomerang = Projectile.new()
+	var shape2 := CollisionShape2D.new()
+	shape2.shape = circle
+	boomerang.add_child(shape2)
+	boomerang.speed = 200.0
+	boomerang.returns = true
+	boomerang.outbound_time = 0.6
+	boomerang.lifetime = 6.0
+	boomerang.return_to = owner_node
+	_level.add_child(boomerang)
+	boomerang.global_position = Vector2(30.0, _player.global_position.y)
+	boomerang.launch(Vector2.RIGHT)
+	await _wait(30)
+	_check(_player.health.health == hp - 1 and is_instance_valid(boomerang) and not boomerang.is_returning, "al dar al jugador le hace daño y no se gasta: sigue su camino (vida %d de %d, vivo %s)" % [_player.health.health, hp, is_instance_valid(boomerang)])
+	# Un parry: vuelve ya y pasa a herir al grupo de reflejo.
+	boomerang.on_parried()
+	_check(boomerang.is_returning and boomerang.target_group == &"player", "sin reflect_group, el parry solo lo manda de vuelta")
+	owner_node.queue_free()
+	await _wait(4)
+	_check(not is_instance_valid(boomerang), "si su dueño ya no existe, se borra")
+	var guarded := Projectile.new()
+	guarded.returns = true
+	guarded.reflect_group = &"enemy"
+	guarded.return_to = _player
+	_level.add_child(guarded)
+	guarded.on_parried()
+	_check(guarded.target_group == &"enemy" and guarded.is_returning, "con reflect_group, un parry lo devuelve y pasa a herir a ese grupo")
+	guarded.queue_free()
+
+
+func _test_telegraph_ring() -> void:
+	print("\n[Aviso de zona con hueco central: el arco de Jacinto no llega a quien está pegado]")
+	await _load_world()
+	_player.health.max_health = 99
+	_player.health.health = 99
+	await _clear_enemies(_room)
+	var hp: int = _player.health.health
+	var zone := _make_zone(Vector2(100.0, 296.0), TelegraphZone.Shape.CIRCLE, Vector2(130.0, 0.0), 0.3, true)
+	zone.inner_radius = 45.0
+	await _wait(25)
+	_check(_player.health.health == hp, "en el centro (a menos del radio interior) no hay daño")
+	await _wait(40)
+	zone = _make_zone(Vector2(190.0, 296.0), TelegraphZone.Shape.CIRCLE, Vector2(130.0, 0.0), 0.3, true)
+	zone.inner_radius = 45.0
+	await _wait(25)
+	_check(_player.health.health == hp - 1, "a 90 px del centro, dentro de la banda, sí")
+	await _wait(40)
+	hp = _player.health.health
+	zone = _make_zone(Vector2(300.0, 296.0), TelegraphZone.Shape.CIRCLE, Vector2(130.0, 0.0), 0.3, true)
+	zone.inner_radius = 45.0
+	await _wait(25)
+	_check(_player.health.health == hp, "y fuera del radio exterior, no")
+
+
+# --- La sala de Jacinto y el camino hasta ella ---------------------------------------
+
+func _era() -> Node2D:
+	return _level.get_node("Rooms/LaEra")
+
+
+## Mete al jugador en La Era, pasada la línea del disparador, con vida de sobra.
+func _enter_era(tough: bool = true) -> void:
+	_player.global_position = _standing_on("LaEra", 10, 27)
+	_player.velocity = Vector2.ZERO
+	if tough:
+		_player.health.max_health = 999
+		_player.health.health = 999
+	await _wait(8)
+
+
+## Deja a Jacinto en reposo en `col` (sin que decida solo) y al jugador en `player_col`.
+func _stage_jacinto(col: float, player_col: float, facing: int = -1) -> Node:
+	var boss: Node = _era().boss
+	boss.global_position = Vector2(_cell("LaEra", col, 27).x, boss.global_position.y)
+	boss._set_facing(facing)
+	boss.state = boss.State.IDLE
+	boss._timer = 1000.0
+	boss._forced_next = &""
+	_player.global_position = _standing_on("LaEra", player_col, 27)
+	_player.velocity = Vector2.ZERO
+	return boss
+
+
+func _zones_alive() -> Array:
+	var zones: Array = []
+	for node in get_nodes_in_group(&"boss_debris"):
+		if node is TelegraphZone and not node.is_queued_for_deletion() and not node.is_resolved:
+			zones.append(node)
+	return zones
+
+
+func _test_era_is_reached_from_the_cruce() -> void:
+	print("\n[La Era: del Cruce del Pan al Cercado Vacío (Ancla) y a la arena, con las puertas alineadas]")
+	await _load_world()
+	_player.health.max_health = 99
+	_player.health.health = 99
+	var names := []
+	for room in _level.get_node("Rooms").get_children():
+		names.append(room.name)
+	_check("CercadoVacio" in names and "LaEra" in names, "el mundo tiene El Cercado Vacío y La Era")
+	var cercado: Node2D = _level.get_node("Rooms/CercadoVacio")
+	var era := _era()
+	_check(cercado.title == "El Cercado Vacío" and era.title == "La Era", "con sus nombres")
+	_check(_anchor_in("CercadoVacio") != null, "el Cercado tiene el Ancla de antes del jefe (A12)")
+	_check(_anchor_in("LaEra") == null, "y la arena no tiene Ancla")
+	# Las puertas coinciden: el suelo de las tres salas está a la misma altura del mundo.
+	var floor_cruce: float = _level.get_node("Rooms/CruceDelPan").global_position.y
+	_check(is_equal_approx(cercado.global_position.y + 32.0 * 16.0, era.global_position.y + 27.0 * 16.0), "el suelo del Cercado y el de La Era están al mismo nivel")
+	_check(is_equal_approx(cercado.global_position.y + 34.0 * 16.0, floor_cruce), "el Cercado se apoya sobre el techo del Cruce del Pan")
+	_check(is_equal_approx(cercado.global_position.x + 56.0 * 16.0, era.global_position.x), "y La Era empieza donde acaba el Cercado")
+	# Del Cercado a la arena caminando, por la puerta este.
+	_player.global_position = _standing_on("CercadoVacio", 48, 32)
+	_player.velocity = Vector2.ZERO
+	await _wait(10)
+	_check(_level.current_room.name == "CercadoVacio", "se está en el Cercado")
+	Input.action_press(&"ui_right")
+	await _wait(100)
+	Input.action_release(&"ui_right")
+	await _wait(6)
+	_check(_level.current_room.name == "LaEra" and _player.is_on_floor(), "andando hacia el este se llega a La Era (entrando por el túnel, a su altura)")
+	_check(_era().boss.state == _era().boss.State.DORMANT or _era().boss.is_fighting(), "Jacinto está en su arena")
+
+
+func _climb_attempt(from_cell: Vector2, jump_frames: int, second_jump_at: int, expect_room: String = "") -> Dictionary:
+	_player.global_position = from_cell
+	_player.velocity = Vector2.ZERO
+	await _wait(12)
+	Input.action_press(&"ui_accept")
+	await _wait(jump_frames)
+	Input.action_release(&"ui_accept")
+	if second_jump_at >= 0:
+		await _wait(second_jump_at)
+		Input.action_press(&"ui_accept")
+		await _wait(jump_frames)
+		Input.action_release(&"ui_accept")
+	await _wait(80)
+	return {"room": _level.current_room.name if _level.current_room else "", "floor": _player.is_on_floor(), "y": _player.global_position.y, "expect": expect_room}
+
+
+func _test_the_shaft_up_to_the_cercado() -> void:
+	print("\n[El pozo del Cruce del Pan al Cercado: un salto al tablón de en medio y el doble salto hasta arriba]")
+	await _load_world()
+	_player.health.max_health = 99
+	_player.health.health = 99
+	await _clear_enemies(_level.get_node("Rooms/CruceDelPan"))
+	_player.unlock_ability(&"double_jump")
+	_player.unlock_ability(&"dash")
+	# Tablón del hueco: desde la plataforma alta (fila 10) basta un salto.
+	var got := await _climb_attempt(_standing_on("CruceDelPan", 43, 10), 18, -1)
+	var plank_y: float = _standing_on("CruceDelPan", 43, 6).y
+	_check(got["floor"] and absf(float(got["y"]) - plank_y) < 6.0, "de la plataforma alta se sube al tablón con un salto (y %d, tablón %d)" % [int(got["y"]), int(plank_y)])
+	# Del tablón al suelo del Cercado: salto y doble salto. Se prueban varias cadencias reales.
+	var made_it := false
+	var tried := []
+	for second in [10, 14, 18, 22]:
+		var r := await _climb_attempt(_standing_on("CruceDelPan", 43, 6), 14, second)
+		tried.append("%d:%s" % [second, r["room"]])
+		if r["room"] == "CercadoVacio" and r["floor"]:
+			made_it = true
+			break
+	_check(made_it, "del tablón al Cercado con un doble salto %s" % [tried])
+
+
+func _test_the_cercado_drop_is_safe() -> void:
+	print("\n[El Cercado: se puede bajar por el pozo (tablones) sin hacerse daño]")
+	await _load_world()
+	_player.health.max_health = 99
+	_player.health.health = 99
+	_player.global_position = _standing_on("CercadoVacio", 10, 32)
+	_player.velocity = Vector2.ZERO
+	await _wait(12)
+	var hp: int = _player.health.health
+	Input.action_press(&"ui_down")
+	Input.action_press(&"ui_accept")
+	await _wait(10)
+	Input.action_release(&"ui_down")
+	Input.action_release(&"ui_accept")
+	await _wait(140)
+	_check(_level.current_room.name == "CruceDelPan" and _player.is_on_floor() and _player.health.health == hp, "bajando atravesando los tablones se cae al Cruce del Pan, de pie y sin daño")
+
+
+func _test_jacinto_room_and_gates() -> void:
+	print("\n[Jacinto: la sala, el jefe dormido, las rejas y los límites de la arena]")
+	await _load_world()
+	var arena := _era()
+	var boss: Node = arena.boss
+	_check(is_instance_valid(boss) and boss.state == boss.State.DORMANT, "Jacinto duerme hasta que el jugador entra")
+	_check(boss.core_hp == 36 and boss.core_health == 36 and boss.phases.phase == 0 and boss.armor_max() == 0, "36 de vida, fase 0 y sin armadura")
+	_check(boss.display_name == "Jacinto, el Último Segador", "el nombre de la barra es el del canon")
+	boss.take_hit(5, 1)
+	_check(boss.core_hp == 36, "dormido no recibe daño")
+	_check(arena.reward_ability == &"wall_jump" and arena.arena_margin_cells == 6, "la recompensa es el salto de pared y la arena termina en los muros de bancal")
+	_check(is_equal_approx(boss.arena_left, arena.global_position.x + 6.0 * 16.0) and is_equal_approx(boss.arena_right, arena.global_position.x + 54.0 * 16.0), "el jefe se mueve entre las caras de los dos muros (columnas 6 y 54)")
+	_check(arena._entry_gates.size() == 12 and arena._exit_gates.is_empty(), "una reja de entrada de 2 x 6 celdas y ninguna de salida")
+	var entry_open := true
+	for gate in arena._entry_gates:
+		entry_open = entry_open and not gate.closed
+	_check(entry_open, "la reja empieza abierta")
+	_check(is_equal_approx(boss.global_position.y + boss.half_height, arena.global_position.y + 27.0 * 16.0), "el jefe se apoya en el suelo (mide 80 de alto)")
+	var shape := boss.get_node("CollisionShape2D").shape as RectangleShape2D
+	_check(shape.size == Vector2(32.0, 80.0), "cuerpo de 32 x 80")
+	var texture_bytes := 0
+	var sheet: Texture2D = boss.get_node("Visual").texture
+	texture_bytes = sheet.get_width() * sheet.get_height() * 4
+	_check(texture_bytes <= 16 * 1024 * 1024, "la hoja del jefe ocupa %.1f MB de textura (tope 16)" % (texture_bytes / 1048576.0))
+	var tablilla: Node = null
+	for child in arena.get_children():
+		if child is Readable and child.name_id == &"eloy_ferran":
+			tablilla = child
+	_check(tablilla != null and "Eloy" in tablilla.text, "la tablilla de Eloy Ferrán (con su Nombre) está en la arena")
+	await _enter_era()
+	var closed := true
+	for gate in arena._entry_gates:
+		closed = closed and gate.closed
+	_check(boss.is_fighting() and closed, "al cruzar la línea despierta y se cierra la reja de entrada")
+	_check(arena._bar.visible and arena._bar._name_label.text == "Jacinto, el Último Segador", "aparece su barra con su nombre")
+	_check(not arena._bar._armor_bar.get_parent().visible, "y la barra no muestra armadura (no tiene)")
+	var player_free: bool = _player.global_position.x > arena.global_position.x + 5.0 * 16.0
+	_check(player_free, "el jugador ha quedado dentro de la arena, no en el túnel")
+
+
+func _test_jacinto_phases_and_reward() -> void:
+	print("\n[Jacinto: tres fases por marcas (24 / 12 / 0), transiciones con respiro, muerte y recompensa]")
+	await _load_world()
+	var arena := _era()
+	var boss: Node = arena.boss
+	await _enter_era()
+	await _wait(110)
+	var changes := []
+	boss.phases.phase_changed.connect(func(phase: int) -> void: changes.append(phase))
+	boss.state = boss.State.IDLE
+	boss._timer = 1000.0
+	for i in 12:
+		boss.take_hit(1, 1)
+	_check(boss.core_hp == 24 and boss.state == boss.State.TRANSITION and boss.phases.phase == 0, "al bajar a 24 empieza la transición (aún en la fase 0)")
+	var zones_during := _zones_alive().size()
+	_check(zones_during == 0, "la transición no deja avisos ni ataques en pie")
+	boss.take_hit(10, 1)
+	_check(boss.core_hp == 24, "durante la transición es invulnerable")
+	var hp: int = _player.health.health
+	await _wait(60)
+	_check(boss.state == boss.State.TRANSITION and _player.health.health == hp, "y no ataca (el jugador puede curarse)")
+	_check(boss._timer > 0.5 and boss._timer < 1.2, "la pausa dura ~2 s (quedan %.1f)" % boss._timer)
+	await _wait(75)
+	_check(boss.phases.phase == 1 and changes == [1] and boss.state == boss.State.IDLE, "pasa a la fase 1 una sola vez")
+	_check(boss._forced_next == &"throw", "y abre con una demostración del ataque nuevo: la hoz lanzada")
+	# Un golpe enorme no se salta la fase 1.
+	boss._timer = 1000.0
+	boss._forced_next = &""
+	boss.take_hit(100, 1)
+	_check(boss.core_hp == 12 and boss.state == boss.State.TRANSITION, "un golpe enorme se queda en la marca de la fase (12)")
+	await _wait(130)
+	_check(boss.phases.phase == 2 and changes == [1, 2], "y pasa a la fase 2 (no se salta ninguna)")
+	_check(boss._forced_next == &"summon", "que abre con la Llamada")
+	boss._timer = 1000.0
+	boss._forced_next = &""
+	var ecos_before: int = _player.ecos
+	var defeated := [false]
+	arena.boss_defeated.connect(func() -> void: defeated[0] = true)
+	boss.take_hit(100, 1)
+	_check(boss.state == boss.State.DYING and boss.core_hp == 0, "con la vida a 0 en la última fase muere")
+	await _wait(20)
+	_check(not _player.get_node("Camera2D").is_current(), "mientras muere, la cámara sigue a Jacinto (el jugador puede estar lejos)")
+	var frames := 20
+	while not defeated[0] and frames < 700:
+		await _wait(1)
+		frames += 1
+	_check(defeated[0] and arena.is_defeated() and arena.boss == null, "su muerte se avisa y la sala queda vencida (en %.1f s)" % (frames / 60.0))
+	_check(get_first_node_in_group("player").get_node("Camera2D").is_current(), "y la cámara vuelve a ser la del jugador")
+	_check(frames >= 150 and frames <= 480, "la muerte dura entre 2,5 y 8 s")
+	_check(_player.ecos == ecos_before + 60, "suelta 60 Ecos")
+	var open := true
+	for gate in arena._entry_gates:
+		open = open and not gate.closed
+	_check(open, "la reja se abre")
+	var reward: AbilityPickup = null
+	var after_note: Readable = null
+	for child in arena.get_children():
+		if child is AbilityPickup and not child.is_queued_for_deletion():
+			reward = child
+		if child is Readable and child.name_id == &"jacinto_ferran":
+			after_note = child
+	_check(reward != null and reward.ability_id == &"wall_jump", "aparece el recuerdo del salto de pared")
+	_check(after_note != null and "Segó igual" in after_note.text, "y la hoz clavada con el Nombre de Jacinto Ferrán")
+	await _wait(4)
+	_check("LaEra" in _saved().get("bosses", []), "se guarda que el jefe está vencido")
+	_player.global_position = reward.global_position
+	await _wait(6)
+	_check(_player.has_ability(&"wall_jump"), "al tocarlo se recuerda el salto de pared")
+	# Cargada la partida: sigue vencido y la recompensa y la hoz siguen en la sala.
+	_player.unlock_ability(&"wall_jump")
+	_level.save_game()
+	await _load_world(true)
+	_check(_era().is_defeated() and _era().boss == null, "cargada la partida, Jacinto sigue vencido")
+	var notes := 0
+	for child in _era().get_children():
+		notes += 1 if child is Readable and child.name_id == &"jacinto_ferran" else 0
+	_check(notes == 1, "y la hoz clavada sigue en La Era")
+
+
+func _test_jacinto_attacks_warn_and_hurt() -> void:
+	print("\n[Jacinto: cada ataque avisa (amarillo parable, rojo no), hace su daño y respeta sus tiempos]")
+	await _load_world()
+	var arena := _era()
+	var boss: Node = arena.boss
+	await _enter_era()
+	await _wait(110)
+	# Avisos de la fase 0 (docs/jefes.md) y mínimos por daño.
+	_check(is_equal_approx(boss.windup_time(&"swing"), 0.75) and is_equal_approx(boss.windup_time(&"spin"), 0.90) and is_equal_approx(boss.windup_time(&"step"), 0.55) and is_equal_approx(boss.windup_time(&"throw"), 0.60), "avisos de la fase 1: 0,75 / 0,90 / 0,55 / 0,60 s")
+	boss.phases.phase = 2
+	_check(boss.windup_time(&"swing") >= 0.40 and boss.windup_time(&"spin") >= 0.70 and boss.windup_time(&"step") >= 0.40 and boss.windup_time(&"triple") >= 0.90, "en la fase 3 se acortan sin bajar del mínimo de su daño")
+	_check(boss.windup_time(&"swing") < 0.75 and boss.windup_time(&"spin") < 0.90, "pero se acortan")
+	boss.phases.phase = 0
+
+	# --- Siega baja: aviso amarillo, daño 1 en el fotograma de impacto, parable ---
+	var hp: int = _player.health.health
+	boss = _stage_jacinto(44, 41)
+	boss.debug_force_attack(&"swing")
+	_check(boss.state == boss.State.SWING_WINDUP and boss.parryable, "la siega empieza con aviso y se puede parar")
+	var zones := _zones_alive()
+	_check(zones.size() == 1 and zones[0].parryable and zones[0].damage == 1 and zones[0].warning_color() == Color(1.0, 0.85, 0.3), "con su marca amarilla en el suelo, 1 de daño")
+	_check(zones[0].duration > 0.75 and zones[0].duration < 0.9, "que dura el aviso más el tiempo hasta el fotograma de impacto (%.2f s)" % zones[0].duration)
+	var impact := {"frame": -1, "zone": -1}
+	var on_frame := func(animation: String, frame: int) -> void:
+		if animation == "swing_low" and frame == boss.SWING_IMPACT_FRAME:
+			impact["frame"] = Engine.get_physics_frames()
+	boss.animator.frame_changed.connect(on_frame)
+	zones[0].resolved.connect(func(_hit: Array) -> void: impact["zone"] = Engine.get_physics_frames())
+	await _wait(40)
+	_check(_player.health.health == hp and boss.state == boss.State.SWING_WINDUP, "durante el aviso no hay daño")
+	boss.animator.frame_changed.disconnect(on_frame)
+	boss.animator.frame_changed.connect(on_frame)
+	await _wait(50)
+	_check(_player.health.health == hp - 1, "al caer la hoja, 1 de daño")
+	_check(impact["frame"] > 0 and impact["zone"] > 0 and absi(int(impact["frame"]) - int(impact["zone"])) <= 2, "y el golpe coincide con el fotograma de impacto (animación %d, daño %d)" % [impact["frame"], impact["zone"]])
+	boss.animator.frame_changed.disconnect(on_frame)
+	await _wait(80)
+
+	# --- Siega parada: el parry lo deja expuesto y recibe el doble ---
+	boss = _stage_jacinto(44, 41)
+	hp = _player.health.health
+	boss.debug_force_attack(&"swing")
+	var wait_frames := int(boss.windup_time(&"swing") * 60.0) - 2
+	await _wait(wait_frames)
+	_player.parry.try_start()
+	await _wait(14)
+	_check(_player.health.health == hp and boss.state == boss.State.STAGGER, "parar la siega no hace daño y deja a Jacinto aturdido")
+	var before: int = boss.core_hp
+	boss.take_hit(1, 1)
+	_check(before - boss.core_hp == 2 and boss.is_exposed(), "aturdido recibe el doble de daño")
+	boss._timer = 0.0
+	await _wait(3)
+	_check(boss.state == boss.State.IDLE, "se recupera")
+
+	# --- Vuelta amplia: radio 130, hueco seguro de 45 px, daño 2, parable ---
+	boss = _stage_jacinto(44, 44)
+	boss.global_position.x = _cell("LaEra", 40, 27).x
+	hp = _player.health.health
+	boss.debug_force_attack(&"spin")
+	_player.global_position = Vector2(boss.global_position.x + 24.0, _standing_on("LaEra", 40, 27).y)
+	await _wait(int(boss.windup_time(&"spin") * 60.0) + 40)
+	_check(boss.state == boss.State.RECOVER or boss.state == boss.State.IDLE, "la vuelta termina y queda recuperándose")
+	_check(_player.health.health == hp, "pegado a él (a 24 px) el arco no lo toca")
+	await _wait(100)
+	boss = _stage_jacinto(44, 44)
+	boss.global_position.x = _cell("LaEra", 40, 27).x
+	boss.debug_force_attack(&"spin")
+	_player.global_position = Vector2(boss.global_position.x - 90.0, _standing_on("LaEra", 40, 27).y)
+	zones = _zones_alive()
+	_check(zones.size() == 1 and zones[0].inner_radius == 45.0 and zones[0].size.x == 130.0 and zones[0].parryable, "el aviso es un anillo de radio 130 con el hueco de 45, amarillo")
+	await _wait(int(boss.windup_time(&"spin") * 60.0) + 10)
+	_check(boss.state == boss.State.SPIN and _player.health.health == hp - 2, "a 90 px recibe los 2 de daño de la vuelta")
+	await _wait(100)
+	boss = _stage_jacinto(44, 44)
+	boss.global_position.x = _cell("LaEra", 40, 27).x
+	hp = _player.health.health
+	boss.debug_force_attack(&"spin")
+	_player.global_position = Vector2(boss.global_position.x - 175.0, _standing_on("LaEra", 40, 27).y)
+	await _wait(int(boss.windup_time(&"spin") * 60.0) + 40)
+	_check(_player.health.health == hp, "retrocediendo más de 130 px no llega")
+	await _wait(100)
+	# Parry de la vuelta: la desvía y lo deja expuesto 1,6 s.
+	boss = _stage_jacinto(44, 44)
+	boss.global_position.x = _cell("LaEra", 40, 27).x
+	hp = _player.health.health
+	boss.debug_force_attack(&"spin")
+	_player.global_position = Vector2(boss.global_position.x - 90.0, _standing_on("LaEra", 40, 27).y)
+	await _wait(int(boss.windup_time(&"spin") * 60.0) - 6)
+	_player.parry.try_start()
+	await _wait(14)
+	_check(_player.health.health == hp and boss.state == boss.State.STAGGER and boss._timer > 1.0, "parar la vuelta la desvía y lo deja aturdido 1,6 s (estado %s, vida %d de %d, mira %d, parry %s)" % [boss.State.keys()[boss.state], _player.health.health, hp, _player.motor.facing, _player.parry.is_active])
+	boss._timer = 0.0
+	await _wait(3)
+
+	# --- Paso de segador: avanza 3 baldosas y siega ---
+	boss = _stage_jacinto(40, 34)
+	hp = _player.health.health
+	var x0: float = boss.global_position.x
+	boss.debug_force_attack(&"step")
+	_check(boss.state == boss.State.STEP_WINDUP, "el paso empieza con aviso")
+	zones = _zones_alive()
+	_check(zones.size() == 1 and zones[0].damage == 1 and zones[0].parryable, "amarillo y de 1 de daño")
+	await _wait(int(boss.windup_time(&"step") * 60.0) + 40)
+	_check(absf((x0 - boss.global_position.x) - 48.0) < 4.0, "avanza 3 baldosas (%d px)" % int(x0 - boss.global_position.x))
+	_check(_player.health.health == hp - 1, "y siega a quien tiene delante")
+	await _wait(100)
+
+	# --- Hoz lanzada: boomerang a ras de suelo; manos vacías = doble daño; el parry la devuelve ---
+	boss = _stage_jacinto(44, 36)
+	hp = _player.health.health
+	boss.debug_force_attack(&"throw")
+	_check(boss.state == boss.State.THROW_WINDUP, "la hoz empieza con aviso")
+	await _wait(int(boss.windup_time(&"throw") * 60.0) + 4)
+	_check(boss.state == boss.State.THROW_EMPTY and not boss._has_scythe and is_instance_valid(boss._hoz), "la suelta y se queda con las manos vacías")
+	var scythe: Projectile = boss._hoz
+	_check(scythe.returns and scythe.target_group == &"player" and scythe.reflect_group == &"enemy", "la hoz es un boomerang que hiere al jugador y que el parry devuelve")
+	var before_hp: int = boss.core_hp
+	boss.take_hit(1, 1)
+	_check(before_hp - boss.core_hp == 2 and boss.is_exposed(), "con las manos vacías recibe el doble")
+	var max_scythe_x := 0.0
+	var min_scythe_x := 1e9
+	var returned := false
+	for i in 140:
+		await _wait(1)
+		if is_instance_valid(scythe):
+			max_scythe_x = maxf(max_scythe_x, scythe.global_position.x)
+			min_scythe_x = minf(min_scythe_x, scythe.global_position.x)
+		elif not returned:
+			returned = true
+		if i == 40:
+			# El jugador se aparta: la hoz no le da, solo va y vuelve.
+			_player.global_position = _standing_on("LaEra", 12, 27)
+	_check(returned and boss._has_scythe, "la hoz vuelve a sus manos aunque el jugador no esté (o haya muerto)")
+	_check(boss.state != boss.State.THROW_EMPTY or boss._timer < 0.5, "y no se queda esperando")
+	await _wait(60)
+	# El parry la devuelve contra él.
+	boss = _stage_jacinto(44, 36)
+	boss.debug_force_attack(&"throw")
+	await _wait(int(boss.windup_time(&"throw") * 60.0) + 12)
+	scythe = boss._hoz
+	_check(is_instance_valid(scythe), "otra hoz en el aire")
+	var hp_boss: int = boss.core_hp
+	scythe.on_parried()
+	_check(scythe.is_returning and scythe.target_group == &"enemy", "el parry la manda de vuelta contra Jacinto")
+	for i in 120:
+		await _wait(1)
+		if is_instance_valid(scythe) and scythe.global_position.distance_to(boss.global_position) < 26.0:
+			scythe.global_position = boss.global_position
+	_check(boss.core_hp < hp_boss, "y le hiere (hoz devuelta, daño doble y por tener las manos vacías)")
+	await _wait(60)
+
+
+func _test_jacinto_climb_dive_and_summon() -> void:
+	print("\n[Jacinto: trepa y picado (rojo), llamada con tope de 2 espantapájaros y tres vueltas (la última roja)]")
+	await _load_world()
+	var arena := _era()
+	var boss: Node = arena.boss
+	await _enter_era()
+	await _wait(110)
+	boss.phases.phase = 1
+	boss._set_attacks(1)
+	# La Trepa solo sale si el jugador lleva más de 6 s sin acercarse a menos de 4 baldosas.
+	boss = _stage_jacinto(44, 20)
+	boss._since_close = 0.0
+	_check(boss._bias()[&"dive"] == 0.0, "la Trepa no entra mientras el jugador no huye")
+	boss._since_close = 6.5
+	_check(boss._bias()[&"dive"] > 0.0, "tras 6 s sin acercarse, sí")
+	# Picado: sube por el muro de la derecha, avisa en amarillo agarrado y cae sobre una sombra roja.
+	boss = _stage_jacinto(44, 25)
+	var hp: int = _player.health.health
+	boss.debug_force_attack(&"dive")
+	_check(boss.state == boss.State.CLIMB_RUN and not boss.parryable, "empieza corriendo al muro y no se puede parar")
+	var seen := {}
+	var out_of_arena := false
+	var red_zone: TelegraphZone = null
+	var highest: float = boss.global_position.y
+	for i in 400:
+		await _wait(1)
+		seen[boss.State.keys()[boss.state]] = true
+		out_of_arena = out_of_arena or boss.global_position.x < boss.arena_left or boss.global_position.x > boss.arena_right
+		highest = minf(highest, boss.global_position.y)
+		for zone in _zones_alive():
+			if not zone.parryable:
+				red_zone = zone
+		if boss.state == boss.State.RECOVER:
+			break
+	_check(seen.has("CLIMB") and seen.has("WALL_HOLD") and seen.has("DIVE") and seen.has("RECOVER"), "trepa, se agarra, cae y se recupera %s" % [seen.keys()])
+	_check(not out_of_arena, "no sale de la arena en ningún momento")
+	_check(absf(boss.global_position.y + boss.half_height - (arena.global_position.y + 27.0 * 16.0)) < 2.0, "acaba en el suelo")
+	_check(red_zone != null and red_zone.size.x == 60.0 and red_zone.damage == 2, "la sombra es roja, de radio 60 y de 2 de daño")
+	_check(arena.global_position.y + 27.0 * 16.0 - 40.0 - highest > 100.0, "el agarre está a más de 100 px de altura (sube por el muro)")
+	_check(_player.health.health == hp - 2 or _player.health.health == hp, "si el jugador no se aparta de la sombra, 2 de daño; si se aparta, ninguno (%d)" % (hp - _player.health.health))
+	boss._timer = 0.0
+	await _wait(5)
+	# Quien se aparta de la sombra no recibe daño.
+	boss = _stage_jacinto(44, 25)
+	hp = _player.health.health
+	boss.debug_force_attack(&"dive")
+	for i in 400:
+		await _wait(1)
+		if boss.state == boss.State.DIVE:
+			_player.global_position = _standing_on("LaEra", 12, 27)
+			_player.velocity = Vector2.ZERO
+			break
+	await _wait(60)
+	_check(_player.health.health == hp, "apartándose de la sombra no hay daño")
+	boss._timer = 0.0
+	await _wait(5)
+
+	# --- Llamada: espantapájaros con tope de 2, sin Ecos, que no se acumulan ---
+	boss = _stage_jacinto(44, 30)
+	boss.debug_force_attack(&"summon")
+	_check(boss.state == boss.State.SUMMON_WINDUP and absf(boss._timer - 1.0 * boss.WINDUP_SCALE[1]) < 0.01 or boss._timer >= 0.9, "la Llamada avisa alzando la hoz")
+	await _wait(int(boss._timer * 60.0) + 6)
+	var scarecrows := get_nodes_in_group(&"boss_debris").filter(func(n: Node) -> bool: return n.is_in_group("enemy") and not n.is_queued_for_deletion())
+	_check(scarecrows.size() == 2 and boss.spawner.alive_count() == 2, "levanta 2 espantapájaros")
+	_check(scarecrows[0].health.max_health == 3 and scarecrows[0].ecos_reward == 0, "de 3 de vida y sin Ecos")
+	var ecos: int = _player.ecos
+	scarecrows[0].take_hit(3, 1)
+	scarecrows[0].take_hit(3, 1)
+	await _wait(2)
+	_check(_player.ecos == ecos, "matarlos no da Ecos")
+	boss._timer = 0.0
+	await _wait(3)
+	boss.debug_force_attack(&"summon")
+	await _wait(int(boss._timer * 60.0) + 6)
+	boss.debug_force_attack(&"summon")
+	await _wait(80)
+	_check(boss.spawner.alive_count() <= 2, "no hay más de 2 vivos nunca (%d)" % boss.spawner.alive_count())
+	_check(boss._bias()[&"summon"] == 0.0 or boss.spawner.can_spawn(), "con el tope cubierto no vuelve a elegir la Llamada")
+
+	# --- Tres vueltas: dos amarillas y una tercera roja a ras de suelo ---
+	boss.spawner.clear()
+	boss.phases.phase = 2
+	boss = _stage_jacinto(44, 40)
+	hp = _player.health.health
+	boss.debug_force_attack(&"triple")
+	_check(boss.state == boss.State.SPIN_WINDUP and boss.windup_time(&"triple") >= 0.9, "empieza con 0,9 s de aviso")
+	var stages := []
+	var recovery_timer := 0.0
+	var last_state: int = -1
+	var third := {}
+	for i in 400:
+		await _wait(1)
+		if boss.state != last_state:
+			stages.append(boss.State.keys()[boss.state])
+			last_state = boss.state
+		for zone in _zones_alive():
+			if not zone.parryable and zone.shape_kind == TelegraphZone.Shape.RECT:
+				third = {"size": zone.size, "damage": zone.damage, "parryable": zone.parryable, "progress": zone.progress()}
+		if boss.state == boss.State.RECOVER:
+			recovery_timer = boss._timer
+			break
+		# El jugador va entrando por dentro (pegado a él): las dos primeras no le dan.
+		if boss.state == boss.State.SPIN_WINDUP or boss.state == boss.State.SPIN or boss.state == boss.State.TRIPLE_GAP:
+			_player.global_position = Vector2(boss.global_position.x - 26.0, _standing_on("LaEra", 40, 27).y)
+			_player.velocity = Vector2.ZERO
+		if not third.is_empty() and float(third["progress"]) > 0.6:
+			_player.global_position = Vector2(boss.global_position.x - 26.0, _standing_on("LaEra", 40, 27).y - 70.0)
+			_player.velocity = Vector2.ZERO
+	_check(stages == ["SPIN_WINDUP", "SPIN", "TRIPLE_GAP", "SPIN", "TRIPLE_GAP", "SPIN", "RECOVER"], "windup, vuelta, respiro, vuelta, marca roja, tercera vuelta, recuperación %s" % [stages])
+	_check(not third.is_empty() and third["size"].x == 320.0 and third["damage"] == 2 and not third["parryable"], "la tercera lleva una marca roja de radio 160 a ras de suelo, no parable")
+	_check(not third.is_empty() and third["size"].y <= 26.0, "y mide solo 24 de alto: saltándola no te toca")
+	await _wait(30)
+	_check(_player.health.health == hp, "pegado a él en las dos primeras y saltando la tercera, no recibe ningún golpe")
+	_check(recovery_timer > 1.3, "la recuperación del remate es larga (1,4 s)")
+
+
+func _test_jacinto_resets_and_leaves_nothing_behind() -> void:
+	print("\n[Jacinto: si muere el jugador la pelea se reinicia (sin hoz, avisos ni espantapájaros); no sale de su arena en 60 s]")
+	await _load_world()
+	var arena := _era()
+	await _enter_era()
+	var boss: Node = arena.boss
+	await _wait(110)
+	boss.phases.phase = 2
+	boss._set_attacks(2)
+	boss.state = boss.State.IDLE
+	boss._timer = 1000.0
+	boss.debug_force_attack(&"summon")
+	await _wait(80)
+	boss.debug_force_attack(&"throw")
+	await _wait(60)
+	boss.take_hit(5, 1)
+	_player.die()
+	await _wait(8)
+	var fresh: Node = arena.boss
+	_check(is_instance_valid(fresh) and fresh != boss and fresh.state == fresh.State.DORMANT and fresh.core_hp == 36 and fresh.phases.phase == 0, "al morir el jugador Jacinto vuelve a dormir con la vida y la fase de partida")
+	var leftovers := 0
+	for node in get_nodes_in_group(&"boss_debris"):
+		if not node.is_queued_for_deletion():
+			leftovers += 1
+	_check(leftovers == 0, "sin hoz, avisos ni espantapájaros en la sala (%d)" % leftovers)
+	var entry_open := true
+	for gate in arena._entry_gates:
+		entry_open = entry_open and not gate.closed
+	_check(entry_open and not arena._bar.visible, "reja abierta y barra oculta")
+
+	# Combate largo con el jugador moviéndose al azar: sin atascos ni salidas de la arena.
+	await _enter_era()
+	boss = arena.boss
+	await _wait(100)
+	boss.phases.phase = 2
+	boss._set_attacks(2)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 42
+	var worst := {}
+	var outside := false
+	var peak_zones := 0
+	var peak_scarecrows := 0
+	var seen_states := {}
+	for i in 3600:
+		await _wait(1)
+		if not is_instance_valid(boss):
+			break
+		var name: String = boss.State.keys()[boss.state]
+		seen_states[name] = true
+		worst[name] = maxf(float(worst.get(name, 0.0)), boss._state_clock)
+		outside = outside or boss.global_position.x < boss.arena_left + 15.0 or boss.global_position.x > boss.arena_right - 15.0
+		peak_zones = maxi(peak_zones, _zones_alive().size())
+		peak_scarecrows = maxi(peak_scarecrows, boss.spawner.alive_count())
+		_player.health.health = 999
+		if i % 90 == 0:
+			_player.global_position = _standing_on("LaEra", rng.randi_range(8, 52), 27)
+			_player.velocity = Vector2.ZERO
+		if i % 600 == 599:
+			boss.take_hit(2, 1)
+	_check(not outside, "en 60 s de pelea no sale de su arena")
+	var limits := {"IDLE": 1.0, "WALK": 1.8, "SWING_WINDUP": 0.8, "SWING_STRIKE": 0.4, "SPIN_WINDUP": 1.0, "SPIN": 0.7, "TRIPLE_GAP": 0.8, "STEP_WINDUP": 0.7, "STEP_STRIKE": 0.4, "THROW_WINDUP": 0.7, "THROW_EMPTY": 3.4, "CLIMB_RUN": 4.0, "CLIMB": 0.7, "WALL_HOLD": 0.7, "DIVE": 1.0, "SUMMON_WINDUP": 1.2, "SUMMON_END": 0.6, "RECOVER": 1.6, "STAGGER": 2.0, "TRANSITION": 2.2}
+	var stuck := []
+	for name in worst:
+		if limits.has(name) and float(worst[name]) > float(limits[name]) + 1.0:
+			stuck.append("%s %.1f" % [name, worst[name]])
+	_check(stuck.is_empty(), "ningún estado dura más que su máximo + 1 s %s" % [stuck])
+	_check(seen_states.size() >= 12, "en esa pelea salen muchos ataques distintos (%d estados)" % seen_states.size())
+	_check(peak_zones <= 6 and peak_scarecrows <= 2, "nunca más de 6 avisos a la vez (%d) ni más de 2 espantapájaros (%d)" % [peak_zones, peak_scarecrows])
+
+
+func _test_the_centinela_still_fights_with_the_shared_base() -> void:
+	print("\n[El Centinela sigue usando la base común de los jefes]")
+	await _load_world()
+	var boss: Node = _arena().boss
+	_check(boss.get_script().get_base_script().resource_path == "res://game/boss/boss_base.gd", "el Centinela hereda de boss_base.gd")
+	_check(_era().boss.get_script().get_base_script().resource_path == "res://game/boss/boss_base.gd", "y Jacinto también")
+	_check(boss.has_method("_ghost") and boss.has_method("_has_ground") and boss.has_method("_distance_to_player"), "con lo que comparten: traspasar al jugador, mirar suelo y distancia")
+	var shape := boss.get_node("CollisionShape2D").shape as RectangleShape2D
+	_check(shape.size == Vector2(112.0, 160.0) and _arena().arena_margin_cells == 2, "sin cambios de tamaño ni de márgenes en el Aljibe")
+	_check(is_equal_approx(boss.arena_left, _arena().global_position.x + 32.0), "su arena sigue empezando 2 baldosas dentro")
